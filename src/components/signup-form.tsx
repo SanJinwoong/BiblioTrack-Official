@@ -29,8 +29,8 @@ import { useToast } from '@/hooks/use-toast';
 
 
 const formSchema = z.object({
-  email: z.string().email({
-    message: 'Please enter a valid email address.',
+  username: z.string().min(2, {
+    message: 'El nombre de usuario debe tener al menos 2 caracteres.',
   }),
   password: z.string().min(6, {
     message: 'La contraseña debe tener al menos 6 caracteres.',
@@ -46,7 +46,7 @@ export function SignUpForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: '',
+      username: '',
       password: '',
     },
   });
@@ -54,25 +54,25 @@ export function SignUpForm() {
   function onSubmit(values: z.infer<typeof formSchema>) {
     // In a real app, you'd do this on a backend and hash passwords.
     // For this mock, we'll just add to our in-memory user array.
-    const existingUser = users.find(u => u.email === values.email);
+    const existingUser = users.find(u => u.username === values.username);
     if (existingUser) {
         toast({
             variant: "destructive",
             title: "Error de registro",
-            description: "Este correo electrónico ya está en uso.",
+            description: "Este nombre de usuario ya está en uso.",
         });
         return;
     }
     
     // This is not persistent, will be lost on refresh.
     users.push({
-        email: values.email,
+        username: values.username,
         password: values.password, // In real app, HASH THIS
         role: values.role,
     });
     
     localStorage.setItem('userRole', values.role);
-    localStorage.setItem('userEmail', values.email);
+    localStorage.setItem('userUsername', values.username);
     router.push('/dashboard');
   }
 
@@ -89,12 +89,12 @@ export function SignUpForm() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
-              name="email"
+              name="username"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Correo electrónico</FormLabel>
+                  <FormLabel>Usuario</FormLabel>
                   <FormControl>
-                    <Input placeholder="user@example.com" {...field} />
+                    <Input placeholder="usuario" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

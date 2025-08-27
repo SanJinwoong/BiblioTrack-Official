@@ -11,13 +11,13 @@ import { Recommendations } from './recommendations';
 import { Badge } from './ui/badge';
 
 export function ClientDashboard() {
-  const [userEmail, setUserEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredBooks, setFilteredBooks] = useState<BookType[]>(books);
 
   useEffect(() => {
-    const email = localStorage.getItem('userEmail') || '';
-    setUserEmail(email);
+    const storedUsername = localStorage.getItem('userUsername') || '';
+    setUsername(storedUsername);
   }, []);
 
   useEffect(() => {
@@ -29,7 +29,7 @@ export function ClientDashboard() {
   }, [searchTerm]);
 
   const userCheckouts = checkouts
-    .filter(c => c.userId === userEmail)
+    .filter(c => c.userId === username)
     .map(c => {
       const book = books.find(b => b.id === c.bookId);
       return { ...book, dueDate: c.dueDate };
@@ -37,7 +37,7 @@ export function ClientDashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold font-headline">Welcome, {userEmail}!</h1>
+      <h1 className="text-3xl font-bold font-headline">Welcome, {username}!</h1>
       <Tabs defaultValue="my-books" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="my-books"><BookOpen className="mr-2 h-4 w-4" />My Books</TabsTrigger>

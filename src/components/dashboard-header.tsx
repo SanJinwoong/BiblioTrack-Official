@@ -17,15 +17,15 @@ import {
 
 export function DashboardHeader() {
   const router = useRouter();
-  const [userEmail, setUserEmail] = useState('');
+  const [username, setUsername] = useState('');
 
   useEffect(() => {
-    setUserEmail(localStorage.getItem('userEmail') || 'user@example.com');
+    setUsername(localStorage.getItem('userUsername') || 'usuario');
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('userRole');
-    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userUsername');
     router.push('/');
   };
 
@@ -48,9 +48,9 @@ export function DashboardHeader() {
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">My Account</p>
+                  <p className="text-sm font-medium leading-none">Mi Cuenta</p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    {userEmail}
+                    {username}
                   </p>
                 </div>
               </DropdownMenuLabel>

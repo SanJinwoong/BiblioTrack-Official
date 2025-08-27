@@ -1,9 +1,9 @@
 import type { Book, Checkout, User } from './types';
 
 export const users: User[] = [
-    { email: 'librarian@example.com', password: 'password', role: 'librarian'},
-    { email: 'client@example.com', password: 'password', role: 'client'},
-    { email: 'another@example.com', password: 'password', role: 'client'},
+    { username: 'librarian', password: 'password', role: 'librarian'},
+    { username: 'client', password: 'password', role: 'client'},
+    { username: 'another', password: 'password', role: 'client'},
 ];
 
 export const books: Book[] = [
@@ -82,12 +82,12 @@ export const books: Book[] = [
 ];
 
 export const checkouts: Checkout[] = [
-  { userId: 'client@example.com', bookId: 2, dueDate: '2024-08-15' },
-  { userId: 'client@example.com', bookId: 5, dueDate: '2024-08-22' },
-  { userId: 'another@example.com', bookId: 8, dueDate: '2024-08-10' },
+  { userId: 'client', bookId: 2, dueDate: '2024-08-15' },
+  { userId: 'client', bookId: 5, dueDate: '2024-08-22' },
+  { userId: 'another', bookId: 8, dueDate: '2024-08-10' },
 ];
 
 export const readingHistory: { [key: string]: number[] } = {
-    'client@example.com': [4, 6],
-    'another@example.com': [1],
+    'client': [4, 6],
+    'another': [1],
 };

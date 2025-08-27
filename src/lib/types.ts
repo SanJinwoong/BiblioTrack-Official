@@ -15,7 +15,7 @@ export interface Checkout {
 }
 
 export interface User {
-    email: string;
+    username: string;
     password: string; // In a real app, this should be a hashed password
     role: 'client' | 'librarian';
 }

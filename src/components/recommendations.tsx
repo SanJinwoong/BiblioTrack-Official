@@ -14,14 +14,14 @@ export function Recommendations() {
   const [recommendations, setRecommendations] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
   
   useEffect(() => {
-    setUserEmail(localStorage.getItem('userEmail'));
+    setUsername(localStorage.getItem('userUsername'));
   }, []);
 
   const handleGetRecommendations = async () => {
-    if (!userEmail) {
+    if (!username) {
         setError("Could not find user information.");
         return;
     }
@@ -30,7 +30,7 @@ export function Recommendations() {
     setRecommendations([]);
 
     try {
-      const historyIds = readingHistory[userEmail] || [];
+      const historyIds = readingHistory[username] || [];
       const userHistoryTitles = historyIds.map(id => books.find(b => b.id === id)?.title).filter(Boolean) as string[];
       const inventoryTitles = books.filter(b => b.available).map(b => b.title);
 
@@ -65,7 +65,7 @@ export function Recommendations() {
       </CardHeader>
       <CardContent className="text-center space-y-6">
         {recommendations.length === 0 && !loading && (
-             <Button onClick={handleGetRecommendations} disabled={loading || !userEmail}>
+             <Button onClick={handleGetRecommendations} disabled={loading || !username}>
                 {loading ? (
                 <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

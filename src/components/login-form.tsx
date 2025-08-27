@@ -27,8 +27,8 @@ import { users } from '@/lib/data'; // Assuming users are exported from data
 import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
-  email: z.string().email({
-    message: 'Please enter a valid email address.',
+  username: z.string().min(1, {
+    message: 'Por favor ingrese un nombre de usuario.',
   }),
   password: z.string().min(1, {
     message: 'Password cannot be empty.',
@@ -41,7 +41,7 @@ export function LoginForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: '',
+      username: '',
       password: '',
     },
   });
@@ -49,17 +49,17 @@ export function LoginForm() {
   function onSubmit(values: z.infer<typeof formSchema>) {
     // In a real app, you'd authenticate here against a backend.
     // For this mock, we'll check against our mock user data.
-    const user = users.find(u => u.email === values.email && u.password === values.password);
+    const user = users.find(u => u.username === values.username && u.password === values.password);
 
     if (user) {
       localStorage.setItem('userRole', user.role);
-      localStorage.setItem('userEmail', user.email);
+      localStorage.setItem('userUsername', user.username);
       router.push('/dashboard');
     } else {
         toast({
             variant: "destructive",
             title: "Error de inicio de sesión",
-            description: "Correo o contraseña incorrectos.",
+            description: "Usuario o contraseña incorrectos.",
         });
     }
   }
@@ -77,12 +77,12 @@ export function LoginForm() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
-              name="email"
+              name="username"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Correo electrónico</FormLabel>
+                  <FormLabel>Usuario</FormLabel>
                   <FormControl>
-                    <Input placeholder="user@example.com" {...field} />
+                    <Input placeholder="usuario" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
