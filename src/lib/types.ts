@@ -13,3 +13,9 @@ export interface Checkout {
   bookId: number;
   dueDate: string;
 }
+
+export interface User {
+    email: string;
+    password: string; // In a real app, this should be a hashed password
+    role: 'client' | 'librarian';
+}

@@ -23,7 +23,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { users } from '@/lib/data'; // Assuming users are exported from data
+import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
   email: z.string().email({
@@ -32,13 +33,11 @@ const formSchema = z.object({
   password: z.string().min(1, {
     message: 'Password cannot be empty.',
   }),
-  role: z.enum(['client', 'librarian'], {
-    required_error: 'You need to select a role.',
-  }),
 });
 
 export function LoginForm() {
   const router = useRouter();
+  const { toast } = useToast();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -48,19 +47,29 @@ export function LoginForm() {
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    // In a real app, you'd authenticate here.
-    // For this mock, we'll just store the role and navigate.
-    localStorage.setItem('userRole', values.role);
-    localStorage.setItem('userEmail', values.email);
-    router.push('/dashboard');
+    // In a real app, you'd authenticate here against a backend.
+    // For this mock, we'll check against our mock user data.
+    const user = users.find(u => u.email === values.email && u.password === values.password);
+
+    if (user) {
+      localStorage.setItem('userRole', user.role);
+      localStorage.setItem('userEmail', user.email);
+      router.push('/dashboard');
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Error de inicio de sesión",
+            description: "Correo o contraseña incorrectos.",
+        });
+    }
   }
 
   return (
-    <Card className="w-full">
+    <Card className="w-full border-0 shadow-none">
       <CardHeader>
-        <CardTitle className="font-headline text-2xl">Login</CardTitle>
+        <CardTitle className="font-headline text-2xl">Iniciar sesión</CardTitle>
         <CardDescription>
-          Select your role and enter your credentials to continue.
+          Ingresa tus credenciales para continuar.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -71,7 +80,7 @@ export function LoginForm() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Correo electrónico</FormLabel>
                   <FormControl>
                     <Input placeholder="user@example.com" {...field} />
                   </FormControl>
@@ -84,7 +93,7 @@ export function LoginForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>Contraseña</FormLabel>
                   <FormControl>
                     <Input type="password" placeholder="••••••••" {...field} />
                   </FormControl>
@@ -92,41 +101,9 @@ export function LoginForm() {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Role</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex flex-col space-y-1"
-                    >
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="client" />
-                        </FormControl>
-                        <FormLabel className="font-normal">Client</FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="librarian" />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          Librarian
-                        </FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <Button type="submit" className="w-full bg-accent hover:bg-accent/90">
               <LogIn className="mr-2 h-4 w-4" />
-              Login
+              Iniciar sesión
             </Button>
           </form>
         </Form>

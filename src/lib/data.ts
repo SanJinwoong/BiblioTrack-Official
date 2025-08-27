@@ -1,4 +1,10 @@
-import type { Book, Checkout } from './types';
+import type { Book, Checkout, User } from './types';
+
+export const users: User[] = [
+    { email: 'librarian@example.com', password: 'password', role: 'librarian'},
+    { email: 'client@example.com', password: 'password', role: 'client'},
+    { email: 'another@example.com', password: 'password', role: 'client'},
+];
 
 export const books: Book[] = [
   {
