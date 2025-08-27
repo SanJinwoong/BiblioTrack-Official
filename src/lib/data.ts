@@ -4,6 +4,7 @@ export const users: User[] = [
     { username: 'librarian', password: 'password', role: 'librarian'},
     { username: 'client', password: 'password', role: 'client'},
     { username: 'another', password: 'password', role: 'client'},
+    { username: 'admin', password: 'admin', role: 'librarian' },
 ];
 
 export const books: Book[] = [
