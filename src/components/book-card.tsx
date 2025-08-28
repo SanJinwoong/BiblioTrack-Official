@@ -16,7 +16,7 @@ interface BookCardProps {
 
 export function BookCard({ book, children }: BookCardProps) {
   return (
-    <Card className="flex flex-col overflow-hidden transition-shadow hover:shadow-lg">
+    <Card className="flex flex-col overflow-hidden transition-shadow hover:shadow-lg h-full">
       <CardHeader className="p-0">
         <div className="relative aspect-[3/4.5] w-full">
           <Image
@@ -24,18 +24,21 @@ export function BookCard({ book, children }: BookCardProps) {
             alt={`Cover of ${book.title}`}
             fill
             className="object-cover"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 15vw"
             data-ai-hint={`${book.genre} book cover`}
           />
         </div>
       </CardHeader>
-      <CardContent className="flex flex-col flex-grow p-4">
+      <CardContent className="flex flex-col flex-grow p-3">
         <div className="flex-grow">
-            <CardTitle className="font-headline text-lg mb-1 line-clamp-2">{book.title}</CardTitle>
-            <CardDescription>{book.author}</CardDescription>
+            <CardTitle className="font-headline text-sm mb-1 line-clamp-2">{book.title}</CardTitle>
+            <CardDescription className="text-xs line-clamp-1">{book.author}</CardDescription>
         </div>
-        <div className="mt-4">
-            <Badge variant={book.available ? 'default' : 'secondary'} className={book.available ? 'bg-accent text-accent-foreground' : ''}>
+        <div className="mt-2">
+            <Badge 
+                variant={book.available ? 'default' : 'secondary'} 
+                className={`text-xs ${book.available ? 'bg-accent text-accent-foreground' : ''}`}
+            >
                 {book.available ? 'Available' : 'Checked Out'}
             </Badge>
         </div>

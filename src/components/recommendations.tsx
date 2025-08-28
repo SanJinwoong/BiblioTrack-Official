@@ -8,7 +8,7 @@ import { books, readingHistory } from '@/lib/data';
 import { Sparkles, Loader2, BookHeart } from 'lucide-react';
 import type { Book } from '@/lib/types';
 import { BookCard } from './book-card';
-
+import { ScrollArea, ScrollBar } from './ui/scroll-area';
 
 export function Recommendations() {
   const [recommendations, setRecommendations] = useState<string[]>([]);
@@ -36,7 +36,7 @@ export function Recommendations() {
 
       const result = await recommendBooks({
         readingHistory: userHistoryTitles,
-        currentCheckouts: [], // Not used in prompt, but can be added
+        currentCheckouts: [],
         inventory: inventoryTitles,
       });
 
@@ -56,15 +56,10 @@ export function Recommendations() {
   const recommendedBooks: Book[] = recommendations.map(title => books.find(b => b.title === title)).filter(Boolean) as Book[];
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="font-headline flex items-center"><BookHeart className="mr-2 h-6 w-6 text-primary"/> AI-Powered Recommendations</CardTitle>
-        <CardDescription>
-          Based on your reading history, here are some books you might like that are currently available.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="text-center space-y-6">
-        {recommendations.length === 0 && !loading && (
+    <div className="w-full">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold font-headline flex items-center"><BookHeart className="mr-2 h-6 w-6 text-primary"/> AI-Powered Recommendations</h2>
+        {recommendations.length === 0 && (
              <Button onClick={handleGetRecommendations} disabled={loading || !username}>
                 {loading ? (
                 <>
@@ -79,19 +74,33 @@ export function Recommendations() {
                 )}
             </Button>
         )}
+      </div>
+      
+      {loading && <div className="flex justify-center items-center h-48"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}
 
-        {loading && <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />}
+      {error && <p className="text-destructive">{error}</p>}
+      
+      {recommendations.length > 0 && (
+          <ScrollArea>
+              <div className="flex space-x-4 pb-4">
+                  {recommendedBooks.map(book => (
+                      <div key={book.id} className="w-40 min-w-40">
+                          <BookCard book={book} />
+                      </div>
+                  ))}
+              </div>
+              <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+      )}
 
-        {error && <p className="text-destructive">{error}</p>}
-        
-        {recommendations.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 text-left">
-                {recommendedBooks.map(book => (
-                    <BookCard key={book.id} book={book} />
-                ))}
-            </div>
-        )}
-      </CardContent>
-    </Card>
+      {recommendations.length === 0 && !loading && !error && (
+        <Card className="flex flex-col items-center justify-center text-center p-8 border-dashed">
+            <CardHeader>
+                <CardTitle>Discover your next read</CardTitle>
+                <CardDescription>Click the button to get personalized book recommendations based on your reading history.</CardDescription>
+            </CardHeader>
+        </Card>
+      )}
+    </div>
   );
 }

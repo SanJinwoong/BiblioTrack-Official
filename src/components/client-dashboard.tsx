@@ -1,14 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Book, BookOpen, Search, Sparkles } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
+import Image from 'next/image';
 import { books, checkouts } from '@/lib/data';
 import type { Book as BookType } from '@/lib/types';
 import { BookCard } from './book-card';
 import { Recommendations } from './recommendations';
 import { Badge } from './ui/badge';
+import { ScrollArea, ScrollBar } from './ui/scroll-area';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel';
+import { Card } from './ui/card';
+import { ClientHeader } from './client-header';
 
 export function ClientDashboard() {
   const [username, setUsername] = useState('');
@@ -21,69 +29,120 @@ export function ClientDashboard() {
   }, []);
 
   useEffect(() => {
-    const results = books.filter(book =>
-      book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      book.author.toLowerCase().includes(searchTerm.toLowerCase())
+    const results = books.filter(
+      (book) =>
+        book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        book.author.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredBooks(results);
   }, [searchTerm]);
 
   const userCheckouts = checkouts
-    .filter(c => c.userId === username)
-    .map(c => {
-      const book = books.find(b => b.id === c.bookId);
+    .filter((c) => c.userId === username)
+    .map((c) => {
+      const book = books.find((b) => b.id === c.bookId);
       return { ...book, dueDate: c.dueDate };
     });
 
+  const featuredBooks = [...books].sort(() => 0.5 - Math.random()).slice(0, 5);
+
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold font-headline">Welcome, {username}!</h1>
-      <Tabs defaultValue="my-books" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="my-books"><BookOpen className="mr-2 h-4 w-4" />My Books</TabsTrigger>
-          <TabsTrigger value="browse"><Search className="mr-2 h-4 w-4" />Browse Catalog</TabsTrigger>
-          <TabsTrigger value="recommendations"><Sparkles className="mr-2 h-4 w-4" />Recommendations</TabsTrigger>
-        </TabsList>
+    <div className="bg-background min-h-screen">
+      <ClientHeader username={username} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
 
-        <TabsContent value="my-books" className="mt-4">
-           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {userCheckouts.length > 0 ? (
-              userCheckouts.map(book =>
-                book.id ? (
-                    <BookCard key={book.id} book={book as BookType}>
-                        <div className="p-4 pt-0">
-                            <Badge variant="secondary">Due: {book.dueDate}</Badge>
+      <div className="container mx-auto p-4 md:p-8 space-y-12">
+        <section id="discover">
+          <Carousel
+            opts={{
+              loop: true,
+            }}
+            className="w-full"
+          >
+            <CarouselContent>
+              {featuredBooks.map((book) => (
+                <CarouselItem key={book.id}>
+                  <Card className="overflow-hidden">
+                    <div className="relative h-64 md:h-80 w-full">
+                      <Image
+                        src={`https://picsum.photos/1200/400?random=${book.id}`}
+                        alt={`Promotional image for ${book.title}`}
+                        fill
+                        className="object-cover"
+                        data-ai-hint={`${book.genre} landscape`}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                      <div className="absolute bottom-0 left-0 p-6 md:p-8 text-white">
+                        <h2 className="text-2xl md:text-4xl font-bold font-headline">
+                          {book.title}
+                        </h2>
+                        <p className="text-sm md:text-lg">{book.author}</p>
+                      </div>
+                    </div>
+                  </Card>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="left-4" />
+            <CarouselNext className="right-4" />
+          </Carousel>
+        </section>
+
+        {searchTerm ? (
+             <section id="search-results" className="space-y-6">
+                <h2 className="text-2xl font-bold font-headline">Search Results</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    {filteredBooks.map((book) => (
+                        <BookCard key={book.id} book={book} />
+                    ))}
+                </div>
+                {filteredBooks.length === 0 && (
+                    <p className="text-muted-foreground">No books found for &quot;{searchTerm}&quot;.</p>
+                )}
+             </section>
+        ) : (
+            <>
+                {userCheckouts.length > 0 && (
+                    <section id="my-books" className="space-y-4">
+                    <h2 className="text-2xl font-bold font-headline">My Books</h2>
+                    <ScrollArea>
+                        <div className="flex space-x-4 pb-4">
+                        {userCheckouts.map((book) =>
+                            book.id ? (
+                            <div key={book.id} className="w-40 min-w-40">
+                                <BookCard book={book as BookType}>
+                                <div className="p-4 pt-0">
+                                    <Badge variant="secondary">Due: {book.dueDate}</Badge>
+                                </div>
+                                </BookCard>
+                            </div>
+                            ) : null
+                        )}
                         </div>
-                    </BookCard>
-                ) : null
-              )
-            ) : (
-              <p className="col-span-full text-muted-foreground">You have no books checked out.</p>
-            )}
-          </div>
-        </TabsContent>
+                        <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
+                    </section>
+                )}
 
-        <TabsContent value="browse" className="mt-4 space-y-6">
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                    placeholder="Search by title or author..."
-                    className="pl-10 w-full md:w-1/2"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {filteredBooks.map(book => (
-                    <BookCard key={book.id} book={book} />
-                ))}
-            </div>
-        </TabsContent>
+                <section id="browse" className="space-y-4">
+                    <h2 className="text-2xl font-bold font-headline">Browse Catalog</h2>
+                    <ScrollArea>
+                        <div className="flex space-x-4 pb-4">
+                        {books.map((book) => (
+                             <div key={book.id} className="w-40 min-w-40">
+                                <BookCard book={book} />
+                            </div>
+                        ))}
+                        </div>
+                        <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
+                </section>
 
-        <TabsContent value="recommendations" className="mt-4">
-          <Recommendations />
-        </TabsContent>
-      </Tabs>
+                <section id="recommendations">
+                    <Recommendations />
+                </section>
+            </>
+        )}
+      </div>
     </div>
   );
 }
