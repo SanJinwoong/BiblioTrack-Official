@@ -79,7 +79,7 @@ export function ClientHeader({ username, searchTerm, setSearchTerm }: ClientHead
             </form>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+              <Button variant="outline" className="relative h-9 w-9 rounded-full">
                 <User className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
