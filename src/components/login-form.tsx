@@ -23,7 +23,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { users } from '@/lib/data'; // Assuming users are exported from data
+import { users } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
@@ -31,7 +31,7 @@ const formSchema = z.object({
     message: 'Por favor ingrese un nombre de usuario.',
   }),
   password: z.string().min(1, {
-    message: 'Password cannot be empty.',
+    message: 'La contraseña no puede estar vacía.',
   }),
 });
 
@@ -47,27 +47,29 @@ export function LoginForm() {
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    // In a real app, you'd authenticate here against a backend.
-    // For this mock, we'll check against our mock user data.
     const user = users.find(u => u.username === values.username && u.password === values.password);
 
     if (user) {
       localStorage.setItem('userRole', user.role);
       localStorage.setItem('userUsername', user.username);
       router.push('/dashboard');
+      toast({
+        title: `✅ ¡Bienvenido, ${user.username}!`,
+        description: 'Has iniciado sesión correctamente.',
+      });
     } else {
         toast({
             variant: "destructive",
-            title: "Error de inicio de sesión",
-            description: "Usuario o contraseña incorrectos.",
+            title: "❌ Error de inicio de sesión",
+            description: "Usuario o contraseña incorrectos. Por favor, inténtalo de nuevo.",
         });
     }
   }
 
   return (
     <Card className="w-full border-0 shadow-none">
-      <CardHeader>
-        <CardTitle className="font-headline text-2xl">Iniciar sesión</CardTitle>
+      <CardHeader className="text-center">
+        <CardTitle className="font-headline text-2xl">¡Hola de nuevo!</CardTitle>
         <CardDescription>
           Ingresa tus credenciales para continuar.
         </CardDescription>
@@ -82,7 +84,7 @@ export function LoginForm() {
                 <FormItem>
                   <FormLabel>Usuario</FormLabel>
                   <FormControl>
-                    <Input placeholder="usuario" {...field} />
+                    <Input placeholder="tu-usuario" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -101,9 +103,9 @@ export function LoginForm() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full bg-accent hover:bg-accent/90">
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
               <LogIn className="mr-2 h-4 w-4" />
-              Iniciar sesión
+              Entrar
             </Button>
           </form>
         </Form>

@@ -23,10 +23,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { users } from '@/lib/data'; // Assuming users are exported from data
+import { users } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
-
 
 const formSchema = z.object({
   username: z.string().min(2, {
@@ -34,9 +32,6 @@ const formSchema = z.object({
   }),
   password: z.string().min(6, {
     message: 'La contraseña debe tener al menos 6 caracteres.',
-  }),
-  role: z.enum(['client', 'librarian'], {
-    required_error: 'Debes seleccionar un rol.',
   }),
 });
 
@@ -52,36 +47,39 @@ export function SignUpForm() {
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    // In a real app, you'd do this on a backend and hash passwords.
-    // For this mock, we'll just add to our in-memory user array.
     const existingUser = users.find(u => u.username === values.username);
     if (existingUser) {
         toast({
             variant: "destructive",
-            title: "Error de registro",
-            description: "Este nombre de usuario ya está en uso.",
+            title: "❌ Error de registro",
+            description: "Este nombre de usuario ya está en uso. Por favor, elige otro.",
         });
         return;
     }
     
-    // This is not persistent, will be lost on refresh.
+    const role = 'client';
+    
     users.push({
         username: values.username,
-        password: values.password, // In real app, HASH THIS
-        role: values.role,
+        password: values.password,
+        role: role,
     });
     
-    localStorage.setItem('userRole', values.role);
+    localStorage.setItem('userRole', role);
     localStorage.setItem('userUsername', values.username);
     router.push('/dashboard');
+    toast({
+        title: "✅ ¡Registro exitoso!",
+        description: "Tu cuenta ha sido creada y has iniciado sesión."
+    });
   }
 
   return (
     <Card className="w-full border-0 shadow-none">
-      <CardHeader>
-        <CardTitle className="font-headline text-2xl">Crear una cuenta</CardTitle>
+      <CardHeader className="text-center">
+        <CardTitle className="font-headline text-2xl">Crear una cuenta nueva</CardTitle>
         <CardDescription>
-          Selecciona tu rol y crea tus credenciales.
+          ¡Es rápido y fácil! Empieza a explorar la biblioteca ahora.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -92,9 +90,9 @@ export function SignUpForm() {
               name="username"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Usuario</FormLabel>
+                  <FormLabel>Elige un nombre de usuario</FormLabel>
                   <FormControl>
-                    <Input placeholder="usuario" {...field} />
+                    <Input placeholder="ej: lector-genial" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -105,7 +103,7 @@ export function SignUpForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Contraseña</FormLabel>
+                  <FormLabel>Crea una contraseña segura</FormLabel>
                   <FormControl>
                     <Input type="password" placeholder="••••••••" {...field} />
                   </FormControl>
@@ -113,41 +111,9 @@ export function SignUpForm() {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Rol</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex flex-col space-y-1"
-                    >
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="client" />
-                        </FormControl>
-                        <FormLabel className="font-normal">Cliente</FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="librarian" />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          Bibliotecario
-                        </FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <Button type="submit" className="w-full bg-accent hover:bg-accent/90">
               <UserPlus className="mr-2 h-4 w-4" />
-              Registrarse
+              Registrarme
             </Button>
           </form>
         </Form>
