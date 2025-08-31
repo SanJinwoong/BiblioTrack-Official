@@ -27,44 +27,60 @@ import {
 import { users } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 
+const studentEmailRegex = /^a\d{10}@alumnos\.uat\.edu\.mx$/;
+
 const formSchema = z.object({
   username: z.string().min(2, {
     message: 'El nombre de usuario debe tener al menos 2 caracteres.',
-  }),
+  }).optional(),
+  email: z.string().regex(studentEmailRegex, {
+    message: 'Por favor ingrese un correo institucional válido (ej: a1234567890@alumnos.uat.edu.mx).',
+  }).optional(),
   password: z.string().min(6, {
     message: 'La contraseña debe tener al menos 6 caracteres.',
   }),
   librarianId: z.string().optional(),
+}).refine(data => (data.role === 'client' ? !!data.email : !!data.username), {
+    message: "El campo es requerido",
+    path: ["username"], // you can use any field name here
 });
+
 
 export function SignUpForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [role, setRole] = React.useState<'client' | 'librarian' | null>(null);
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<z.infer<typeof formSchema> & {role: 'client' | 'librarian' | null}>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      role: null,
       username: '',
+      email: '',
       password: '',
       librarianId: '',
     },
   });
+  
+  React.useEffect(() => {
+    form.setValue('role', role);
+  }, [role, form]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     if (!role) return;
 
-    const existingUser = users.find(u => u.username === values.username);
+    const usernameToRegister = role === 'client' ? values.email! : values.username!;
+
+    const existingUser = users.find(u => u.username === usernameToRegister);
     if (existingUser) {
         toast({
             variant: "destructive",
             title: "❌ Error de registro",
-            description: "Este nombre de usuario ya está en uso. Por favor, elige otro.",
+            description: "Este usuario ya está en uso. Por favor, elige otro.",
         });
         return;
     }
     
-    // For this example, any ID will be considered "valid" for a librarian
     if (role === 'librarian' && !values.librarianId) {
         toast({
             variant: "destructive",
@@ -75,13 +91,20 @@ export function SignUpForm() {
     }
     
     users.push({
-        username: values.username,
+        username: usernameToRegister,
         password: values.password,
         role: role,
     });
     
     localStorage.setItem('userRole', role);
-    localStorage.setItem('userUsername', values.username);
+
+    if (role === 'client') {
+      const matricula = values.email!.split('@')[0];
+      localStorage.setItem('userUsername', matricula);
+    } else {
+      localStorage.setItem('userUsername', usernameToRegister);
+    }
+    
     router.push('/dashboard');
     toast({
         title: "✅ ¡Registro exitoso!",
@@ -101,7 +124,7 @@ export function SignUpForm() {
             <CardContent className="flex flex-col space-y-4">
                 <Button onClick={() => setRole('client')} className="w-full">
                     <User className="mr-2 h-4 w-4" />
-                    Soy un nuevo cliente
+                    Soy un nuevo cliente (Alumno)
                 </Button>
                 <Button onClick={() => setRole('librarian')} variant="outline" className="w-full">
                     <Library className="mr-2 h-4 w-4" />
@@ -115,7 +138,7 @@ export function SignUpForm() {
   return (
     <Card className="w-full border-0 shadow-none">
       <CardHeader className="text-center">
-        <CardTitle className="font-headline text-2xl">Crear una cuenta de {role === 'client' ? 'Cliente' : 'Bibliotecario'}</CardTitle>
+        <CardTitle className="font-headline text-2xl">Crear una cuenta de {role === 'client' ? 'Alumno' : 'Bibliotecario'}</CardTitle>
         <CardDescription>
           ¡Es rápido y fácil! Empieza a explorar la biblioteca ahora.
         </CardDescription>
@@ -123,19 +146,36 @@ export function SignUpForm() {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="username"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Elige un nombre de usuario</FormLabel>
-                  <FormControl>
-                    <Input placeholder="ej: lector-genial" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {role === 'client' && (
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Correo Institucional</FormLabel>
+                    <FormControl>
+                      <Input placeholder="a1234567890@alumnos.uat.edu.mx" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            {role === 'librarian' && (
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Elige un nombre de usuario</FormLabel>
+                    <FormControl>
+                      <Input placeholder="ej: biblio-admin" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <FormField
               control={form.control}
               name="password"

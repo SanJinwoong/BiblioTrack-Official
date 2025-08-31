@@ -26,9 +26,12 @@ import {
 import { users } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 
+const studentEmailRegex = /^a\d{10}@alumnos\.uat\.edu\.mx$/;
+const matriculaRegex = /^a\d{10}$/;
+
 const formSchema = z.object({
-  username: z.string().min(1, {
-    message: 'Por favor ingrese un nombre de usuario.',
+  emailOrMatricula: z.string().min(1, {
+    message: 'Por favor ingrese su correo o matrícula.',
   }),
   password: z.string().min(1, {
     message: 'La contraseña no puede estar vacía.',
@@ -41,27 +44,41 @@ export function LoginForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: '',
+      emailOrMatricula: '',
       password: '',
     },
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    const user = users.find(u => u.username === values.username && u.password === values.password);
+    let username = values.emailOrMatricula;
+
+    // If user enters just matricula, convert to full email
+    if (matriculaRegex.test(username)) {
+      username = `${username}@alumnos.uat.edu.mx`;
+    }
+
+    const user = users.find(u => u.username === username && u.password === values.password);
 
     if (user) {
       localStorage.setItem('userRole', user.role);
-      localStorage.setItem('userUsername', user.username);
+      // For students, store the matricula as the display username
+      if (user.role === 'client' && studentEmailRegex.test(user.username)) {
+        const matricula = user.username.split('@')[0];
+        localStorage.setItem('userUsername', matricula);
+      } else {
+        localStorage.setItem('userUsername', user.username);
+      }
+      
       router.push('/dashboard');
       toast({
-        title: `✅ ¡Bienvenido, ${user.username}!`,
+        title: `✅ ¡Bienvenido!`,
         description: 'Has iniciado sesión correctamente.',
       });
     } else {
         toast({
             variant: "destructive",
             title: "❌ Error de inicio de sesión",
-            description: "Usuario o contraseña incorrectos. Por favor, inténtalo de nuevo.",
+            description: "Credenciales incorrectas. Por favor, inténtalo de nuevo.",
         });
     }
   }
@@ -79,12 +96,12 @@ export function LoginForm() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
-              name="username"
+              name="emailOrMatricula"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Usuario</FormLabel>
+                  <FormLabel>Correo Institucional o Matrícula</FormLabel>
                   <FormControl>
-                    <Input placeholder="tu-usuario" {...field} />
+                    <Input placeholder="a1234567890@alumnos.uat.edu.mx" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

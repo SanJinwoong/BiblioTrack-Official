@@ -2,8 +2,8 @@ import type { Book, Checkout, User } from './types';
 
 export const users: User[] = [
     { username: 'librarian', password: 'password', role: 'librarian'},
-    { username: 'client', password: 'password', role: 'client'},
-    { username: 'another', password: 'password', role: 'client'},
+    { username: 'a1234567890@alumnos.uat.edu.mx', password: 'password', role: 'client'},
+    { username: 'a0987654321@alumnos.uat.edu.mx', password: 'password', role: 'client'},
     { username: 'admin', password: 'admin', role: 'librarian' },
 ];
 
@@ -83,12 +83,12 @@ export const books: Book[] = [
 ];
 
 export const checkouts: Checkout[] = [
-  { userId: 'client', bookId: 2, dueDate: '2024-08-15' },
-  { userId: 'client', bookId: 5, dueDate: '2024-08-22' },
-  { userId: 'another', bookId: 8, dueDate: '2024-08-10' },
+  { userId: 'a1234567890', bookId: 2, dueDate: '2024-08-15' },
+  { userId: 'a1234567890', bookId: 5, dueDate: '2024-08-22' },
+  { userId: 'a0987654321', bookId: 8, dueDate: '2024-08-10' },
 ];
 
 export const readingHistory: { [key: string]: number[] } = {
-    'client': [4, 6],
-    'another': [1],
+    'a1234567890': [4, 6],
+    'a0987654321': [1],
 };
