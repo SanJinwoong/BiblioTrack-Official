@@ -29,20 +29,26 @@ import { useToast } from '@/hooks/use-toast';
 
 const studentEmailRegex = /^a\d{10}@alumnos\.uat\.edu\.mx$/;
 
-const formSchema = z.object({
-  username: z.string().min(2, {
-    message: 'El nombre de usuario debe tener al menos 2 caracteres.',
-  }).optional(),
-  email: z.string().regex(studentEmailRegex, {
-    message: 'Por favor ingrese un correo institucional válido (ej: a1234567890@alumnos.uat.edu.mx).',
-  }).optional(),
-  password: z.string().min(6, {
-    message: 'La contraseña debe tener al menos 6 caracteres.',
-  }),
-  librarianId: z.string().optional(),
-}).refine(data => (data.role === 'client' ? !!data.email : !!data.username), {
-    message: "El campo es requerido",
-    path: ["username"], // you can use any field name here
+const baseSchema = z.object({
+    password: z.string().min(6, {
+        message: 'La contraseña debe tener al menos 6 caracteres.',
+    }),
+});
+
+const clientSchema = baseSchema.extend({
+    email: z.string().regex(studentEmailRegex, {
+        message: 'Por favor ingrese un correo institucional válido (ej: a1234567890@alumnos.uat.edu.mx).',
+    }),
+    username: z.string().optional(),
+    librarianId: z.string().optional(),
+});
+
+const librarianSchema = baseSchema.extend({
+    username: z.string().min(2, {
+        message: 'El nombre de usuario debe tener al menos 2 caracteres.',
+    }),
+    email: z.string().optional(),
+    librarianId: z.string().min(1, { message: "Por favor, ingrese su ID de bibliotecario."}),
 });
 
 
@@ -51,10 +57,11 @@ export function SignUpForm() {
   const { toast } = useToast();
   const [role, setRole] = React.useState<'client' | 'librarian' | null>(null);
 
-  const form = useForm<z.infer<typeof formSchema> & {role: 'client' | 'librarian' | null}>({
+  const formSchema = role === 'client' ? clientSchema : librarianSchema;
+
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      role: null,
       username: '',
       email: '',
       password: '',
@@ -62,10 +69,6 @@ export function SignUpForm() {
     },
   });
   
-  React.useEffect(() => {
-    form.setValue('role', role);
-  }, [role, form]);
-
   function onSubmit(values: z.infer<typeof formSchema>) {
     if (!role) return;
 
@@ -77,15 +80,6 @@ export function SignUpForm() {
             variant: "destructive",
             title: "❌ Error de registro",
             description: "Este usuario ya está en uso. Por favor, elige otro.",
-        });
-        return;
-    }
-    
-    if (role === 'librarian' && !values.librarianId) {
-        toast({
-            variant: "destructive",
-            title: "❌ Error de registro",
-            description: "Por favor, ingrese su ID de bibliotecario.",
         });
         return;
     }
