@@ -4,7 +4,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
 import { Library } from 'lucide-react';
 import Autoplay from 'embla-carousel-autoplay';
-import Fade from 'embla-carousel-fade';
 import { LoginForm } from '@/components/login-form';
 import { SignUpForm } from '@/components/signup-form';
 import {
@@ -28,15 +27,13 @@ export default function AuthPage() {
     );
   }, []);
 
-  const autoplayPlugin = useRef(Autoplay({ delay: 3000, stopOnInteraction: false }));
-  const fadePlugin = useRef(Fade());
-
+  const autoplayPlugin = useRef(Autoplay({ delay: 3000, stopOnInteraction: true }));
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background p-4 sm:p-8">
-      <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-center bg-card text-card-foreground rounded-2xl shadow-2xl p-8">
+      <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 items-stretch bg-card text-card-foreground rounded-2xl shadow-2xl overflow-hidden">
         {/* Left Column: Form */}
-        <div className="flex flex-col justify-center">
+        <div className="flex flex-col justify-center p-8 sm:p-12">
           <div className="flex items-center space-x-3 mb-6 text-primary">
             <Library className="h-10 w-10" />
             <h1 className="text-4xl font-bold font-headline text-foreground">
@@ -68,9 +65,9 @@ export default function AuthPage() {
         </div>
 
         {/* Right Column: Visual */}
-        <div className="hidden md:flex flex-col items-center justify-center relative h-[450px]">
+        <div className="hidden md:flex items-center justify-center relative bg-primary/10 p-8">
           <Carousel
-            plugins={[autoplayPlugin.current, fadePlugin.current]}
+            plugins={[autoplayPlugin.current]}
             opts={{
               loop: true,
             }}
@@ -79,7 +76,9 @@ export default function AuthPage() {
             <CarouselContent>
               {featuredBooks.map((book) => (
                 <CarouselItem key={book.id}>
-                  <BookCard book={book} />
+                   <div className="p-1">
+                    <BookCard book={book} />
+                  </div>
                 </CarouselItem>
               ))}
             </CarouselContent>
