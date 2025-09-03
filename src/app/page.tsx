@@ -27,7 +27,7 @@ export default function AuthPage() {
     );
   }, []);
 
-  const autoplayPlugin = useRef(Autoplay({ delay: 3000, stopOnInteraction: true }));
+  const autoplayPlugin = useRef(Autoplay({ delay: 2000, stopOnInteraction: false }));
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background p-4 sm:p-8">
@@ -69,13 +69,14 @@ export default function AuthPage() {
           <Carousel
             plugins={[autoplayPlugin.current]}
             opts={{
+              align: "start",
               loop: true,
             }}
-            className="w-full max-w-xs"
+            className="w-full"
           >
-            <CarouselContent>
+            <CarouselContent className="-ml-4">
               {featuredBooks.map((book) => (
-                <CarouselItem key={book.id}>
+                <CarouselItem key={book.id} className="pl-4 basis-1/3">
                    <div className="p-1">
                     <BookCard book={book} />
                   </div>
