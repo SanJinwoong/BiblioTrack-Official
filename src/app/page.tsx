@@ -65,7 +65,7 @@ export default function AuthPage() {
         </div>
 
         {/* Right Column: Visual */}
-        <div className="hidden md:flex items-center justify-center relative bg-primary/10">
+        <div className="hidden md:flex items-center justify-center relative bg-primary/10 overflow-hidden">
           <Carousel
             plugins={[autoplayPlugin.current]}
             opts={{
@@ -74,9 +74,9 @@ export default function AuthPage() {
             }}
             className="w-full"
           >
-            <CarouselContent className="-ml-4">
+            <CarouselContent className="-ml-2">
               {featuredBooks.map((book) => (
-                <CarouselItem key={book.id} className="pl-4 basis-1/2 md:basis-1/3">
+                <CarouselItem key={book.id} className="pl-2 basis-full md:basis-1/2">
                    <div className="p-1">
                     <BookCard book={book} />
                   </div>
