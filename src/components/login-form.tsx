@@ -71,37 +71,37 @@ export function LoginForm() {
       
       router.push('/dashboard');
       toast({
-        title: `✅ ¡Bienvenido!`,
+        title: `✅ ¡Bienvenido de nuevo!`,
         description: 'Has iniciado sesión correctamente.',
       });
     } else {
         toast({
             variant: "destructive",
-            title: "❌ Error de inicio de sesión",
-            description: "Credenciales incorrectas. Por favor, inténtalo de nuevo.",
+            title: "❌ Credenciales incorrectas",
+            description: "El usuario o la contraseña no son correctos. Por favor, inténtalo de nuevo.",
         });
     }
   }
 
   return (
-    <Card className="w-full border-0 shadow-none">
-      <CardHeader className="text-center">
-        <CardTitle className="font-headline text-2xl">¡Hola de nuevo!</CardTitle>
+    <Card className="w-full border-0 shadow-none bg-transparent">
+      <CardHeader>
+        <CardTitle className="font-headline text-3xl">Inicia Sesión</CardTitle>
         <CardDescription>
-          Ingresa tus credenciales para continuar.
+          Ingresa tus credenciales para acceder a tu cuenta.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="emailOrMatricula"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Correo Institucional o Matrícula</FormLabel>
+                  <FormLabel>Correo Institucional o Usuario</FormLabel>
                   <FormControl>
-                    <Input placeholder="a1234567890@alumnos.uat.edu.mx" {...field} />
+                    <Input placeholder="a1234567890 o admin" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -120,7 +120,7 @@ export function LoginForm() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
+            <Button type="submit" size="lg" className="w-full mt-4 bg-primary hover:bg-primary/90">
               <LogIn className="mr-2 h-4 w-4" />
               Entrar
             </Button>

@@ -108,21 +108,21 @@ export function SignUpForm() {
 
   if (!role) {
     return (
-        <Card className="w-full border-0 shadow-none">
-            <CardHeader className="text-center">
-                <CardTitle className="font-headline text-2xl">Elige tu tipo de cuenta</CardTitle>
+        <Card className="w-full border-0 shadow-none bg-transparent">
+            <CardHeader>
+                <CardTitle className="font-headline text-3xl">Elige tu rol</CardTitle>
                 <CardDescription>
-                Para comenzar, dinos si eres un nuevo cliente o un bibliotecario.
+                Dinos qué tipo de cuenta necesitas para empezar.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col space-y-4">
-                <Button onClick={() => setRole('client')} className="w-full">
+            <CardContent className="flex flex-col space-y-4 pt-6">
+                <Button onClick={() => setRole('client')} size="lg" className="w-full">
                     <User className="mr-2 h-4 w-4" />
-                    Soy un nuevo cliente (Alumno)
+                    Soy Alumno
                 </Button>
-                <Button onClick={() => setRole('librarian')} variant="outline" className="w-full">
+                <Button onClick={() => setRole('librarian')} size="lg" variant="outline" className="w-full">
                     <Library className="mr-2 h-4 w-4" />
-                    Tengo un ID de bibliotecario
+                    Soy Bibliotecario
                 </Button>
             </CardContent>
         </Card>
@@ -130,16 +130,16 @@ export function SignUpForm() {
   }
 
   return (
-    <Card className="w-full border-0 shadow-none">
-      <CardHeader className="text-center">
-        <CardTitle className="font-headline text-2xl">Crear una cuenta de {role === 'client' ? 'Alumno' : 'Bibliotecario'}</CardTitle>
+    <Card className="w-full border-0 shadow-none bg-transparent">
+      <CardHeader>
+        <CardTitle className="font-headline text-3xl">Crear una cuenta</CardTitle>
         <CardDescription>
           ¡Es rápido y fácil! Empieza a explorar la biblioteca ahora.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {role === 'client' && (
               <FormField
                 control={form.control}
@@ -161,7 +161,7 @@ export function SignUpForm() {
                 name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Elige un nombre de usuario</FormLabel>
+                    <FormLabel>Nombre de usuario</FormLabel>
                     <FormControl>
                       <Input placeholder="ej: biblio-admin" {...field} />
                     </FormControl>
@@ -175,7 +175,7 @@ export function SignUpForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Crea una contraseña segura</FormLabel>
+                  <FormLabel>Contraseña</FormLabel>
                   <FormControl>
                     <Input type="password" placeholder="••••••••" {...field} />
                   </FormControl>
@@ -191,20 +191,20 @@ export function SignUpForm() {
                    <FormItem>
                      <FormLabel>ID de Bibliotecario</FormLabel>
                      <FormControl>
-                       <Input placeholder="Ingresa tu ID" {...field} />
+                       <Input placeholder="Ingresa tu ID de personal" {...field} />
                      </FormControl>
                      <FormMessage />
                    </FormItem>
                  )}
                />
             )}
-            <div className="flex flex-col space-y-4">
-                <Button type="submit" className="w-full bg-accent hover:bg-accent/90">
+            <div className="flex flex-col space-y-2 pt-4">
+                <Button type="submit" size="lg" className="w-full bg-primary hover:bg-primary/90">
                 <UserPlus className="mr-2 h-4 w-4" />
-                Registrarme
+                Crear mi cuenta
                 </Button>
                 <Button variant="link" size="sm" onClick={() => setRole(null)}>
-                    Volver a la selección de rol
+                    &larr; Volver a la selección de rol
                 </Button>
             </div>
           </form>
