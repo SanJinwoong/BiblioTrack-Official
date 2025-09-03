@@ -18,7 +18,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-  Card,
   CardContent,
   CardDescription,
   CardHeader,
@@ -57,7 +56,7 @@ export function SignUpForm() {
   const { toast } = useToast();
   const [role, setRole] = React.useState<'client' | 'librarian' | null>(null);
 
-  const formSchema = role === 'client' ? clientSchema : librarianSchema;
+  const formSchema = role === 'client' ? clientSchema : (role === 'librarian' ? librarianSchema : z.object({}));
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -67,6 +66,7 @@ export function SignUpForm() {
       password: '',
       librarianId: '',
     },
+    shouldUnregister: true,
   });
   
   function onSubmit(values: z.infer<typeof formSchema>) {
@@ -108,36 +108,36 @@ export function SignUpForm() {
 
   if (!role) {
     return (
-        <Card className="w-full border-0 shadow-none bg-transparent">
-            <CardHeader>
-                <CardTitle className="font-headline text-3xl">Elige tu rol</CardTitle>
-                <CardDescription>
-                Dinos qué tipo de cuenta necesitas para empezar.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col space-y-4 pt-6">
-                <Button onClick={() => setRole('client')} size="lg" className="w-full">
-                    <User className="mr-2 h-4 w-4" />
-                    Soy Alumno
-                </Button>
-                <Button onClick={() => setRole('librarian')} size="lg" variant="outline" className="w-full">
-                    <Library className="mr-2 h-4 w-4" />
-                    Soy Bibliotecario
-                </Button>
-            </CardContent>
-        </Card>
+      <>
+        <CardHeader className="px-0">
+            <CardTitle className="font-headline text-3xl">Elige tu rol</CardTitle>
+            <CardDescription>
+            Dinos qué tipo de cuenta necesitas para empezar.
+            </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col space-y-4 pt-6 px-0">
+            <Button onClick={() => setRole('client')} size="lg" className="w-full">
+                <User className="mr-2 h-4 w-4" />
+                Soy Alumno
+            </Button>
+            <Button onClick={() => setRole('librarian')} size="lg" variant="outline" className="w-full">
+                <Library className="mr-2 h-4 w-4" />
+                Soy Bibliotecario
+            </Button>
+        </CardContent>
+      </>
     )
   }
 
   return (
-    <Card className="w-full border-0 shadow-none bg-transparent">
-      <CardHeader>
+    <>
+      <CardHeader className="px-0">
         <CardTitle className="font-headline text-3xl">Crear una cuenta</CardTitle>
         <CardDescription>
           ¡Es rápido y fácil! Empieza a explorar la biblioteca ahora.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-0">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {role === 'client' && (
@@ -156,19 +156,34 @@ export function SignUpForm() {
               />
             )}
             {role === 'librarian' && (
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nombre de usuario</FormLabel>
-                    <FormControl>
-                      <Input placeholder="ej: biblio-admin" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <>
+                <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nombre de usuario</FormLabel>
+                      <FormControl>
+                        <Input placeholder="ej: biblio-admin" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                 control={form.control}
+                 name="librarianId"
+                 render={({ field }) => (
+                   <FormItem>
+                     <FormLabel>ID de Bibliotecario</FormLabel>
+                     <FormControl>
+                       <Input placeholder="Ingresa tu ID de personal" {...field} />
+                     </FormControl>
+                     <FormMessage />
+                   </FormItem>
+                 )}
+               />
+              </>
             )}
             <FormField
               control={form.control}
@@ -183,33 +198,19 @@ export function SignUpForm() {
                 </FormItem>
               )}
             />
-            {role === 'librarian' && (
-                 <FormField
-                 control={form.control}
-                 name="librarianId"
-                 render={({ field }) => (
-                   <FormItem>
-                     <FormLabel>ID de Bibliotecario</FormLabel>
-                     <FormControl>
-                       <Input placeholder="Ingresa tu ID de personal" {...field} />
-                     </FormControl>
-                     <FormMessage />
-                   </FormItem>
-                 )}
-               />
-            )}
+            
             <div className="flex flex-col space-y-2 pt-4">
                 <Button type="submit" size="lg" className="w-full bg-primary hover:bg-primary/90">
                 <UserPlus className="mr-2 h-4 w-4" />
                 Crear mi cuenta
                 </Button>
-                <Button variant="link" size="sm" onClick={() => setRole(null)}>
+                <Button variant="link" size="sm" onClick={() => { form.reset(); setRole(null);}}>
                     &larr; Volver a la selección de rol
                 </Button>
             </div>
           </form>
         </Form>
       </CardContent>
-    </Card>
+    </>
   );
 }

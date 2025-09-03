@@ -17,7 +17,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-  Card,
   CardContent,
   CardDescription,
   CardHeader,
@@ -84,14 +83,14 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-full border-0 shadow-none bg-transparent">
-      <CardHeader>
+    <>
+      <CardHeader className="px-0">
         <CardTitle className="font-headline text-3xl">Inicia Sesión</CardTitle>
         <CardDescription>
           Ingresa tus credenciales para acceder a tu cuenta.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-0">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -127,6 +126,6 @@ export function LoginForm() {
           </form>
         </Form>
       </CardContent>
-    </Card>
+    </>
   );
 }
