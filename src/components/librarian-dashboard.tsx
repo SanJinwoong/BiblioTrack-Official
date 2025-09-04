@@ -2,9 +2,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { books as initialBooks, checkouts as initialCheckouts } from '@/lib/data';
-import type { Book as BookType, Checkout } from '@/lib/types';
-import { Book, ListChecks, Search, User, Calendar } from 'lucide-react';
+import { books as initialBooks, checkouts as initialCheckouts, users } from '@/lib/data';
+import type { Book as BookType, Checkout, User as UserType } from '@/lib/types';
+import { Book, ListChecks, Search, User, Calendar, MoreHorizontal } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,8 @@ import { BookCard } from '@/components/book-card';
 import { BookDetailsDialog } from './book-details-dialog';
 import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from './ui/dropdown-menu';
+import { UserDetailsTooltip } from './user-details-tooltip';
 
 export function LibrarianDashboard() {
   const [books, setBooks] = useState<BookType[]>(initialBooks);
@@ -125,14 +127,39 @@ export function LibrarianDashboard() {
                     {checkouts.map((checkout) => {
                         const book = getBook(checkout.bookId);
                         if (!book) return null;
+                        
                         return (
                             <BookCard key={`${checkout.userId}-${checkout.bookId}`} book={book} onClick={() => handleOpenDialog(book, checkout)}>
                                 <div className="p-3 border-t mt-auto">
-                                    <div className='flex items-center gap-2 mb-2'>
-                                      <Avatar className="h-6 w-6">
-                                        <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
-                                      </Avatar>
-                                      <p className="text-xs font-medium truncate">{checkout.userId}</p>
+                                    <div className='flex items-center justify-between gap-2 mb-2'>
+                                      <div className="flex items-center gap-2 overflow-hidden">
+                                        <Avatar className="h-6 w-6 shrink-0">
+                                          <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
+                                        </Avatar>
+                                        <p className="text-xs font-medium truncate">{checkout.userId}</p>
+                                      </div>
+                                      
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            <DropdownMenuSub>
+                                              <DropdownMenuSubTrigger>
+                                                <User className="mr-2 h-4 w-4" />
+                                                <span>Ver detalles del usuario</span>
+                                              </DropdownMenuSubTrigger>
+                                              <DropdownMenuPortal>
+                                                <DropdownMenuSubContent>
+                                                    <UserDetailsTooltip userId={checkout.userId} />
+                                                </DropdownMenuSubContent>
+                                              </DropdownMenuPortal>
+                                            </DropdownMenuSub>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+
                                     </div>
                                     <div className='flex items-center gap-2'>
                                       <Calendar className="h-4 w-4 text-muted-foreground" />
