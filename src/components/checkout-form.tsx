@@ -4,14 +4,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { format, addDays, parseISO } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
+import { format, addDays } from 'date-fns';
 
-import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -20,38 +17,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import type { Book } from '@/lib/types';
-import { RadioGroup, RadioGroupItem } from './ui/radio-group';
-import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { Calendar } from './ui/calendar';
-import { cn } from '@/lib/utils';
+import { Textarea } from './ui/textarea';
 
 const formSchema = z.object({
-  loanType: z.enum(['physical', 'digital'], {
-    required_error: 'Debes seleccionar un formato de préstamo.',
-  }),
-  pickupDate: z.date().optional(),
   dueDate: z.string(),
-}).refine(data => {
-    if (data.loanType === 'physical' && !data.pickupDate) {
-        return false;
-    }
-    return true;
-}, {
-    message: 'La fecha de retiro es requerida para préstamos físicos.',
-    path: ['pickupDate'],
-}).refine(data => {
-    if (data.loanType === 'physical' && data.pickupDate) {
-        // The dueDate is a string 'YYYY-MM-DD', parseISO will handle it correctly
-        // and create a date object at the beginning of that day in UTC.
-        const dueDate = parseISO(data.dueDate);
-        const pickupDate = data.pickupDate;
-        // Compare dates without time part
-        return pickupDate < dueDate;
-    }
-    return true;
-}, {
-    message: 'La fecha de retiro debe ser anterior a la fecha de entrega.',
-    path: ['pickupDate'],
+  comments: z.string().optional(),
 });
 
 
@@ -69,12 +39,10 @@ export function CheckoutForm({ book, username, formId, onSuccess }: CheckoutForm
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      loanType: 'physical',
       dueDate: defaultDueDate,
+      comments: "",
     },
   });
-
-  const loanType = form.watch('loanType');
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     if (book.stock === 0) {
@@ -104,85 +72,6 @@ export function CheckoutForm({ book, username, formId, onSuccess }: CheckoutForm
         <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="loanType"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Formato de préstamo</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex flex-col space-y-1"
-                    >
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="physical" />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          Físico
-                        </FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="digital" />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          Digital
-                        </FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            {loanType === 'physical' && (
-                 <FormField
-                 control={form.control}
-                 name="pickupDate"
-                 render={({ field }) => (
-                   <FormItem className="flex flex-col">
-                     <FormLabel>Fecha de retiro deseada</FormLabel>
-                     <Popover>
-                       <PopoverTrigger asChild>
-                         <FormControl>
-                           <Button
-                             variant={"outline"}
-                             className={cn(
-                               "w-full pl-3 text-left font-normal",
-                               !field.value && "text-muted-foreground"
-                             )}
-                           >
-                             {field.value ? (
-                               format(field.value, "PPP")
-                             ) : (
-                               <span>Elige una fecha</span>
-                             )}
-                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                           </Button>
-                         </FormControl>
-                       </PopoverTrigger>
-                       <PopoverContent className="w-auto p-0" align="start">
-                         <Calendar
-                           mode="single"
-                           selected={field.value}
-                           onSelect={field.onChange}
-                           disabled={(date) =>
-                             date < new Date(new Date().setHours(0,0,0,0)) || date < new Date("1900-01-01")
-                           }
-                           initialFocus
-                         />
-                       </PopoverContent>
-                     </Popover>
-                     <FormMessage />
-                   </FormItem>
-                 )}
-               />
-            )}
-
-            <FormField
-              control={form.control}
               name="dueDate"
               render={({ field }) => (
                 <FormItem>
@@ -193,6 +82,24 @@ export function CheckoutForm({ book, username, formId, onSuccess }: CheckoutForm
                   <FormMessage />
                 </FormItem>
               )}
+            />
+
+            <FormField
+              control={form.control}
+              name="comments"
+              render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Comentarios (Opcional)</FormLabel>
+                    <FormControl>
+                        <Textarea
+                        placeholder="Ej: Dejar en recepción, necesito la edición de tapa dura, etc."
+                        className="resize-none"
+                        {...field}
+                        />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+                )}
             />
         </form>
       </Form>
