@@ -32,7 +32,6 @@ const formSchema = z.object({
   }),
   pickupDate: z.date().optional(),
   dueDate: z.string(),
-  comments: z.string().optional(),
 }).refine(data => {
     if (data.loanType === 'physical' && !data.pickupDate) {
         return false;
@@ -59,7 +58,6 @@ export function CheckoutForm({ book, username, formId, onSuccess }: CheckoutForm
     defaultValues: {
       loanType: 'physical',
       dueDate: defaultDueDate,
-      comments: '',
     },
   });
 
@@ -178,23 +176,6 @@ export function CheckoutForm({ book, username, formId, onSuccess }: CheckoutForm
                   <FormLabel>Fecha de Entrega</FormLabel>
                   <FormControl>
                     <Input type="date" {...field} readOnly disabled />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="comments"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Comentarios (opcional)</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Ej: Dejar en recepción, cuidado especial, etc."
-                      className="resize-none"
-                      {...field}
-                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
