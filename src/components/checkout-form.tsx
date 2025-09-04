@@ -187,7 +187,7 @@ export function CheckoutForm({ book, username, role, formId, onSuccess }: Checko
   }
 
   return (
-    <div>
+    <>
       <h3 className="font-semibold text-lg mb-4">Confirmar Préstamo</h3>
       <Form {...form}>
         <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -296,6 +296,6 @@ export function CheckoutForm({ book, username, role, formId, onSuccess }: Checko
             />
         </form>
       </Form>
-    </div>
+    </>
   );
 }
