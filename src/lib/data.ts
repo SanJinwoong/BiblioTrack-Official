@@ -15,7 +15,7 @@ export const books: Book[] = [
     description: 'A novel about the American dream.',
     coverUrl: 'https://picsum.photos/300/450?random=1',
     genre: 'Classic',
-    available: true,
+    stock: 5,
   },
   {
     id: 2,
@@ -24,7 +24,7 @@ export const books: Book[] = [
     description: 'A novel about justice and racism in the American South.',
     coverUrl: 'https://picsum.photos/300/450?random=2',
     genre: 'Classic',
-    available: false,
+    stock: 0,
   },
   {
     id: 3,
@@ -33,7 +33,7 @@ export const books: Book[] = [
     description: 'A dystopian novel about totalitarianism.',
     coverUrl: 'https://picsum.photos/300/450?random=3',
     genre: 'Dystopian',
-    available: true,
+    stock: 2,
   },
   {
     id: 4,
@@ -42,7 +42,7 @@ export const books: Book[] = [
     description: 'A romantic novel of manners.',
     coverUrl: 'https://picsum.photos/300/450?random=4',
     genre: 'Romance',
-    available: true,
+    stock: 10,
   },
   {
     id: 5,
@@ -51,7 +51,7 @@ export const books: Book[] = [
     description: 'A fantasy novel about the adventures of Bilbo Baggins.',
     coverUrl: 'https://picsum.photos/300/450?random=5',
     genre: 'Fantasy',
-    available: false,
+    stock: 0,
   },
   {
     id: 6,
@@ -60,7 +60,7 @@ export const books: Book[] = [
     description: 'A science fiction novel set in a distant future amidst a feudal interstellar society.',
     coverUrl: 'https://picsum.photos/300/450?random=6',
     genre: 'Sci-Fi',
-    available: true,
+    stock: 8,
   },
   {
     id: 7,
@@ -69,7 +69,7 @@ export const books: Book[] = [
     description: 'A story about adolescent alienation and loss of innocence.',
     coverUrl: 'https://picsum.photos/300/450?random=7',
     genre: 'Classic',
-    available: true,
+    stock: 1,
   },
   {
     id: 8,
@@ -78,7 +78,7 @@ export const books: Book[] = [
     description: 'A dystopian novel which anticipates developments in reproductive technology, sleep-learning, and psychological manipulation.',
     coverUrl: 'https://picsum.photos/300/450?random=8',
     genre: 'Dystopian',
-    available: false,
+    stock: 0,
   },
 ];
 

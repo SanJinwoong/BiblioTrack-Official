@@ -5,7 +5,7 @@ export interface Book {
   description: string;
   coverUrl: string;
   genre: string;
-  available: boolean;
+  stock: number;
 }
 
 export interface Checkout {

@@ -10,7 +10,11 @@ import type { Book } from '@/lib/types';
 import { BookCard } from './book-card';
 import { ScrollArea, ScrollBar } from './ui/scroll-area';
 
-export function Recommendations() {
+interface RecommendationsProps {
+  onBookSelect: (book: Book) => void;
+}
+
+export function Recommendations({ onBookSelect }: RecommendationsProps) {
   const [recommendations, setRecommendations] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +36,7 @@ export function Recommendations() {
     try {
       const historyIds = readingHistory[username] || [];
       const userHistoryTitles = historyIds.map(id => books.find(b => b.id === id)?.title).filter(Boolean) as string[];
-      const inventoryTitles = books.filter(b => b.available).map(b => b.title);
+      const inventoryTitles = books.filter(b => b.stock > 0).map(b => b.title);
 
       const result = await recommendBooks({
         readingHistory: userHistoryTitles,
@@ -85,7 +89,7 @@ export function Recommendations() {
               <div className="flex space-x-4 pb-4">
                   {recommendedBooks.map(book => (
                       <div key={book.id} className="w-40 min-w-40">
-                          <BookCard book={book} />
+                          <BookCard book={book} onClick={() => onBookSelect(book)} />
                       </div>
                   ))}
               </div>
