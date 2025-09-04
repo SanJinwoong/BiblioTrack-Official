@@ -3,20 +3,14 @@
 import { useState, useEffect } from 'react';
 import { books, checkouts } from '@/lib/data';
 import type { Book as BookType } from '@/lib/types';
-import { Book, ListChecks, Search } from 'lucide-react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Book, ListChecks, Search, User, Calendar } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { BookCard } from '@/components/book-card';
 import { BookDetailsDialog } from './book-details-dialog';
+import { Badge } from './ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
 export function LibrarianDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,8 +28,8 @@ export function LibrarianDashboard() {
   }, [searchTerm]);
 
 
-  const getBookTitle = (bookId: number) => {
-    return books.find(b => b.id === bookId)?.title || 'Unknown Book';
+  const getBook = (bookId: number) => {
+    return books.find(b => b.id === bookId);
   };
 
   return (
@@ -84,24 +78,28 @@ export function LibrarianDashboard() {
                 <CardTitle className="font-headline">All Checked Out Books</CardTitle>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Book Title</TableHead>
-                      <TableHead>User</TableHead>
-                      <TableHead className="text-right">Due Date</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {checkouts.map((checkout) => (
-                      <TableRow key={`${checkout.userId}-${checkout.bookId}`}>
-                        <TableCell className="font-medium">{getBookTitle(checkout.bookId)}</TableCell>
-                        <TableCell>{checkout.userId}</TableCell>
-                        <TableCell className="text-right">{checkout.dueDate}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    {checkouts.map((checkout) => {
+                        const book = getBook(checkout.bookId);
+                        if (!book) return null;
+                        return (
+                            <BookCard key={`${checkout.userId}-${checkout.bookId}`} book={book} onClick={() => setSelectedBook(book)}>
+                                <div className="p-3 border-t mt-auto">
+                                    <div className='flex items-center gap-2 mb-2'>
+                                      <Avatar className="h-6 w-6">
+                                        <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
+                                      </Avatar>
+                                      <p className="text-xs font-medium truncate">{checkout.userId}</p>
+                                    </div>
+                                    <div className='flex items-center gap-2'>
+                                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                                      <p className="text-xs text-muted-foreground">Due: {checkout.dueDate}</p>
+                                    </div>
+                                </div>
+                            </BookCard>
+                        )
+                    })}
+                 </div>
               </CardContent>
             </Card>
           </TabsContent>
