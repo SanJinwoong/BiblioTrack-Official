@@ -99,9 +99,11 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange }: BookDe
           )}
 
           <DialogFooter className="mt-4 sm:justify-start">
-            <Button type="button" disabled={book.stock === 0 || !!checkout}>
-              Pedir Prestado
-            </Button>
+            {!checkout && (
+              <Button type="button" disabled={book.stock === 0}>
+                Pedir Prestado
+              </Button>
+            )}
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
               Cerrar
             </Button>
