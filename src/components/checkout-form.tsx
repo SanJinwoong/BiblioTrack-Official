@@ -25,7 +25,6 @@ import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
 import { Textarea } from './ui/textarea';
 import { cn } from '@/lib/utils';
-import { DialogFooter } from './ui/dialog';
 
 const formSchema = z.object({
   loanType: z.enum(['physical', 'digital'], {
@@ -47,11 +46,11 @@ const formSchema = z.object({
 interface CheckoutFormProps {
   book: Book;
   username: string;
-  onCancel: () => void;
+  formId: string;
   onSuccess: () => void;
 }
 
-export function CheckoutForm({ book, username, onCancel, onSuccess }: CheckoutFormProps) {
+export function CheckoutForm({ book, username, formId, onSuccess }: CheckoutFormProps) {
   const { toast } = useToast();
   const defaultDueDate = format(addDays(new Date(), 14), 'yyyy-MM-dd');
 
@@ -91,7 +90,7 @@ export function CheckoutForm({ book, username, onCancel, onSuccess }: CheckoutFo
     <div>
       <h3 className="font-semibold text-lg mb-4">Confirmar Préstamo</h3>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="loanType"
@@ -202,12 +201,6 @@ export function CheckoutForm({ book, username, onCancel, onSuccess }: CheckoutFo
                 </FormItem>
               )}
             />
-            <DialogFooter className="pt-4">
-              <Button type="button" variant="ghost" onClick={onCancel}>
-                Cancelar
-              </Button>
-              <Button type="submit">Confirmar Préstamo</Button>
-            </DialogFooter>
         </form>
       </Form>
     </div>
