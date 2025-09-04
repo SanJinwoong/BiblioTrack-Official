@@ -1,3 +1,4 @@
+
 import Image from 'next/image';
 import {
   Card,
@@ -45,7 +46,9 @@ export function BookCard({ book, children, className, onClick }: BookCardProps) 
         <div className="mt-2">
             <Badge 
                 variant={isAvailable ? 'default' : 'secondary'} 
-                className={`text-xs ${isAvailable ? 'bg-accent text-accent-foreground' : ''}`}
+                className={cn('text-xs', {
+                    'bg-green-500 text-green-50': isAvailable,
+                })}
             >
                 {isAvailable ? 'Disponible' : 'Agotado'}
             </Badge>
