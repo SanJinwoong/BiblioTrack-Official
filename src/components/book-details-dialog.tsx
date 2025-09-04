@@ -90,63 +90,69 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
             />
           </div>
         </div>
-        <div className="flex flex-col p-6 overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="font-headline text-2xl mb-1">{book.title}</DialogTitle>
-            <DialogDescription className="text-base">{book.author}</DialogDescription>
-          </DialogHeader>
+        <div className="flex flex-col">
+          <div className="p-6 pb-0">
+            <DialogHeader>
+              <DialogTitle className="font-headline text-2xl mb-1">{book.title}</DialogTitle>
+              <DialogDescription className="text-base">{book.author}</DialogDescription>
+            </DialogHeader>
+          </div>
 
-          {showCheckoutForm ? (
-            <CheckoutForm 
-                book={book} 
-                username={username}
-                onCancel={() => setShowCheckoutForm(false)}
-                onSuccess={handleSuccessfulCheckout}
-            />
-          ) : (
-            <>
-                <div className="my-4 text-sm text-muted-foreground flex-grow max-h-48 overflow-y-auto">
-                    <p>{book.description}</p>
-                </div>
-                <div className="flex items-center space-x-2 my-2">
-                    <span className="font-semibold text-sm">Disponibilidad:</span>
-                    <Badge className={cn("text-xs font-bold", stockStatus.color)}>
-                    {stockStatus.text}
-                    </Badge>
-                </div>
-
-                {checkout && dueDateStatus && (
-                    <div className="mt-2 space-y-2 text-sm">
-                        <div className="flex items-center">
-                            <User className="mr-2 h-4 w-4 text-muted-foreground" />
-                            <span className="font-semibold">Prestado a:</span>
-                            <span className="ml-2">{checkout.userId}</span>
-                        </div>
-                        <div className="flex items-center">
-                            <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-                            <span className="font-semibold">Fecha de entrega:</span>
-                            <span className={cn("ml-2", dueDateStatus.color)}>{dueDateStatus.text}</span>
-                        </div>
+          <div className="p-6 flex-grow overflow-y-auto">
+            {showCheckoutForm ? (
+                <CheckoutForm 
+                    book={book} 
+                    username={username}
+                    onCancel={() => setShowCheckoutForm(false)}
+                    onSuccess={handleSuccessfulCheckout}
+                />
+            ) : (
+                <>
+                    <div className="my-4 text-sm text-muted-foreground flex-grow max-h-48 overflow-y-auto">
+                        <p>{book.description}</p>
                     </div>
-                )}
-                 {book.stock === 0 && !checkout && (
-                    <div className="mt-4 flex items-center p-3 rounded-md bg-yellow-50 text-yellow-800 border border-yellow-200">
-                        <AlertCircle className="h-5 w-5 mr-3"/>
-                        <span className="text-sm">Este libro no está disponible actualmente.</span>
+                    <div className="flex items-center space-x-2 my-2">
+                        <span className="font-semibold text-sm">Disponibilidad:</span>
+                        <Badge className={cn("text-xs font-bold", stockStatus.color)}>
+                        {stockStatus.text}
+                        </Badge>
                     </div>
-                 )}
 
-                <DialogFooter className="mt-4 sm:justify-start">
-                    {!checkout && (
-                    <Button type="button" disabled={book.stock === 0} onClick={() => setShowCheckoutForm(true)}>
-                        Pedir Prestado
-                    </Button>
+                    {checkout && dueDateStatus && (
+                        <div className="mt-2 space-y-2 text-sm">
+                            <div className="flex items-center">
+                                <User className="mr-2 h-4 w-4 text-muted-foreground" />
+                                <span className="font-semibold">Prestado a:</span>
+                                <span className="ml-2">{checkout.userId}</span>
+                            </div>
+                            <div className="flex items-center">
+                                <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
+                                <span className="font-semibold">Fecha de entrega:</span>
+                                <span className={cn("ml-2", dueDateStatus.color)}>{dueDateStatus.text}</span>
+                            </div>
+                        </div>
                     )}
-                    <Button type="button" variant="ghost" onClick={() => handleOpenChange(false)}>
-                    Cerrar
-                    </Button>
-                </DialogFooter>
-            </>
+                    {book.stock === 0 && !checkout && (
+                        <div className="mt-4 flex items-center p-3 rounded-md bg-yellow-50 text-yellow-800 border border-yellow-200">
+                            <AlertCircle className="h-5 w-5 mr-3"/>
+                            <span className="text-sm">Este libro no está disponible actualmente.</span>
+                        </div>
+                    )}
+                </>
+            )}
+          </div>
+        
+          {!showCheckoutForm && (
+            <DialogFooter className="p-6 pt-0 sm:justify-start">
+              {!checkout && (
+                <Button type="button" disabled={book.stock === 0} onClick={() => setShowCheckoutForm(true)}>
+                  Pedir Prestado
+                </Button>
+              )}
+              <Button type="button" variant="ghost" onClick={() => handleOpenChange(false)}>
+                Cerrar
+              </Button>
+            </DialogFooter>
           )}
 
         </div>

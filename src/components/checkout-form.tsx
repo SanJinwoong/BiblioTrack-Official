@@ -25,6 +25,7 @@ import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
 import { Textarea } from './ui/textarea';
 import { cn } from '@/lib/utils';
+import { DialogFooter } from './ui/dialog';
 
 const formSchema = z.object({
   loanType: z.enum(['physical', 'digital'], {
@@ -87,7 +88,7 @@ export function CheckoutForm({ book, username, onCancel, onSuccess }: CheckoutFo
   }
 
   return (
-    <div className="mt-6">
+    <div>
       <h3 className="font-semibold text-lg mb-4">Confirmar Préstamo</h3>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -201,12 +202,12 @@ export function CheckoutForm({ book, username, onCancel, onSuccess }: CheckoutFo
                 </FormItem>
               )}
             />
-            <div className="flex justify-end space-x-2 pt-4">
+            <DialogFooter className="pt-4">
               <Button type="button" variant="ghost" onClick={onCancel}>
                 Cancelar
               </Button>
               <Button type="submit">Confirmar Préstamo</Button>
-            </div>
+            </DialogFooter>
         </form>
       </Form>
     </div>
