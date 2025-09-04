@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { books, checkouts } from '@/lib/data';
-import type { Book as BookType } from '@/lib/types';
+import { books as initialBooks, checkouts as initialCheckouts } from '@/lib/data';
+import type { Book as BookType, Checkout } from '@/lib/types';
 import { BookCard } from './book-card';
 import { Recommendations } from './recommendations';
 import { Badge } from './ui/badge';
@@ -22,6 +23,10 @@ import { BookDetailsDialog } from './book-details-dialog';
 export function ClientDashboard() {
   const [username, setUsername] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  const [books, setBooks] = useState<BookType[]>(initialBooks);
+  const [checkouts, setCheckouts] = useState<Checkout[]>(initialCheckouts);
+
   const [filteredBooks, setFilteredBooks] = useState<BookType[]>(books);
   const [selectedBook, setSelectedBook] = useState<BookType | null>(null);
 
@@ -37,7 +42,29 @@ export function ClientDashboard() {
         book.author.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredBooks(results);
-  }, [searchTerm]);
+  }, [searchTerm, books]);
+
+  const handleSuccessfulCheckout = (bookId: number) => {
+    const book = books.find(b => b.id === bookId);
+    if (!book || !username) return;
+
+    // 1. Decrement stock
+    const updatedBooks = books.map(b => 
+      b.id === bookId ? { ...b, stock: b.stock - 1 } : b
+    );
+    setBooks(updatedBooks);
+
+    // 2. Add to checkouts
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 14); // 2 week loan
+    const newCheckout: Checkout = {
+      userId: username,
+      bookId: bookId,
+      dueDate: dueDate.toISOString().split('T')[0], // YYYY-MM-DD
+    };
+    const updatedCheckouts = [...checkouts, newCheckout];
+    setCheckouts(updatedCheckouts);
+  };
 
   const userCheckouts = checkouts
     .filter((c) => c.userId === username)
@@ -55,7 +82,9 @@ export function ClientDashboard() {
       <BookDetailsDialog 
         book={selectedBook} 
         open={!!selectedBook} 
-        onOpenChange={(isOpen) => !isOpen && setSelectedBook(null)} 
+        onOpenChange={(isOpen) => !isOpen && setSelectedBook(null)}
+        onSuccessfulCheckout={handleSuccessfulCheckout}
+        username={username}
       />
       <div className="bg-background min-h-screen">
         <ClientHeader username={username} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
@@ -118,7 +147,7 @@ export function ClientDashboard() {
                           <div className="flex space-x-4 pb-4">
                           {userCheckouts.map((book) =>
                               book.id ? (
-                              <div key={book.id} className="w-40 min-w-40">
+                              <div key={`checkout-${book.id}`} className="w-40 min-w-40">
                                   <BookCard book={book as BookType} onClick={() => setSelectedBook(book)}>
                                   <div className="p-3 pt-0 text-xs">
                                       <Badge variant="secondary">Due: {book.dueDate}</Badge>

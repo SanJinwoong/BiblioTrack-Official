@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -17,6 +18,12 @@ export function LibrarianDashboard() {
   const [filteredBooks, setFilteredBooks] = useState<BookType[]>(books);
   const [selectedBook, setSelectedBook] = useState<BookType | null>(null);
   const [selectedCheckout, setSelectedCheckout] = useState<Checkout | null>(null);
+  const [username, setUsername] = useState('');
+
+  useEffect(() => {
+    const storedUsername = localStorage.getItem('userUsername') || '';
+    setUsername(storedUsername);
+  }, []);
 
   useEffect(() => {
     const results = books.filter(
@@ -51,6 +58,8 @@ export function LibrarianDashboard() {
         checkout={selectedCheckout}
         open={!!selectedBook} 
         onOpenChange={(isOpen) => !isOpen && handleCloseDialog()}
+        onSuccessfulCheckout={() => {}} // No action for librarian
+        username={username}
       />
       <div className="space-y-6">
         <h1 className="text-3xl font-bold font-headline">Librarian Dashboard</h1>
