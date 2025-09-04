@@ -2,9 +2,9 @@
 'use client';
 
 import { users } from '@/lib/data';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { CardContent, CardHeader, CardTitle } from './ui/card';
 import { User } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 
 interface UserDetailsTooltipProps {
   userId: string;
@@ -35,13 +35,11 @@ export function UserDetailsTooltip({ userId, children }: UserDetailsTooltipProps
     );
 
     return (
-        <TooltipProvider>
-            <Tooltip>
-                <TooltipTrigger asChild>{children}</TooltipTrigger>
-                <TooltipContent>
-                    {content}
-                </TooltipContent>
-            </Tooltip>
-        </TooltipProvider>
+        <Popover>
+            <PopoverTrigger asChild>{children}</PopoverTrigger>
+            <PopoverContent className="w-80">
+                {content}
+            </PopoverContent>
+        </Popover>
     );
 }
