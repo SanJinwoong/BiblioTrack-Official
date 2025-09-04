@@ -23,7 +23,6 @@ import type { Book } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
-import { Textarea } from './ui/textarea';
 import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
@@ -31,7 +30,6 @@ const formSchema = z.object({
     required_error: 'Debes seleccionar un formato de préstamo.',
   }),
   pickupDate: z.date().optional(),
-  comments: z.string().optional(),
   dueDate: z.string(),
 }).refine(data => {
     if (data.loanType === 'physical' && !data.pickupDate) {
@@ -58,7 +56,6 @@ export function CheckoutForm({ book, username, formId, onSuccess }: CheckoutForm
     resolver: zodResolver(formSchema),
     defaultValues: {
       loanType: 'physical',
-      comments: '',
       dueDate: defaultDueDate,
     },
   });
@@ -169,24 +166,6 @@ export function CheckoutForm({ book, username, formId, onSuccess }: CheckoutForm
                  )}
                />
             )}
-            
-            <FormField
-              control={form.control}
-              name="comments"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Comentarios (opcional)</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Ej: Dejar en recepción, etc."
-                      className="resize-none"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <FormField
               control={form.control}
