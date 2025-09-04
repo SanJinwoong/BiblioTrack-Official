@@ -81,7 +81,7 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[650px] grid grid-cols-1 md:grid-cols-[200px_1fr] p-0 max-h-[90vh] overflow-hidden">
+      <DialogContent className="sm:max-w-[650px] grid grid-cols-1 md:grid-cols-[200px_1fr] p-0 max-h-[90vh] h-full">
         <div className="hidden md:flex items-start justify-center p-6 pr-0">
           <div className="relative aspect-[3/4.5] w-full rounded-md overflow-hidden">
             <Image
@@ -94,15 +94,13 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
           </div>
         </div>
 
-        <div className="flex flex-col h-full overflow-hidden">
-          <div className="p-6 pb-4">
-              <DialogHeader>
-                  <DialogTitle className="font-headline text-2xl mb-1">{book.title}</DialogTitle>
-                  <DialogDescription className="text-base">{book.author}</DialogDescription>
-              </DialogHeader>
-          </div>
+        <div className="flex flex-col h-full overflow-y-hidden">
+          <DialogHeader className="p-6 pb-4 border-b">
+              <DialogTitle className="font-headline text-2xl mb-1">{book.title}</DialogTitle>
+              <DialogDescription className="text-base">{book.author}</DialogDescription>
+          </DialogHeader>
           
-          <div className="px-6 pb-6 flex-grow overflow-y-auto">
+          <div className="flex-1 overflow-y-auto p-6">
             {showCheckoutForm ? (
               <CheckoutForm
                 book={book}
@@ -113,10 +111,10 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
               />
             ) : (
               <>
-                <div className="my-4 text-sm text-muted-foreground">
+                <div className="text-sm text-muted-foreground">
                   <p>{book.description}</p>
                 </div>
-                <div className="flex items-center space-x-2 my-2">
+                <div className="flex items-center space-x-2 my-4">
                   <span className="font-semibold text-sm">Disponibilidad:</span>
                   <Badge className={cn("text-xs font-bold", stockStatus.color)}>
                     {stockStatus.text}
@@ -147,7 +145,7 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
             )}
           </div>
           
-          <DialogFooter className="p-6 pt-4 border-t bg-background">
+          <DialogFooter className="p-6 border-t bg-background">
             {showCheckoutForm ? (
                 <>
                     <Button type="button" variant="ghost" onClick={() => setShowCheckoutForm(false)}>
