@@ -4,21 +4,19 @@
 import { users } from '@/lib/data';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { User } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 interface UserDetailsTooltipProps {
   userId: string;
+  children: React.ReactNode;
 }
 
-export function UserDetailsTooltip({ userId }: UserDetailsTooltipProps) {
+export function UserDetailsTooltip({ userId, children }: UserDetailsTooltipProps) {
     const user = users.find(u => u.username === `${userId}@alumnos.uat.edu.mx` || u.username === userId || u.name === userId);
 
-    if (!user) {
-        return <div className="p-4 text-sm">Usuario no encontrado.</div>;
-    }
-
-    return (
+    const content = user ? (
         <div className="p-2 max-w-sm">
-            <CardHeader className="p-2">
+            <CardHeader className="p-2 border-b mb-2">
                 <CardTitle className="text-base flex items-center">
                     <User className="mr-2 h-4 w-4" /> Detalle del Usuario
                 </CardTitle>
@@ -32,5 +30,18 @@ export function UserDetailsTooltip({ userId }: UserDetailsTooltipProps) {
                 <p><strong>Dirección:</strong> {user.address || 'N/A'}</p>
             </CardContent>
         </div>
+    ) : (
+        <div className="p-4 text-sm">Usuario no encontrado.</div>
+    );
+
+    return (
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild>{children}</TooltipTrigger>
+                <TooltipContent>
+                    {content}
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
     );
 }

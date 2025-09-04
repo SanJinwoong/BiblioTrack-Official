@@ -12,8 +12,7 @@ import { BookCard } from '@/components/book-card';
 import { BookDetailsDialog } from './book-details-dialog';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from './ui/dropdown-menu';
+import { Avatar, AvatarFallback } from './ui/avatar';
 import { UserDetailsTooltip } from './user-details-tooltip';
 
 export function LibrarianDashboard() {
@@ -140,26 +139,11 @@ export function LibrarianDashboard() {
                                         <p className="text-xs font-medium truncate">{checkout.userId}</p>
                                       </div>
                                       
-                                      <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                          <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0">
+                                      <UserDetailsTooltip userId={checkout.userId}>
+                                          <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={(e) => e.stopPropagation()}>
                                             <MoreHorizontal className="h-4 w-4" />
                                           </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent>
-                                            <DropdownMenuSub>
-                                              <DropdownMenuSubTrigger>
-                                                <User className="mr-2 h-4 w-4" />
-                                                <span>Ver detalles del usuario</span>
-                                              </DropdownMenuSubTrigger>
-                                              <DropdownMenuPortal>
-                                                <DropdownMenuSubContent>
-                                                    <UserDetailsTooltip userId={checkout.userId} />
-                                                </DropdownMenuSubContent>
-                                              </DropdownMenuPortal>
-                                            </DropdownMenuSub>
-                                        </DropdownMenuContent>
-                                      </DropdownMenu>
+                                      </UserDetailsTooltip>
 
                                     </div>
                                     <div className='flex items-center gap-2'>
