@@ -60,22 +60,25 @@ export function CheckoutForm({ book, username, role, formId, onSuccess }: Checko
       })
   ).refine(data => {
       const { pickupDate, loanDuration } = data;
-      // For librarians, pickupDate is not present, so we skip this validation.
-      if (!pickupDate || !loanDuration) return true;
+      // For librarians, pickupDate is not present, so we use today's date for validation
+      const effectivePickupDate = pickupDate || new Date();
+
+      if (!loanDuration) return true;
 
       let dueDate: Date;
       const [value, unit] = loanDuration.split('-');
       switch (unit) {
           case 'weeks':
-              dueDate = addWeeks(pickupDate, parseInt(value));
+              dueDate = addWeeks(effectivePickupDate, parseInt(value));
               break;
           case 'months':
-              dueDate = addMonths(pickupDate, parseInt(value));
+              dueDate = addMonths(effectivePickupDate, parseInt(value));
               break;
           default:
-              dueDate = addDays(pickupDate, 14);
+              dueDate = addDays(effectivePickupDate, 14);
       }
-      return pickupDate < dueDate;
+      // Ensure pickup date is before due date
+      return effectivePickupDate < dueDate;
   }, {
     message: "La fecha de retiro debe ser anterior a la fecha de entrega.",
     path: ["pickupDate"], 
@@ -86,6 +89,7 @@ export function CheckoutForm({ book, username, role, formId, onSuccess }: Checko
     resolver: zodResolver(dynamicSchema),
     defaultValues: {
       loanDuration: "2-weeks",
+      userId: '',
     },
   });
 
@@ -94,7 +98,7 @@ export function CheckoutForm({ book, username, role, formId, onSuccess }: Checko
     if (!loanDuration) return '';
     
     let dueDate: Date;
-    const [value, unit] = loanDuration.split('-');
+    const [value, unit] = loanador.split('-');
 
     switch (unit) {
         case 'weeks':
