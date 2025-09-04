@@ -13,9 +13,10 @@ import {
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
-import { User, Calendar, AlertCircle } from 'lucide-react';
+import { User, Calendar, AlertCircle, MoreHorizontal } from 'lucide-react';
 import { CheckoutForm } from './checkout-form';
 import { useState } from 'react';
+import { UserDetailsTooltip } from './user-details-tooltip';
 
 interface BookDetailsDialogProps {
   book: Book | null;
@@ -94,7 +95,7 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
           </div>
         </div>
 
-        <div className="flex flex-col h-full overflow-y-hidden">
+        <div className="flex flex-col h-full overflow-hidden">
           <DialogHeader className="p-6 pb-4 border-b">
               <DialogTitle className="font-headline text-2xl mb-1">{book.title}</DialogTitle>
               <DialogDescription className="text-base">{book.author}</DialogDescription>
@@ -124,9 +125,16 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
                 {checkout && dueDateStatus && (
                   <div className="mt-2 space-y-2 text-sm">
                     <div className="flex items-center">
-                      <User className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <span className="font-semibold">Prestado a:</span>
-                      <span className="ml-2">{checkout.userId}</span>
+                      <User className="mr-2 h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="font-semibold mr-2">Prestado a:</span>
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <span className="truncate">{checkout.userId}</span>
+                        <UserDetailsTooltip userId={checkout.userId}>
+                          <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </UserDetailsTooltip>
+                      </div>
                     </div>
                     <div className="flex items-center">
                       <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
