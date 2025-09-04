@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { books, checkouts } from '@/lib/data';
-import type { Book as BookType } from '@/lib/types';
+import type { Book as BookType, Checkout } from '@/lib/types';
 import { Book, ListChecks, Search, User, Calendar } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +16,7 @@ export function LibrarianDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredBooks, setFilteredBooks] = useState<BookType[]>(books);
   const [selectedBook, setSelectedBook] = useState<BookType | null>(null);
+  const [selectedCheckout, setSelectedCheckout] = useState<Checkout | null>(null);
 
   useEffect(() => {
     const results = books.filter(
@@ -31,13 +32,25 @@ export function LibrarianDashboard() {
   const getBook = (bookId: number) => {
     return books.find(b => b.id === bookId);
   };
+  
+  const handleOpenDialog = (book: BookType, checkout: Checkout | null = null) => {
+    setSelectedBook(book);
+    setSelectedCheckout(checkout);
+  };
+
+  const handleCloseDialog = () => {
+    setSelectedBook(null);
+    setSelectedCheckout(null);
+  };
+
 
   return (
     <>
     <BookDetailsDialog 
         book={selectedBook} 
+        checkout={selectedCheckout}
         open={!!selectedBook} 
-        onOpenChange={(isOpen) => !isOpen && setSelectedBook(null)}
+        onOpenChange={(isOpen) => !isOpen && handleCloseDialog()}
       />
       <div className="space-y-6">
         <h1 className="text-3xl font-bold font-headline">Librarian Dashboard</h1>
@@ -63,7 +76,7 @@ export function LibrarianDashboard() {
               <CardContent>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                     {filteredBooks.map((book) => (
-                        <BookCard key={book.id} book={book} onClick={() => setSelectedBook(book)} />
+                        <BookCard key={book.id} book={book} onClick={() => handleOpenDialog(book)} />
                     ))}
                 </div>
                 {filteredBooks.length === 0 && (
@@ -83,7 +96,7 @@ export function LibrarianDashboard() {
                         const book = getBook(checkout.bookId);
                         if (!book) return null;
                         return (
-                            <BookCard key={`${checkout.userId}-${checkout.bookId}`} book={book} onClick={() => setSelectedBook(book)}>
+                            <BookCard key={`${checkout.userId}-${checkout.bookId}`} book={book} onClick={() => handleOpenDialog(book, checkout)}>
                                 <div className="p-3 border-t mt-auto">
                                     <div className='flex items-center gap-2 mb-2'>
                                       <Avatar className="h-6 w-6">

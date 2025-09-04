@@ -1,5 +1,6 @@
 import Image from 'next/image';
-import type { Book } from '@/lib/types';
+import { differenceInDays, parseISO, isPast } from 'date-fns';
+import type { Book, Checkout } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -11,14 +12,16 @@ import {
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
+import { User, Calendar } from 'lucide-react';
 
 interface BookDetailsDialogProps {
   book: Book | null;
+  checkout?: Checkout | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function BookDetailsDialog({ book, open, onOpenChange }: BookDetailsDialogProps) {
+export function BookDetailsDialog({ book, checkout, open, onOpenChange }: BookDetailsDialogProps) {
   if (!book) {
     return null;
   }
@@ -33,7 +36,25 @@ export function BookDetailsDialog({ book, open, onOpenChange }: BookDetailsDialo
     return { text: 'Disponible', color: 'bg-green-500 text-green-50' };
   };
 
+  const getDueDateStatus = () => {
+    if (!checkout) return null;
+    
+    // The date from data.ts is YYYY-MM-DD, which parseISO handles correctly.
+    const dueDate = parseISO(checkout.dueDate);
+    const today = new Date();
+    const daysDiff = differenceInDays(dueDate, today);
+
+    if (isPast(dueDate) && daysDiff < 0) {
+      return { text: `Vencido por ${Math.abs(daysDiff)} día(s)`, color: 'text-red-600 font-bold' };
+    }
+    if (daysDiff <= 3) {
+        return { text: `Vence en ${daysDiff + 1} día(s)`, color: 'text-yellow-600 font-bold' };
+    }
+    return { text: `Vence el ${checkout.dueDate}`, color: 'text-muted-foreground' };
+  };
+
   const stockStatus = getStockStatus();
+  const dueDateStatus = getDueDateStatus();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -61,8 +82,24 @@ export function BookDetailsDialog({ book, open, onOpenChange }: BookDetailsDialo
               {stockStatus.text}
             </Badge>
           </div>
+
+          {checkout && dueDateStatus && (
+            <div className="mt-2 space-y-2 text-sm">
+                <div className="flex items-center">
+                    <User className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <span className="font-semibold">Prestado a:</span>
+                    <span className="ml-2">{checkout.userId}</span>
+                </div>
+                <div className="flex items-center">
+                    <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <span className="font-semibold">Fecha de entrega:</span>
+                    <span className={cn("ml-2", dueDateStatus.color)}>{dueDateStatus.text}</span>
+                </div>
+            </div>
+          )}
+
           <DialogFooter className="mt-4 sm:justify-start">
-            <Button type="button" disabled={book.stock === 0}>
+            <Button type="button" disabled={book.stock === 0 || !!checkout}>
               Pedir Prestado
             </Button>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
