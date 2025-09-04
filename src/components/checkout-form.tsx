@@ -125,6 +125,20 @@ export function CheckoutForm({ book, username, role, formId, onSuccess }: Checko
     }
   }
 
+  const handleCurpLookup = (curp: string) => {
+    if (!curp) return;
+    const foundUser = users.find(u => u.curp === curp);
+
+    if (foundUser) {
+        form.setValue('name', foundUser.name || '');
+        form.setValue('address', foundUser.address || '');
+        toast({
+            title: '✅ Usuario Encontrado por CURP',
+            description: `Datos de ${foundUser.name} cargados.`,
+        });
+    }
+  }
+
 
   const calculateDueDate = (pickupDate: Date | undefined, loanDuration: string) => {
     // For librarians, pickup date is today. For clients, it's the selected date.
@@ -247,7 +261,29 @@ export function CheckoutForm({ book, username, role, formId, onSuccess }: Checko
                     )}
                 />
                 <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Nombre completo</FormLabel> <FormControl><Input placeholder="John Doe" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
-                <FormField control={form.control} name="curp" render={({ field }) => ( <FormItem> <FormLabel>CURP</FormLabel> <FormControl><Input placeholder="ABCD123456H..." {...field} /></FormControl> <FormMessage /> </FormItem>)} />
+                <FormField 
+                    control={form.control} 
+                    name="curp" 
+                    render={({ field }) => ( 
+                        <FormItem> 
+                            <FormLabel>CURP</FormLabel> 
+                            <FormControl>
+                                <Input 
+                                    placeholder="ABCD123456H..." 
+                                    {...field} 
+                                    onBlur={(e) => handleCurpLookup(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleCurpLookup(field.value || '');
+                                        }
+                                    }}
+                                />
+                            </FormControl> 
+                            <FormMessage /> 
+                        </FormItem>
+                    )} 
+                />
                 <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem> <FormLabel>Teléfono de contacto</FormLabel> <FormControl><Input placeholder="834-123-4567" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
                 <FormField control={form.control} name="email" render={({ field }) => ( <FormItem> <FormLabel>Correo electrónico</FormLabel> <FormControl><Input type="email" placeholder="john.doe@example.com" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
                 <FormField control={form.control} name="address" render={({ field }) => ( <FormItem> <FormLabel>Dirección</FormLabel> <FormControl><Input placeholder="123 Main St, City, Country" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
