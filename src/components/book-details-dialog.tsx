@@ -78,17 +78,19 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[650px] grid-cols-1 md:grid-cols-[200px_1fr] gap-6 p-0">
-        <div className="relative aspect-[3/4.5] w-full rounded-l-md overflow-hidden hidden md:block">
-          <Image
-            src={book.coverUrl}
-            alt={`Cover of ${book.title}`}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 30vw, 200px"
-          />
+      <DialogContent className="sm:max-w-[650px] grid grid-cols-1 md:grid-cols-[200px_1fr] p-0 max-h-[90vh]">
+        <div className="hidden md:flex items-start justify-center p-6 pr-0">
+          <div className="relative aspect-[3/4.5] w-full rounded-md overflow-hidden">
+            <Image
+              src={book.coverUrl}
+              alt={`Cover of ${book.title}`}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 30vw, 200px"
+            />
+          </div>
         </div>
-        <div className="flex flex-col p-6">
+        <div className="flex flex-col p-6 overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-headline text-2xl mb-1">{book.title}</DialogTitle>
             <DialogDescription className="text-base">{book.author}</DialogDescription>
