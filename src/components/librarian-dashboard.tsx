@@ -1,7 +1,9 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { books, checkouts } from '@/lib/data';
-import { Book, Users, ListChecks } from 'lucide-react';
+import type { Book as BookType } from '@/lib/types';
+import { Book, ListChecks, Search } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -11,10 +13,25 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { BookCard } from '@/components/book-card';
 
 export function LibrarianDashboard() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredBooks, setFilteredBooks] = useState<BookType[]>(books);
+
+  useEffect(() => {
+    const results = books.filter(
+      (book) =>
+        book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        book.genre.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredBooks(results);
+  }, [searchTerm]);
+
+
   const getBookTitle = (bookId: number) => {
     return books.find(b => b.id === bookId)?.title || 'Unknown Book';
   };
@@ -31,30 +48,25 @@ export function LibrarianDashboard() {
           <Card>
             <CardHeader>
               <CardTitle className="font-headline">Library Catalog</CardTitle>
+                <div className="relative w-full max-w-sm">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                      placeholder="Search by title, author, or genre..."
+                      className="pl-10"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Author</TableHead>
-                    <TableHead className="text-right">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {books.map((book) => (
-                    <TableRow key={book.id}>
-                      <TableCell className="font-medium">{book.title}</TableCell>
-                      <TableCell>{book.author}</TableCell>
-                      <TableCell className="text-right">
-                        <Badge variant={book.available ? 'default' : 'secondary'} className={book.available ? 'bg-accent text-accent-foreground' : ''}>
-                          {book.available ? 'Available' : 'Checked Out'}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
+               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {filteredBooks.map((book) => (
+                      <BookCard key={book.id} book={book} />
                   ))}
-                </TableBody>
-              </Table>
+              </div>
+              {filteredBooks.length === 0 && (
+                  <p className="text-muted-foreground text-center py-8">No books found for &quot;{searchTerm}&quot;.</p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
