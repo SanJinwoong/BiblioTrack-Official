@@ -4,7 +4,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { format, addDays } from 'date-fns';
+import { format, addDays, parseISO } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,6 @@ import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
 import { cn } from '@/lib/utils';
-import { Textarea } from './ui/textarea';
 
 const formSchema = z.object({
   loanType: z.enum(['physical', 'digital'], {
@@ -40,7 +39,21 @@ const formSchema = z.object({
 }, {
     message: 'La fecha de retiro es requerida para préstamos físicos.',
     path: ['pickupDate'],
+}).refine(data => {
+    if (data.loanType === 'physical' && data.pickupDate) {
+        // The dueDate is a string 'YYYY-MM-DD', parseISO will handle it correctly
+        // and create a date object at the beginning of that day in UTC.
+        const dueDate = parseISO(data.dueDate);
+        const pickupDate = data.pickupDate;
+        // Compare dates without time part
+        return pickupDate < dueDate;
+    }
+    return true;
+}, {
+    message: 'La fecha de retiro debe ser anterior a la fecha de entrega.',
+    path: ['pickupDate'],
 });
+
 
 interface CheckoutFormProps {
   book: Book;
@@ -156,7 +169,7 @@ export function CheckoutForm({ book, username, formId, onSuccess }: CheckoutForm
                            selected={field.value}
                            onSelect={field.onChange}
                            disabled={(date) =>
-                             date < new Date() || date < new Date("1900-01-01")
+                             date < new Date(new Date().setHours(0,0,0,0)) || date < new Date("1900-01-01")
                            }
                            initialFocus
                          />
