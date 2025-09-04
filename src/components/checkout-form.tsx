@@ -43,24 +43,22 @@ export function CheckoutForm({ book, username, role, formId, onSuccess }: Checko
 
   const baseSchema = z.object({
     loanDuration: z.string(),
-    pickupDate: z.date({
-      required_error: "La fecha de retiro es obligatoria.",
-    }).optional(),
+    pickupDate: z.date().optional(),
   });
 
-  const dynamicSchema = (role === 'librarian'
-    ? baseSchema.extend({
-        userId: z.string().min(1, { message: "La matrícula es obligatoria." }),
-      })
-    : baseSchema.extend({
-        userId: z.string().optional(),
-        pickupDate: z.date({
-            required_error: "La fecha de retiro es obligatoria.",
-        }),
-      })
+  const dynamicSchema = (
+    role === 'librarian'
+      ? baseSchema.extend({
+          userId: z.string().min(1, { message: "La matrícula es obligatoria." }),
+        })
+      : baseSchema.extend({
+          userId: z.string().optional(),
+          pickupDate: z.date({
+              required_error: "La fecha de retiro es obligatoria.",
+          }),
+        })
   ).refine(data => {
       const { pickupDate, loanDuration } = data;
-      // For librarians, pickupDate is not present, so we use today's date for validation
       const effectivePickupDate = pickupDate || new Date();
 
       if (!loanDuration) return true;
@@ -77,7 +75,6 @@ export function CheckoutForm({ book, username, role, formId, onSuccess }: Checko
           default:
               dueDate = addDays(effectivePickupDate, 14);
       }
-      // Ensure pickup date is before due date
       return effectivePickupDate < dueDate;
   }, {
     message: "La fecha de retiro debe ser anterior a la fecha de entrega.",
@@ -98,7 +95,7 @@ export function CheckoutForm({ book, username, role, formId, onSuccess }: Checko
     if (!loanDuration) return '';
     
     let dueDate: Date;
-    const [value, unit] = loanador.split('-');
+    const [value, unit] = loanDuration.split('-');
 
     switch (unit) {
         case 'weeks':
