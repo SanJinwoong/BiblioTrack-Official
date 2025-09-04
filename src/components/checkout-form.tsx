@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { format, addDays, startOfDay, addWeeks, addMonths } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
+import React from 'react';
 
 import {
   Form,
@@ -16,7 +17,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import type { Book } from '@/lib/types';
+import type { Book, User } from '@/lib/types';
+import { users } from '@/lib/data';
 import { Button } from './ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
@@ -44,12 +46,22 @@ export function CheckoutForm({ book, username, role, formId, onSuccess }: Checko
   const baseSchema = z.object({
     loanDuration: z.string(),
     pickupDate: z.date().optional(),
+    name: z.string().optional(),
+    curp: z.string().optional(),
+    phone: z.string().optional(),
+    email: z.string().email().optional(),
+    address: z.string().optional(),
   });
 
   const dynamicSchema = (
     role === 'librarian'
       ? baseSchema.extend({
-          userId: z.string().min(1, { message: "La matrícula es obligatoria." }),
+          userId: z.string().optional(), // Matricula is optional for lookup
+          name: z.string().min(1, { message: "El nombre es obligatorio." }),
+          curp: z.string().min(1, { message: "La CURP es obligatoria." }),
+          phone: z.string().min(1, { message: "El teléfono es obligatorio." }),
+          email: z.string().email({ message: "El correo no es válido." }),
+          address: z.string().min(1, { message: "La dirección es obligatoria." }),
         })
       : baseSchema.extend({
           userId: z.string().optional(),
@@ -58,24 +70,17 @@ export function CheckoutForm({ book, username, role, formId, onSuccess }: Checko
           }),
         })
   ).refine(data => {
-      const { pickupDate, loanDuration } = data;
-      const effectivePickupDate = pickupDate || new Date();
+      if (role === 'client') {
+        const { pickupDate, loanDuration } = data;
+        const effectivePickupDate = pickupDate;
 
-      if (!loanDuration) return true;
+        if (!loanDuration || !effectivePickupDate) return true;
 
-      let dueDate: Date;
-      const [value, unit] = loanDuration.split('-');
-      switch (unit) {
-          case 'weeks':
-              dueDate = addWeeks(effectivePickupDate, parseInt(value));
-              break;
-          case 'months':
-              dueDate = addMonths(effectivePickupDate, parseInt(value));
-              break;
-          default:
-              dueDate = addDays(effectivePickupDate, 14);
+        const [value, unit] = loanDuration.split('-');
+        const dueDate = unit === 'weeks' ? addWeeks(effectivePickupDate, parseInt(value)) : addMonths(effectivePickupDate, parseInt(value));
+        return effectivePickupDate < dueDate;
       }
-      return effectivePickupDate < dueDate;
+      return true;
   }, {
     message: "La fecha de retiro debe ser anterior a la fecha de entrega.",
     path: ["pickupDate"], 
@@ -87,8 +92,38 @@ export function CheckoutForm({ book, username, role, formId, onSuccess }: Checko
     defaultValues: {
       loanDuration: "2-weeks",
       userId: '',
+      name: '',
+      curp: '',
+      phone: '',
+      email: '',
+      address: '',
     },
   });
+
+  const handleUserLookup = (matricula: string) => {
+    if (!matricula) return;
+    const clientUsername = `${matricula}@alumnos.uat.edu.mx`;
+    const foundUser = users.find(u => u.username === clientUsername);
+
+    if (foundUser) {
+      form.setValue('name', foundUser.name || '');
+      form.setValue('curp', foundUser.curp || '');
+      form.setValue('phone', foundUser.phone || '');
+      form.setValue('email', foundUser.email || '');
+      form.setValue('address', foundUser.address || '');
+      toast({
+        title: '✅ Usuario Encontrado',
+        description: `Datos de ${foundUser.name} cargados.`,
+      });
+    } else {
+      toast({
+        variant: 'destructive',
+        title: '⚠️ Usuario no encontrado',
+        description: 'La matrícula no existe. Puede registrar al usuario llenando los campos manualmente.',
+      });
+    }
+  }
+
 
   const calculateDueDate = (pickupDate: Date | undefined, loanDuration: string) => {
     const startDate = pickupDate || new Date();
@@ -122,12 +157,32 @@ export function CheckoutForm({ book, username, role, formId, onSuccess }: Checko
 
     const dueDate = calculateDueDate(values.pickupDate, values.loanDuration);
     const checkoutUserId = role === 'librarian' ? values.userId! : username;
+    
+    // In a real app, you would also save the new/updated user data
+    if (role === 'librarian' && values.userId && !users.find(u => u.username === `${values.userId}@alumnos.uat.edu.mx`)) {
+        const newUser: User = {
+            username: `${values.userId}@alumnos.uat.edu.mx`,
+            password: 'password', // Default password, should be handled securely
+            role: 'client',
+            name: values.name,
+            curp: values.curp,
+            phone: values.phone,
+            email: values.email,
+            address: values.address,
+        };
+        users.push(newUser);
+        toast({
+            title: '👤 Nuevo usuario registrado',
+            description: `El usuario con matrícula ${values.userId} ha sido creado.`,
+        });
+    }
+
 
     onSuccess({ userId: checkoutUserId, dueDate });
 
     toast({
       title: '✅ ¡Préstamo Exitoso!',
-      description: `"${book.title}" ha sido prestado a ${checkoutUserId}. La fecha de entrega es ${dueDate}.`,
+      description: `"${book.title}" ha sido prestado a ${values.name || checkoutUserId}. La fecha de entrega es ${dueDate}.`,
     });
   }
 
@@ -138,19 +193,36 @@ export function CheckoutForm({ book, username, role, formId, onSuccess }: Checko
         <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             
             {role === 'librarian' && (
+              <>
                 <FormField
                     control={form.control}
                     name="userId"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Matrícula del Usuario</FormLabel>
+                            <FormLabel>Matrícula del Usuario (Opcional)</FormLabel>
                             <FormControl>
-                                <Input placeholder="a1234567890" {...field} />
+                                <Input 
+                                    placeholder="a1234567890 (presiona Enter para buscar)" 
+                                    {...field}
+                                    onBlur={(e) => handleUserLookup(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleUserLookup(field.value || '');
+                                        }
+                                    }}
+                                />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
+                <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Nombre completo</FormLabel> <FormControl><Input placeholder="John Doe" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
+                <FormField control={form.control} name="curp" render={({ field }) => ( <FormItem> <FormLabel>CURP</FormLabel> <FormControl><Input placeholder="ABCD123456H..." {...field} /></FormControl> <FormMessage /> </FormItem>)} />
+                <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem> <FormLabel>Teléfono de contacto</FormLabel> <FormControl><Input placeholder="834-123-4567" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
+                <FormField control={form.control} name="email" render={({ field }) => ( <FormItem> <FormLabel>Correo electrónico</FormLabel> <FormControl><Input type="email" placeholder="john.doe@example.com" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
+                <FormField control={form.control} name="address" render={({ field }) => ( <FormItem> <FormLabel>Dirección</FormLabel> <FormControl><Input placeholder="123 Main St, City, Country" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
+              </>
             )}
 
             {role === 'client' && (

@@ -1,10 +1,41 @@
+
 import type { Book, Checkout, User } from './types';
 
 export const users: User[] = [
-    { username: 'librarian', password: 'password', role: 'librarian'},
-    { username: 'a1234567890@alumnos.uat.edu.mx', password: 'password', role: 'client'},
-    { username: 'a0987654321@alumnos.uat.edu.mx', password: 'password', role: 'client'},
-    { username: 'admin', password: 'admin', role: 'librarian' },
+    { 
+        username: 'librarian', 
+        password: 'password', 
+        role: 'librarian',
+        name: 'Library Admin',
+        email: 'librarian@library.com',
+    },
+    { 
+        username: 'a1234567890@alumnos.uat.edu.mx', 
+        password: 'password', 
+        role: 'client',
+        name: 'Juan Perez',
+        curp: 'PERJ900101HDFXXX',
+        phone: '834-111-2233',
+        email: 'juan.perez@example.com',
+        address: 'Calle Falsa 123, Ciudad Victoria',
+    },
+    { 
+        username: 'a0987654321@alumnos.uat.edu.mx', 
+        password: 'password', 
+        role: 'client',
+        name: 'Maria Rodriguez',
+        curp: 'RODM920202MDFXXX',
+        phone: '834-444-5566',
+        email: 'maria.rodriguez@example.com',
+        address: 'Avenida Siempre Viva 742, Ciudad Victoria',
+    },
+    { 
+        username: 'admin', 
+        password: 'admin', 
+        role: 'librarian',
+        name: 'Super Admin',
+        email: 'admin@library.com',
+    },
 ];
 
 export const books: Book[] = [
