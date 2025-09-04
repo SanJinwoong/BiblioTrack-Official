@@ -45,7 +45,7 @@ export function CheckoutForm({ book, username, role, formId, onSuccess }: Checko
     loanDuration: z.string(),
     pickupDate: z.date({
       required_error: "La fecha de retiro es obligatoria.",
-    }),
+    }).optional(),
   });
 
   const dynamicSchema = (role === 'librarian'
@@ -54,9 +54,13 @@ export function CheckoutForm({ book, username, role, formId, onSuccess }: Checko
       })
     : baseSchema.extend({
         userId: z.string().optional(),
+        pickupDate: z.date({
+            required_error: "La fecha de retiro es obligatoria.",
+        }),
       })
   ).refine(data => {
       const { pickupDate, loanDuration } = data;
+      // For librarians, pickupDate is not present, so we skip this validation.
       if (!pickupDate || !loanDuration) return true;
 
       let dueDate: Date;
@@ -85,21 +89,22 @@ export function CheckoutForm({ book, username, role, formId, onSuccess }: Checko
     },
   });
 
-  const calculateDueDate = (pickupDate: Date, loanDuration: string) => {
-    if (!pickupDate || !loanDuration) return '';
+  const calculateDueDate = (pickupDate: Date | undefined, loanDuration: string) => {
+    const startDate = pickupDate || new Date();
+    if (!loanDuration) return '';
     
     let dueDate: Date;
     const [value, unit] = loanDuration.split('-');
 
     switch (unit) {
         case 'weeks':
-            dueDate = addWeeks(pickupDate, parseInt(value));
+            dueDate = addWeeks(startDate, parseInt(value));
             break;
         case 'months':
-            dueDate = addMonths(pickupDate, parseInt(value));
+            dueDate = addMonths(startDate, parseInt(value));
             break;
         default:
-            dueDate = addDays(pickupDate, 14); // Default
+            dueDate = addDays(startDate, 14); // Default
     }
     return format(dueDate, 'yyyy-MM-dd');
   }
@@ -147,47 +152,49 @@ export function CheckoutForm({ book, username, role, formId, onSuccess }: Checko
                 />
             )}
 
-            <FormField
-              control={form.control}
-              name="pickupDate"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Fecha de retiro deseada</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Elige una fecha</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) =>
-                          date < startOfDay(new Date())
-                        }
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {role === 'client' && (
+              <FormField
+                control={form.control}
+                name="pickupDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Fecha de retiro deseada</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Elige una fecha</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) =>
+                            date < startOfDay(new Date())
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             
             <FormField
               control={form.control}
