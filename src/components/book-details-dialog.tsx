@@ -22,11 +22,12 @@ interface BookDetailsDialogProps {
   checkout?: Checkout | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccessfulCheckout: (bookId: number) => void;
+  onSuccessfulCheckout: (bookId: number, checkoutData: {userId: string; dueDate: string}) => void;
   username: string;
+  role: 'client' | 'librarian';
 }
 
-export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSuccessfulCheckout, username }: BookDetailsDialogProps) {
+export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSuccessfulCheckout, username, role }: BookDetailsDialogProps) {
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
 
   if (!book) {
@@ -40,8 +41,9 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
     onOpenChange(isOpen);
   };
 
-  const handleSuccessfulCheckout = () => {
-    onSuccessfulCheckout(book.id);
+  const handleSuccessfulCheckout = (checkoutData: {userId: string; dueDate: string}) => {
+    if(!book) return;
+    onSuccessfulCheckout(book.id, checkoutData);
     setShowCheckoutForm(false);
     onOpenChange(false);
   }
@@ -105,6 +107,7 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
               <CheckoutForm
                 book={book}
                 username={username}
+                role={role}
                 formId={formId}
                 onSuccess={handleSuccessfulCheckout}
               />
@@ -156,7 +159,7 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
                 </>
             ) : (
                 <>
-                    {!checkout && (
+                    {(!checkout || role === 'librarian') && (
                         <Button type="button" disabled={book.stock === 0} onClick={() => setShowCheckoutForm(true)}>
                         Pedir Prestado
                         </Button>

@@ -28,8 +28,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { Input } from './ui/input';
 
 const formSchema = z.object({
+  userId: z.string().optional(),
   loanDuration: z.string(),
   pickupDate: z.date({
     required_error: "La fecha de retiro es obligatoria.",
@@ -38,13 +40,18 @@ const formSchema = z.object({
     const { pickupDate, loanDuration } = data;
     if (!pickupDate || !loanDuration) return true;
 
-    let dueDate = new Date(pickupDate);
-    if (loanDuration.includes('week')) {
-        dueDate = addWeeks(pickupDate, parseInt(loanDuration));
-    } else if (loanDuration.includes('month')) {
-        dueDate = addMonths(pickupDate, parseInt(loanDuration));
+    let dueDate: Date;
+    const [value, unit] = loanDuration.split('-');
+    switch (unit) {
+        case 'weeks':
+            dueDate = addWeeks(pickupDate, parseInt(value));
+            break;
+        case 'months':
+            dueDate = addMonths(pickupDate, parseInt(value));
+            break;
+        default:
+            dueDate = addDays(pickupDate, 14);
     }
-
     return pickupDate < dueDate;
 }, {
   message: "La fecha de retiro debe ser anterior a la fecha de entrega.",
@@ -54,15 +61,22 @@ const formSchema = z.object({
 interface CheckoutFormProps {
   book: Book;
   username: string;
+  role: 'client' | 'librarian';
   formId: string;
-  onSuccess: () => void;
+  onSuccess: (data: { userId: string; dueDate: string }) => void;
 }
 
-export function CheckoutForm({ book, username, formId, onSuccess }: CheckoutFormProps) {
+export function CheckoutForm({ book, username, role, formId, onSuccess }: CheckoutFormProps) {
   const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const dynamicSchema = formSchema.extend({
+      userId: role === 'librarian' 
+        ? z.string().min(1, { message: "La matrícula es obligatoria." }) 
+        : z.string().optional(),
+  });
+
+  const form = useForm<z.infer<typeof dynamicSchema>>({
+    resolver: zodResolver(dynamicSchema),
     defaultValues: {
       loanDuration: "2-weeks",
     },
@@ -87,7 +101,7 @@ export function CheckoutForm({ book, username, formId, onSuccess }: CheckoutForm
     return format(dueDate, 'yyyy-MM-dd');
   }
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  function onSubmit(values: z.infer<typeof dynamicSchema>) {
     if (book.stock === 0) {
       toast({
         variant: 'destructive',
@@ -98,12 +112,13 @@ export function CheckoutForm({ book, username, formId, onSuccess }: CheckoutForm
     }
 
     const dueDate = calculateDueDate(values.pickupDate, values.loanDuration);
+    const checkoutUserId = role === 'librarian' ? values.userId! : username;
 
-    onSuccess();
+    onSuccess({ userId: checkoutUserId, dueDate });
 
     toast({
       title: '✅ ¡Préstamo Exitoso!',
-      description: `Has pedido prestado "${book.title}". La fecha de entrega es ${dueDate}.`,
+      description: `"${book.title}" ha sido prestado a ${checkoutUserId}. La fecha de entrega es ${dueDate}.`,
     });
   }
 
@@ -112,6 +127,23 @@ export function CheckoutForm({ book, username, formId, onSuccess }: CheckoutForm
       <h3 className="font-semibold text-lg mb-4">Confirmar Préstamo</h3>
       <Form {...form}>
         <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            
+            {role === 'librarian' && (
+                <FormField
+                    control={form.control}
+                    name="userId"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Matrícula del Usuario</FormLabel>
+                            <FormControl>
+                                <Input placeholder="a1234567890" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            )}
+
             <FormField
               control={form.control}
               name="pickupDate"

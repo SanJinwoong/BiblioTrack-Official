@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { books, checkouts } from '@/lib/data';
+import { books as initialBooks, checkouts as initialCheckouts } from '@/lib/data';
 import type { Book as BookType, Checkout } from '@/lib/types';
 import { Book, ListChecks, Search, User, Calendar } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -14,6 +14,9 @@ import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
 export function LibrarianDashboard() {
+  const [books, setBooks] = useState<BookType[]>(initialBooks);
+  const [checkouts, setCheckouts] = useState<Checkout[]>(initialCheckouts);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredBooks, setFilteredBooks] = useState<BookType[]>(books);
   const [selectedBook, setSelectedBook] = useState<BookType | null>(null);
@@ -26,17 +29,18 @@ export function LibrarianDashboard() {
   }, []);
 
   useEffect(() => {
-    const results = books.filter(
-      (book) =>
-        book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        book.genre.toLowerCase().includes(searchTerm.toLowerCase())
+    setFilteredBooks(
+      books.filter(
+        (book) =>
+          book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          book.genre.toLowerCase().includes(searchTerm.toLowerCase())
+      )
     );
-    setFilteredBooks(results);
-  }, [searchTerm]);
+  }, [searchTerm, books]);
 
 
-  const getBook = (bookId: number) => {
+  const getBook = (bookId: number): BookType | undefined => {
     return books.find(b => b.id === bookId);
   };
   
@@ -50,6 +54,22 @@ export function LibrarianDashboard() {
     setSelectedCheckout(null);
   };
 
+  const handleSuccessfulCheckout = (bookId: number, checkoutData: {userId: string; dueDate: string}) => {
+    // 1. Decrement stock
+    const updatedBooks = books.map(b => 
+      b.id === bookId ? { ...b, stock: b.stock - 1 } : b
+    );
+    setBooks(updatedBooks);
+
+    // 2. Add to checkouts
+    const newCheckout: Checkout = {
+      userId: checkoutData.userId,
+      bookId: bookId,
+      dueDate: checkoutData.dueDate,
+    };
+    const updatedCheckouts = [...checkouts, newCheckout];
+    setCheckouts(updatedCheckouts);
+  };
 
   return (
     <>
@@ -58,8 +78,9 @@ export function LibrarianDashboard() {
         checkout={selectedCheckout}
         open={!!selectedBook} 
         onOpenChange={(isOpen) => !isOpen && handleCloseDialog()}
-        onSuccessfulCheckout={() => {}} // No action for librarian
+        onSuccessfulCheckout={handleSuccessfulCheckout}
         username={username}
+        role="librarian"
       />
       <div className="space-y-6">
         <h1 className="text-3xl font-bold font-headline">Librarian Dashboard</h1>

@@ -44,7 +44,7 @@ export function ClientDashboard() {
     setFilteredBooks(results);
   }, [searchTerm, books]);
 
-  const handleSuccessfulCheckout = (bookId: number) => {
+  const handleSuccessfulCheckout = (bookId: number, checkoutData: {userId: string; dueDate: string}) => {
     const book = books.find(b => b.id === bookId);
     if (!book || !username) return;
 
@@ -55,12 +55,10 @@ export function ClientDashboard() {
     setBooks(updatedBooks);
 
     // 2. Add to checkouts
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 14); // 2 week loan
     const newCheckout: Checkout = {
-      userId: username,
+      userId: checkoutData.userId,
       bookId: bookId,
-      dueDate: dueDate.toISOString().split('T')[0], // YYYY-MM-DD
+      dueDate: checkoutData.dueDate,
     };
     const updatedCheckouts = [...checkouts, newCheckout];
     setCheckouts(updatedCheckouts);
@@ -85,6 +83,7 @@ export function ClientDashboard() {
         onOpenChange={(isOpen) => !isOpen && setSelectedBook(null)}
         onSuccessfulCheckout={handleSuccessfulCheckout}
         username={username}
+        role="client"
       />
       <div className="bg-background min-h-screen">
         <ClientHeader username={username} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
