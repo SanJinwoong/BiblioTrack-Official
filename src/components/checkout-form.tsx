@@ -30,34 +30,6 @@ import {
 } from "@/components/ui/select"
 import { Input } from './ui/input';
 
-const formSchema = z.object({
-  userId: z.string().optional(),
-  loanDuration: z.string(),
-  pickupDate: z.date({
-    required_error: "La fecha de retiro es obligatoria.",
-  }),
-}).refine(data => {
-    const { pickupDate, loanDuration } = data;
-    if (!pickupDate || !loanDuration) return true;
-
-    let dueDate: Date;
-    const [value, unit] = loanDuration.split('-');
-    switch (unit) {
-        case 'weeks':
-            dueDate = addWeeks(pickupDate, parseInt(value));
-            break;
-        case 'months':
-            dueDate = addMonths(pickupDate, parseInt(value));
-            break;
-        default:
-            dueDate = addDays(pickupDate, 14);
-    }
-    return pickupDate < dueDate;
-}, {
-  message: "La fecha de retiro debe ser anterior a la fecha de entrega.",
-  path: ["pickupDate"], 
-});
-
 interface CheckoutFormProps {
   book: Book;
   username: string;
@@ -69,11 +41,42 @@ interface CheckoutFormProps {
 export function CheckoutForm({ book, username, role, formId, onSuccess }: CheckoutFormProps) {
   const { toast } = useToast();
 
-  const dynamicSchema = formSchema.extend({
-      userId: role === 'librarian' 
-        ? z.string().min(1, { message: "La matrícula es obligatoria." }) 
-        : z.string().optional(),
+  const baseSchema = z.object({
+    loanDuration: z.string(),
+    pickupDate: z.date({
+      required_error: "La fecha de retiro es obligatoria.",
+    }),
   });
+
+  const dynamicSchema = (role === 'librarian'
+    ? baseSchema.extend({
+        userId: z.string().min(1, { message: "La matrícula es obligatoria." }),
+      })
+    : baseSchema.extend({
+        userId: z.string().optional(),
+      })
+  ).refine(data => {
+      const { pickupDate, loanDuration } = data;
+      if (!pickupDate || !loanDuration) return true;
+
+      let dueDate: Date;
+      const [value, unit] = loanDuration.split('-');
+      switch (unit) {
+          case 'weeks':
+              dueDate = addWeeks(pickupDate, parseInt(value));
+              break;
+          case 'months':
+              dueDate = addMonths(pickupDate, parseInt(value));
+              break;
+          default:
+              dueDate = addDays(pickupDate, 14);
+      }
+      return pickupDate < dueDate;
+  }, {
+    message: "La fecha de retiro debe ser anterior a la fecha de entrega.",
+    path: ["pickupDate"], 
+  });
+
 
   const form = useForm<z.infer<typeof dynamicSchema>>({
     resolver: zodResolver(dynamicSchema),
