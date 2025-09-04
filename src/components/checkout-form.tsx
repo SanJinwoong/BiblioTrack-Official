@@ -4,7 +4,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { format, addDays, startOfDay } from 'date-fns';
+import { format, addDays, startOfDay, addWeeks, addMonths } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
 
 import {
@@ -15,22 +15,38 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import type { Book } from '@/lib/types';
 import { Button } from './ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
 import { cn } from '@/lib/utils';
-import { Textarea } from './ui/textarea';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 
 const formSchema = z.object({
-  dueDate: z.string(),
+  loanDuration: z.string(),
   pickupDate: z.date({
     required_error: "La fecha de retiro es obligatoria.",
   }),
-  comments: z.string().optional(),
-}).refine(data => new Date(data.pickupDate) < new Date(data.dueDate), {
+}).refine(data => {
+    const { pickupDate, loanDuration } = data;
+    if (!pickupDate || !loanDuration) return true;
+
+    let dueDate = new Date(pickupDate);
+    if (loanDuration.includes('week')) {
+        dueDate = addWeeks(pickupDate, parseInt(loanDuration));
+    } else if (loanDuration.includes('month')) {
+        dueDate = addMonths(pickupDate, parseInt(loanDuration));
+    }
+
+    return pickupDate < dueDate;
+}, {
   message: "La fecha de retiro debe ser anterior a la fecha de entrega.",
   path: ["pickupDate"], 
 });
@@ -44,15 +60,32 @@ interface CheckoutFormProps {
 
 export function CheckoutForm({ book, username, formId, onSuccess }: CheckoutFormProps) {
   const { toast } = useToast();
-  const defaultDueDate = format(addDays(new Date(), 14), 'yyyy-MM-dd');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      dueDate: defaultDueDate,
-      comments: "",
+      loanDuration: "2-weeks",
     },
   });
+
+  const calculateDueDate = (pickupDate: Date, loanDuration: string) => {
+    if (!pickupDate || !loanDuration) return '';
+    
+    let dueDate: Date;
+    const [value, unit] = loanDuration.split('-');
+
+    switch (unit) {
+        case 'weeks':
+            dueDate = addWeeks(pickupDate, parseInt(value));
+            break;
+        case 'months':
+            dueDate = addMonths(pickupDate, parseInt(value));
+            break;
+        default:
+            dueDate = addDays(pickupDate, 14); // Default
+    }
+    return format(dueDate, 'yyyy-MM-dd');
+  }
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     if (book.stock === 0) {
@@ -64,14 +97,13 @@ export function CheckoutForm({ book, username, formId, onSuccess }: CheckoutForm
       return;
     }
 
-    // In a real app, this would trigger a server action
-    // For this prototype, we call the onSuccess callback which will
-    // update the local state in the parent component.
+    const dueDate = calculateDueDate(values.pickupDate, values.loanDuration);
+
     onSuccess();
 
     toast({
       title: '✅ ¡Préstamo Exitoso!',
-      description: `Has pedido prestado "${book.title}". La fecha de entrega es ${values.dueDate}.`,
+      description: `Has pedido prestado "${book.title}". La fecha de entrega es ${dueDate}.`,
     });
   }
 
@@ -124,34 +156,28 @@ export function CheckoutForm({ book, username, formId, onSuccess }: CheckoutForm
             
             <FormField
               control={form.control}
-              name="dueDate"
+              name="loanDuration"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Fecha de Entrega</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} readOnly disabled />
-                  </FormControl>
+                  <FormLabel>Duración del Préstamo</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecciona una duración" />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            <SelectItem value="1-weeks">1 semana</SelectItem>
+                            <SelectItem value="2-weeks">2 semanas</SelectItem>
+                            <SelectItem value="3-weeks">3 semanas</SelectItem>
+                            <SelectItem value="1-months">1 mes</SelectItem>
+                            <SelectItem value="2-months">2 meses</SelectItem>
+                            <SelectItem value="3-months">3 meses</SelectItem>
+                        </SelectContent>
+                    </Select>
                   <FormMessage />
                 </FormItem>
               )}
-            />
-
-            <FormField
-              control={form.control}
-              name="comments"
-              render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Comentarios (Opcional)</FormLabel>
-                    <FormControl>
-                        <Textarea
-                        placeholder="Ej: Dejar en recepción, etc."
-                        className="resize-none"
-                        {...field}
-                        />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )}
             />
         </form>
       </Form>
