@@ -53,7 +53,7 @@ export function CheckoutForm({ book, username, role, onSuccess, submitButton }: 
     address: z.string().optional(),
   });
 
-  const dynamicSchema = (
+  const dynamicSchema =
     role === 'librarian'
       ? baseSchema.extend({
           userId: z.string().optional(), // Matricula is optional for lookup
@@ -68,24 +68,7 @@ export function CheckoutForm({ book, username, role, onSuccess, submitButton }: 
           pickupDate: z.date({
               required_error: "La fecha de retiro es obligatoria.",
           }),
-        })
-  ).refine(data => {
-      // This validation only applies to clients, as librarians don't set a pickup date.
-      if (role === 'client') {
-        const { pickupDate, loanDuration } = data;
-        const effectivePickupDate = pickupDate;
-
-        if (!loanDuration || !effectivePickupDate) return true;
-
-        const [value, unit] = loanDuration.split('-');
-        const dueDate = unit === 'weeks' ? addWeeks(effectivePickupDate, parseInt(value)) : addMonths(effectivePickupDate, parseInt(value));
-        return effectivePickupDate < dueDate;
-      }
-      return true;
-  }, {
-    message: "La fecha de retiro debe ser anterior a la fecha de entrega.",
-    path: ["pickupDate"], 
-  });
+        });
 
 
   const form = useForm<z.infer<typeof dynamicSchema>>({
