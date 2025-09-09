@@ -61,7 +61,7 @@ export const books: Book[] = [
     description: 'A novel about justice and racism in the American South.',
     coverUrl: 'https://picsum.photos/300/450?random=2',
     genre: 'Classic',
-    stock: 0,
+    stock: 3,
   },
   {
     id: 3,
@@ -88,7 +88,7 @@ export const books: Book[] = [
     description: 'A fantasy novel about the adventures of Bilbo Baggins.',
     coverUrl: 'https://picsum.photos/300/450?random=5',
     genre: 'Fantasy',
-    stock: 0,
+    stock: 1,
   },
   {
     id: 6,
@@ -115,14 +115,17 @@ export const books: Book[] = [
     description: 'A dystopian novel which anticipates developments in reproductive technology, sleep-learning, and psychological manipulation.',
     coverUrl: 'https://picsum.photos/300/450?random=8',
     genre: 'Dystopian',
-    stock: 0,
+    stock: 4,
   },
 ];
 
 export const checkouts: Checkout[] = [
-  { userId: 'a1234567890', bookId: 2, dueDate: '2024-08-15' },
-  { userId: 'a1234567890', bookId: 5, dueDate: '2024-08-22' },
-  { userId: 'a0987654321', bookId: 8, dueDate: '2024-08-10' },
+  { userId: 'a1234567890', bookId: 2, dueDate: '2024-08-15', status: 'approved' },
+  { userId: 'a0987654321', bookId: 8, dueDate: '2024-08-10', status: 'approved' },
+];
+
+export const checkoutRequests: Checkout[] = [
+    { userId: 'a1234567890', bookId: 5, dueDate: '2024-09-22', status: 'pending' },
 ];
 
 export const readingHistory: { [key: string]: number[] } = {

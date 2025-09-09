@@ -13,7 +13,7 @@ import {
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
-import { User, Calendar, AlertCircle, MoreHorizontal } from 'lucide-react';
+import { User, Calendar, AlertCircle, MoreHorizontal, Bell, Check } from 'lucide-react';
 import { CheckoutForm } from './checkout-form';
 import { useState } from 'react';
 import { UserDetailsTooltip } from './user-details-tooltip';
@@ -24,11 +24,12 @@ interface BookDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccessfulCheckout: (bookId: number, checkoutData: {userId: string; dueDate: string}) => void;
+  onApproveRequest?: (checkout: Checkout) => void;
   username: string;
   role: 'client' | 'librarian';
 }
 
-export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSuccessfulCheckout, username, role }: BookDetailsDialogProps) {
+export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSuccessfulCheckout, onApproveRequest, username, role }: BookDetailsDialogProps) {
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
 
   if (!book) {
@@ -45,8 +46,14 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
   const handleSuccessfulCheckout = (checkoutData: {userId: string; dueDate: string}) => {
     if(!book) return;
     onSuccessfulCheckout(book.id, checkoutData);
-    setShowCheckoutForm(false); // Hide form
-    onOpenChange(false); // Close dialog
+    setShowCheckoutForm(false);
+    onOpenChange(false); 
+  }
+
+  const handleApprove = () => {
+    if (checkout && onApproveRequest) {
+      onApproveRequest(checkout);
+    }
   }
 
   const getStockStatus = () => {
@@ -60,11 +67,11 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
   };
 
   const getDueDateStatus = () => {
-    if (!checkout) return null;
+    if (!checkout || checkout.status !== 'approved') return null;
     
     const dueDate = parseISO(checkout.dueDate);
     const today = new Date();
-    today.setHours(0,0,0,0); // Normalize today to the start of the day
+    today.setHours(0,0,0,0);
     const daysDiff = differenceInDays(dueDate, today);
 
     if (isPast(dueDate) && daysDiff < 0) {
@@ -78,6 +85,7 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
 
   const stockStatus = getStockStatus();
   const dueDateStatus = getDueDateStatus();
+  const isRequest = checkout?.status === 'pending';
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -111,6 +119,16 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
               />
             ) : (
               <>
+                {isRequest && role === 'librarian' && (
+                    <div className="mb-4 flex items-center p-3 rounded-md bg-blue-50 text-blue-800 border border-blue-200">
+                        <Bell className="h-5 w-5 mr-3 shrink-0" />
+                        <div>
+                            <h4 className="font-bold">Solicitud Pendiente</h4>
+                            <p className="text-sm">El usuario <strong>{checkout.userId}</strong> ha solicitado este libro. Fecha de entrega propuesta: {checkout.dueDate}.</p>
+                        </div>
+                   </div>
+                )}
+
                 <div className="text-sm text-muted-foreground">
                   <p>{book.description}</p>
                 </div>
@@ -121,7 +139,7 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
                   </Badge>
                 </div>
 
-                {checkout && dueDateStatus && (
+                {checkout && checkout.status === 'approved' && (
                   <div className="mt-2 space-y-2 text-sm">
                     <div className="flex items-center">
                       <User className="mr-2 h-4 w-4 text-muted-foreground shrink-0" />
@@ -135,11 +153,13 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
                         </UserDetailsTooltip>
                       </div>
                     </div>
-                    <div className="flex items-center">
-                      <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <span className="font-semibold">Fecha de entrega:</span>
-                      <span className={cn("ml-2", dueDateStatus.color)}>{dueDateStatus.text}</span>
-                    </div>
+                    {dueDateStatus && (
+                        <div className="flex items-center">
+                            <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <span className="font-semibold">Fecha de entrega:</span>
+                            <span className={cn("ml-2", dueDateStatus.color)}>{dueDateStatus.text}</span>
+                        </div>
+                    )}
                   </div>
                 )}
                 {book.stock === 0 && !checkout && (
@@ -154,11 +174,22 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
           
           {!showCheckoutForm && (
             <DialogFooter className="p-6 border-t bg-background">
-                {role === 'librarian' || (role === 'client' && !checkout) ? (
-                    <Button type="button" disabled={book.stock === 0} onClick={() => setShowCheckoutForm(true)}>
-                    Pedir Prestado
+                {role === 'librarian' && isRequest && (
+                     <Button type="button" disabled={book.stock === 0} onClick={handleApprove}>
+                        <Check className="mr-2 h-4 w-4" />
+                        Aprobar Préstamo
                     </Button>
-                ) : null}
+                )}
+                {role === 'librarian' && !isRequest && (
+                    <Button type="button" disabled={book.stock === 0} onClick={() => setShowCheckoutForm(true)}>
+                        Realizar Préstamo Directo
+                    </Button>
+                )}
+                {role === 'client' && (
+                    <Button type="button" disabled={book.stock === 0} onClick={() => setShowCheckoutForm(true)}>
+                        Solicitar Préstamo
+                    </Button>
+                )}
                 <Button type="button" variant="ghost" onClick={() => handleOpenChange(false)}>
                     Cerrar
                 </Button>

@@ -2,9 +2,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { books as initialBooks, checkouts as initialCheckouts, users } from '@/lib/data';
+import { books as initialBooks, checkouts as initialCheckouts, users, checkoutRequests as initialCheckoutRequests } from '@/lib/data';
 import type { Book as BookType, Checkout, User as UserType } from '@/lib/types';
-import { Book, ListChecks, Search, User, Calendar, MoreHorizontal } from 'lucide-react';
+import { Book, ListChecks, Search, User, Calendar, MoreHorizontal, Bell } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,16 +14,19 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { UserDetailsTooltip } from './user-details-tooltip';
+import { useToast } from '@/hooks/use-toast';
 
 export function LibrarianDashboard() {
   const [books, setBooks] = useState<BookType[]>(initialBooks);
   const [checkouts, setCheckouts] = useState<Checkout[]>(initialCheckouts);
+  const [checkoutRequests, setCheckoutRequests] = useState<Checkout[]>(initialCheckoutRequests);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredBooks, setFilteredBooks] = useState<BookType[]>(books);
   const [selectedBook, setSelectedBook] = useState<BookType | null>(null);
   const [selectedCheckout, setSelectedCheckout] = useState<Checkout | null>(null);
   const [username, setUsername] = useState('');
+  const { toast } = useToast();
 
   useEffect(() => {
     const storedUsername = localStorage.getItem('userUsername') || '';
@@ -56,18 +59,61 @@ export function LibrarianDashboard() {
     setSelectedCheckout(null);
   };
 
+  const handleApproveRequest = (requestToApprove: Checkout) => {
+    // 1. Find the book and check stock
+    const bookToCheckout = getBook(requestToApprove.bookId);
+    if (!bookToCheckout || bookToCheckout.stock === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Error de aprobación',
+        description: `El libro "${bookToCheckout?.title}" no está disponible.`,
+      });
+      // Optional: remove the request if the book is gone
+      setCheckoutRequests(prev => prev.filter(r => r.bookId !== requestToApprove.bookId || r.userId !== requestToApprove.userId));
+      return;
+    }
+
+    // 2. Decrement stock
+    const updatedBooks = books.map(b => 
+      b.id === requestToApprove.bookId ? { ...b, stock: b.stock - 1 } : b
+    );
+    setBooks(updatedBooks);
+
+    // 3. Move request from pending to approved checkouts
+    const approvedCheckout: Checkout = { ...requestToApprove, status: 'approved' };
+    setCheckouts(prev => [...prev, approvedCheckout]);
+    setCheckoutRequests(prev => prev.filter(r => r.bookId !== requestToApprove.bookId || r.userId !== requestToApprove.userId));
+    
+    handleCloseDialog();
+    
+    toast({
+      title: '✅ Préstamo Aprobado',
+      description: `El préstamo de "${bookToCheckout.title}" a ${requestToApprove.userId} ha sido confirmado.`,
+    });
+  };
+
   const handleSuccessfulCheckout = (bookId: number, checkoutData: {userId: string; dueDate: string}) => {
+    const bookToCheckout = getBook(bookId);
+     if (!bookToCheckout || bookToCheckout.stock === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Error de aprobación',
+        description: `El libro "${bookToCheckout?.title}" no está disponible.`,
+      });
+      return;
+    }
+
     // 1. Decrement stock
     const updatedBooks = books.map(b => 
       b.id === bookId ? { ...b, stock: b.stock - 1 } : b
     );
     setBooks(updatedBooks);
 
-    // 2. Add to checkouts
+    // 2. Add directly to approved checkouts
     const newCheckout: Checkout = {
-      userId: checkoutData.userId,
+      ...checkoutData,
       bookId: bookId,
-      dueDate: checkoutData.dueDate,
+      status: 'approved',
     };
     const updatedCheckouts = [...checkouts, newCheckout];
     setCheckouts(updatedCheckouts);
@@ -81,24 +127,33 @@ export function LibrarianDashboard() {
         open={!!selectedBook} 
         onOpenChange={(isOpen) => !isOpen && handleCloseDialog()}
         onSuccessfulCheckout={handleSuccessfulCheckout}
+        onApproveRequest={handleApproveRequest}
         username={username}
         role="librarian"
       />
       <div className="space-y-6">
         <h1 className="text-3xl font-bold font-headline">Librarian Dashboard</h1>
         <Tabs defaultValue="catalog">
-          <TabsList className="grid w-full grid-cols-2 md:w-[400px]">
-            <TabsTrigger value="catalog"><Book className="mr-2 h-4 w-4" />Catalog Management</TabsTrigger>
-            <TabsTrigger value="checkouts"><ListChecks className="mr-2 h-4 w-4" />User Checkouts</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 md:w-auto">
+            <TabsTrigger value="catalog"><Book className="mr-2 h-4 w-4" />Catálogo</TabsTrigger>
+            <TabsTrigger value="requests">
+                <Bell className="mr-2 h-4 w-4" />
+                Solicitudes
+                {checkoutRequests.length > 0 && (
+                    <Badge variant="destructive" className="ml-2 animate-pulse">{checkoutRequests.length}</Badge>
+                )}
+            </TabsTrigger>
+            <TabsTrigger value="checkouts"><ListChecks className="mr-2 h-4 w-4" />Préstamos Activos</TabsTrigger>
           </TabsList>
+
           <TabsContent value="catalog" className="mt-4">
             <Card>
               <CardHeader>
-                <CardTitle className="font-headline">Library Catalog</CardTitle>
+                <CardTitle className="font-headline">Catálogo de la Biblioteca</CardTitle>
                   <div className="relative w-full max-w-sm">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
-                        placeholder="Search by title, author, or genre..."
+                        placeholder="Buscar por título, autor, o género..."
                         className="pl-10"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -112,19 +167,54 @@ export function LibrarianDashboard() {
                     ))}
                 </div>
                 {filteredBooks.length === 0 && (
-                    <p className="text-muted-foreground text-center py-8">No books found for &quot;{searchTerm}&quot;.</p>
+                    <p className="text-muted-foreground text-center py-8">No se encontraron libros para &quot;{searchTerm}&quot;.</p>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
+          
+          <TabsContent value="requests" className="mt-4">
+             <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">Solicitudes de Préstamo Pendientes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {checkoutRequests.length > 0 ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                            {checkoutRequests.map((request) => {
+                                const book = getBook(request.bookId);
+                                if (!book) return null;
+                                
+                                return (
+                                    <BookCard key={`${request.userId}-${request.bookId}`} book={book} onClick={() => handleOpenDialog(book, request)}>
+                                        <div className="p-3 border-t mt-auto text-center">
+                                            <p className="text-xs font-semibold text-primary mb-2">Solicitado por:</p>
+                                             <div className='flex items-center justify-center gap-2'>
+                                                <Avatar className="h-6 w-6 shrink-0">
+                                                <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
+                                                </Avatar>
+                                                <p className="text-sm font-medium truncate">{request.userId}</p>
+                                            </div>
+                                        </div>
+                                    </BookCard>
+                                )
+                            })}
+                        </div>
+                    ) : (
+                        <p className="text-muted-foreground text-center py-8">No hay solicitudes de préstamo pendientes.</p>
+                    )}
+                </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="checkouts" className="mt-4">
             <Card>
               <CardHeader>
-                <CardTitle className="font-headline">All Checked Out Books</CardTitle>
+                <CardTitle className="font-headline">Todos los Libros Prestados</CardTitle>
               </CardHeader>
               <CardContent>
                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                    {checkouts.map((checkout) => {
+                    {checkouts.filter(c => c.status === 'approved').map((checkout) => {
                         const book = getBook(checkout.bookId);
                         if (!book) return null;
                         
@@ -148,13 +238,16 @@ export function LibrarianDashboard() {
                                     </div>
                                     <div className='flex items-center gap-2'>
                                       <Calendar className="h-4 w-4 text-muted-foreground" />
-                                      <p className="text-xs text-muted-foreground">Due: {checkout.dueDate}</p>
+                                      <p className="text-xs text-muted-foreground">Vence: {checkout.dueDate}</p>
                                     </div>
                                 </div>
                             </BookCard>
                         )
                     })}
                  </div>
+                 {checkouts.filter(c => c.status === 'approved').length === 0 && (
+                    <p className="text-muted-foreground text-center py-8">No hay libros prestados actualmente.</p>
+                 )}
               </CardContent>
             </Card>
           </TabsContent>

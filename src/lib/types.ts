@@ -13,6 +13,7 @@ export interface Checkout {
   userId: string;
   bookId: number;
   dueDate: string;
+  status: 'pending' | 'approved' | 'returned';
 }
 
 export interface User {
@@ -25,5 +26,3 @@ export interface User {
     email?: string;
     address?: string;
 }
-
-    

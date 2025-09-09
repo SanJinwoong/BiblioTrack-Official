@@ -39,7 +39,6 @@ interface CheckoutFormProps {
   role: 'client' | 'librarian';
   onSuccess: (data: { userId: string; dueDate: string }) => void;
   onCancel: () => void;
-  submitButton?: React.ReactNode;
 }
 
 // Separate schemas for clarity and robustness
@@ -63,7 +62,7 @@ const librarianSchema = z.object({
 // Union schema for typing convenience, resolver will use the correct one.
 const formSchema = z.union([clientSchema, librarianSchema]);
 
-export function CheckoutForm({ book, username, role, onSuccess, onCancel, submitButton }: CheckoutFormProps) {
+export function CheckoutForm({ book, username, role, onSuccess, onCancel }: CheckoutFormProps) {
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -125,7 +124,6 @@ export function CheckoutForm({ book, username, role, onSuccess, onCancel, submit
 
 
   const calculateDueDate = (pickupDate: Date | undefined, loanDuration: string) => {
-    // For librarians, pickup date is today. For clients, it's the selected date.
     const startDate = role === 'client' ? pickupDate : new Date();
     if (!startDate || !loanDuration) return '';
     
@@ -188,20 +186,26 @@ export function CheckoutForm({ book, username, role, onSuccess, onCancel, submit
             toast({ title: '👤 Nuevo usuario registrado', description: `El usuario ${userName} ha sido creado.` });
         }
         toastDescriptionName = userName;
+         onSuccess({ userId: checkoutUserId, dueDate });
+
+        toast({
+            title: '✅ ¡Préstamo Directo Exitoso!',
+            description: `"${book.title}" ha sido prestado a ${toastDescriptionName}. La fecha de entrega es ${dueDate}.`,
+        });
+
     } else {
         // Client role
         const clientValues = values as z.infer<typeof clientSchema>;
         checkoutUserId = username;
         toastDescriptionName = username;
         dueDate = calculateDueDate(clientValues.pickupDate, clientValues.loanDuration);
+        onSuccess({ userId: checkoutUserId, dueDate });
+        
+        toast({
+            title: '✅ ¡Solicitud Enviada!',
+            description: `Tu solicitud para "${book.title}" ha sido enviada. Recibirás una notificación cuando sea aprobada.`,
+        });
     }
-
-    onSuccess({ userId: checkoutUserId, dueDate });
-
-    toast({
-      title: '✅ ¡Préstamo Exitoso!',
-      description: `"${book.title}" ha sido prestado a ${toastDescriptionName}. La fecha de entrega es ${dueDate}.`,
-    });
   }
   
   const userOptions = users
@@ -214,7 +218,7 @@ export function CheckoutForm({ book, username, role, onSuccess, onCancel, submit
 
   return (
     <>
-      <h3 className="font-semibold text-lg mb-4">Confirmar Préstamo</h3>
+      <h3 className="font-semibold text-lg mb-4">{role === 'client' ? 'Solicitar Préstamo' : 'Préstamo Directo'}</h3>
       <Form {...form}>
         <form id="checkout-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             
@@ -339,7 +343,6 @@ export function CheckoutForm({ book, username, role, onSuccess, onCancel, submit
                 </FormItem>
               )}
             />
-          {submitButton && React.cloneElement(submitButton as React.ReactElement, { form: 'checkout-form' })}
         </form>
       </Form>
        <div className='flex justify-end gap-2 mt-6'>
@@ -347,7 +350,7 @@ export function CheckoutForm({ book, username, role, onSuccess, onCancel, submit
             Cancelar
           </Button>
           <Button type="submit" form="checkout-form">
-              Confirmar Préstamo
+              Confirmar
           </Button>
         </div>
     </>

@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { books as initialBooks, checkouts as initialCheckouts } from '@/lib/data';
+import { books as initialBooks, checkouts as initialCheckouts, checkoutRequests as initialCheckoutRequests } from '@/lib/data';
 import type { Book as BookType, Checkout } from '@/lib/types';
 import { BookCard } from './book-card';
 import { Recommendations } from './recommendations';
@@ -26,6 +26,7 @@ export function ClientDashboard() {
   
   const [books, setBooks] = useState<BookType[]>(initialBooks);
   const [checkouts, setCheckouts] = useState<Checkout[]>(initialCheckouts);
+  const [checkoutRequests, setCheckoutRequests] = useState<Checkout[]>(initialCheckoutRequests);
 
   const [filteredBooks, setFilteredBooks] = useState<BookType[]>(books);
   const [selectedBook, setSelectedBook] = useState<BookType | null>(null);
@@ -44,29 +45,31 @@ export function ClientDashboard() {
     setFilteredBooks(results);
   }, [searchTerm, books]);
 
-  const handleSuccessfulCheckout = (bookId: number, checkoutData: {userId: string; dueDate: string}) => {
-    // 1. Decrement stock
-    const updatedBooks = books.map(b => 
-      b.id === bookId ? { ...b, stock: b.stock - 1 } : b
-    );
-    setBooks(updatedBooks);
-  
-    // 2. Add to checkouts
-    const newCheckout: Checkout = {
+  const handleSuccessfulCheckoutRequest = (bookId: number, checkoutData: {userId: string; dueDate: string}) => {
+    // Add a new request to the checkoutRequests state
+    const newRequest: Checkout = {
       userId: checkoutData.userId,
       bookId: bookId,
       dueDate: checkoutData.dueDate,
+      status: 'pending',
     };
-    const updatedCheckouts = [...checkouts, newCheckout];
-    setCheckouts(updatedCheckouts);
+    const updatedRequests = [...checkoutRequests, newRequest];
+    setCheckoutRequests(updatedRequests);
   };
 
   const userCheckouts = checkouts
-    .filter((c) => c.userId === username)
+    .filter((c) => c.userId === username && c.status === 'approved')
     .map((c) => {
       const book = books.find((b) => b.id === c.bookId);
       // This is a safe cast because we are filtering for existing books
-      return { ...book, dueDate: c.dueDate } as BookType & { dueDate: string };
+      return { ...book, dueDate: c.dueDate, status: c.status } as BookType & { dueDate: string, status: Checkout['status'] };
+    });
+
+  const userRequests = checkoutRequests
+    .filter((r) => r.userId === username)
+    .map((r) => {
+        const book = books.find((b) => b.id === r.bookId);
+        return { ...book, dueDate: r.dueDate, status: r.status } as BookType & { dueDate: string, status: Checkout['status'] };
     });
 
 
@@ -78,7 +81,7 @@ export function ClientDashboard() {
         book={selectedBook} 
         open={!!selectedBook} 
         onOpenChange={(isOpen) => !isOpen && setSelectedBook(null)}
-        onSuccessfulCheckout={handleSuccessfulCheckout}
+        onSuccessfulCheckout={handleSuccessfulCheckoutRequest}
         username={username}
         role="client"
       />
@@ -136,9 +139,9 @@ export function ClientDashboard() {
               </section>
           ) : (
               <>
-                  {userCheckouts.length > 0 && (
+                  {(userCheckouts.length > 0 || userRequests.length > 0) && (
                       <section id="my-books" className="space-y-4">
-                      <h2 className="text-2xl font-bold font-headline">My Books</h2>
+                      <h2 className="text-2xl font-bold font-headline">My Activity</h2>
                       <ScrollArea>
                           <div className="flex space-x-4 pb-4">
                           {userCheckouts.map((book) =>
@@ -146,7 +149,19 @@ export function ClientDashboard() {
                               <div key={`checkout-${book.id}`} className="w-40 min-w-40">
                                   <BookCard book={book as BookType} onClick={() => setSelectedBook(book)}>
                                   <div className="p-3 pt-0 text-xs">
-                                      <Badge variant="secondary">Due: {book.dueDate}</Badge>
+                                      <Badge variant="secondary" className="bg-green-100 text-green-800">Aprobado</Badge>
+                                      <p className="text-muted-foreground mt-1">Vence: {book.dueDate}</p>
+                                  </div>
+                                  </BookCard>
+                              </div>
+                              ) : null
+                          )}
+                           {userRequests.map((book) =>
+                              book.id ? (
+                              <div key={`request-${book.id}`} className="w-40 min-w-40">
+                                  <BookCard book={book as BookType} onClick={() => setSelectedBook(book)}>
+                                  <div className="p-3 pt-0 text-xs">
+                                      <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 animate-pulse">Pendiente</Badge>
                                   </div>
                                   </BookCard>
                               </div>
