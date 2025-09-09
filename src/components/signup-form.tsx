@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,6 +26,7 @@ import {
 } from '@/components/ui/card';
 import { users } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
+import type { User as UserType } from '@/lib/types';
 
 const studentEmailRegex = /^a\d{10}@alumnos\.uat\.edu\.mx$/;
 
@@ -38,6 +40,10 @@ const clientSchema = baseSchema.extend({
     email: z.string().regex(studentEmailRegex, {
         message: 'Por favor ingrese un correo institucional válido (ej: a1234567890@alumnos.uat.edu.mx).',
     }),
+    name: z.string().min(1, { message: "El nombre es obligatorio." }),
+    curp: z.string().min(1, { message: "La CURP es obligatoria." }),
+    phone: z.string().min(1, { message: "El teléfono es obligatorio." }),
+    address: z.string().min(1, { message: "La dirección es obligatoria." }),
     username: z.string().optional(),
     librarianId: z.string().optional(),
 });
@@ -65,6 +71,10 @@ export function SignUpForm() {
       email: '',
       password: '',
       librarianId: '',
+      name: '',
+      curp: '',
+      phone: '',
+      address: '',
     },
     shouldUnregister: true,
   });
@@ -72,7 +82,31 @@ export function SignUpForm() {
   function onSubmit(values: z.infer<typeof formSchema>) {
     if (!role) return;
 
-    const usernameToRegister = role === 'client' ? values.email! : values.username!;
+    let usernameToRegister: string;
+    let newUser: UserType;
+    
+    if (role === 'client') {
+        const clientValues = values as z.infer<typeof clientSchema>;
+        usernameToRegister = clientValues.email;
+        newUser = {
+            username: usernameToRegister,
+            password: clientValues.password,
+            role: 'client',
+            name: clientValues.name,
+            curp: clientValues.curp,
+            phone: clientValues.phone,
+            address: clientValues.address,
+            email: usernameToRegister, // Using institutional email as the primary contact for clients
+        };
+    } else { // librarian
+        const librarianValues = values as z.infer<typeof librarianSchema>;
+        usernameToRegister = librarianValues.username;
+        newUser = {
+            username: usernameToRegister,
+            password: librarianValues.password,
+            role: 'librarian',
+        };
+    }
 
     const existingUser = users.find(u => u.username === usernameToRegister);
     if (existingUser) {
@@ -84,19 +118,15 @@ export function SignUpForm() {
         return;
     }
     
-    users.push({
-        username: usernameToRegister,
-        password: values.password,
-        role: role,
-    });
+    users.push(newUser);
     
     localStorage.setItem('userRole', role);
 
     if (role === 'client') {
-      const matricula = values.email!.split('@')[0];
+      const matricula = newUser.username.split('@')[0];
       localStorage.setItem('userUsername', matricula);
     } else {
-      localStorage.setItem('userUsername', usernameToRegister);
+      localStorage.setItem('userUsername', newUser.username);
     }
     
     router.push('/dashboard');
@@ -132,7 +162,7 @@ export function SignUpForm() {
   return (
     <>
       <CardHeader className="px-0">
-        <CardTitle className="font-headline text-3xl">Crear una cuenta</CardTitle>
+        <CardTitle className="font-headline text-3xl">Crear una cuenta de {role === 'client' ? 'Alumno' : 'Bibliotecario'}</CardTitle>
         <CardDescription>
           ¡Es rápido y fácil! Empieza a explorar la biblioteca ahora.
         </CardDescription>
@@ -141,10 +171,9 @@ export function SignUpForm() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {role === 'client' && (
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
+              <>
+                <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Nombre completo</FormLabel> <FormControl><Input placeholder="John Doe" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
+                <FormField control={form.control} name="email" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Correo Institucional</FormLabel>
                     <FormControl>
@@ -153,7 +182,12 @@ export function SignUpForm() {
                     <FormMessage />
                   </FormItem>
                 )}
-              />
+                />
+                <FormField control={form.control} name="curp" render={({ field }) => ( <FormItem> <FormLabel>CURP</FormLabel> <FormControl><Input placeholder="ABCD123456H..." {...field} />
+                    </FormControl> <FormMessage /> </FormItem>)} />
+                <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem> <FormLabel>Teléfono de contacto</FormLabel> <FormControl><Input placeholder="834-123-4567" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
+                <FormField control={form.control} name="address" render={({ field }) => ( <FormItem> <FormLabel>Dirección</FormLabel> <FormControl><Input placeholder="123 Main St, City, Country" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
+              </>
             )}
             {role === 'librarian' && (
               <>

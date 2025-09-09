@@ -8,15 +8,18 @@ export const users: User[] = [
         role: 'librarian',
         name: 'Library Admin',
         email: 'librarian@library.com',
+        curp: 'ADMINCURP12345',
+        phone: '123-456-7890',
+        address: 'Library Address'
     },
     { 
         username: 'a1234567890@alumnos.uat.edu.mx', 
-        password: 'password', 
+        password: 'password',
         role: 'client',
         name: 'Juan Perez',
         curp: 'PERJ900101HDFXXX',
         phone: '834-111-2233',
-        email: 'juan.perez@example.com',
+        email: 'a1234567890@alumnos.uat.edu.mx',
         address: 'Calle Falsa 123, Ciudad Victoria',
     },
     { 
@@ -26,7 +29,7 @@ export const users: User[] = [
         name: 'Maria Rodriguez',
         curp: 'RODM920202MDFXXX',
         phone: '834-444-5566',
-        email: 'maria.rodriguez@example.com',
+        email: 'a0987654321@alumnos.uat.edu.mx',
         address: 'Avenida Siempre Viva 742, Ciudad Victoria',
     },
     { 
@@ -35,6 +38,9 @@ export const users: User[] = [
         role: 'librarian',
         name: 'Super Admin',
         email: 'admin@library.com',
+        curp: 'ADMINCURP67890',
+        phone: '098-765-4321',
+        address: 'Admin Address'
     },
 ];
 
