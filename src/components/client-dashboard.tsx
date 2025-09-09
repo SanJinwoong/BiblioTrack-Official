@@ -45,18 +45,16 @@ export function ClientDashboard() {
   }, [searchTerm, books]);
 
   const handleSuccessfulCheckout = (bookId: number, checkoutData: {userId: string; dueDate: string}) => {
-    if (!selectedBook || !username) return;
-  
     // 1. Decrement stock
     const updatedBooks = books.map(b => 
-      b.id === selectedBook.id ? { ...b, stock: b.stock - 1 } : b
+      b.id === bookId ? { ...b, stock: b.stock - 1 } : b
     );
     setBooks(updatedBooks);
   
     // 2. Add to checkouts
     const newCheckout: Checkout = {
       userId: checkoutData.userId,
-      bookId: selectedBook.id,
+      bookId: bookId,
       dueDate: checkoutData.dueDate,
     };
     const updatedCheckouts = [...checkouts, newCheckout];
