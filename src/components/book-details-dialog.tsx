@@ -45,8 +45,8 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
   const handleSuccessfulCheckout = (checkoutData: {userId: string; dueDate: string}) => {
     if(!book) return;
     onSuccessfulCheckout(book.id, checkoutData);
-    setShowCheckoutForm(false);
-    onOpenChange(false);
+    setShowCheckoutForm(false); // Hide form
+    onOpenChange(false); // Close dialog
   }
 
   const getStockStatus = () => {
@@ -107,16 +107,7 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
                 username={username}
                 role={role}
                 onSuccess={handleSuccessfulCheckout}
-                submitButton={
-                  <div className='flex justify-end gap-2'>
-                    <Button type="button" variant="ghost" onClick={() => setShowCheckoutForm(false)}>
-                      Cancelar
-                    </Button>
-                    <Button type="submit">
-                        Confirmar Préstamo
-                    </Button>
-                  </div>
-                }
+                onCancel={() => setShowCheckoutForm(false)}
               />
             ) : (
               <>
@@ -163,11 +154,11 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
           
           {!showCheckoutForm && (
             <DialogFooter className="p-6 border-t bg-background">
-                {(!checkout || role === 'librarian') && (
+                {role === 'librarian' || (role === 'client' && !checkout) ? (
                     <Button type="button" disabled={book.stock === 0} onClick={() => setShowCheckoutForm(true)}>
                     Pedir Prestado
                     </Button>
-                )}
+                ) : null}
                 <Button type="button" variant="ghost" onClick={() => handleOpenChange(false)}>
                     Cerrar
                 </Button>

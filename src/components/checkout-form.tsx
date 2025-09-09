@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { format, addDays, startOfDay, addWeeks, addMonths } from 'date-fns';
-import { Calendar as CalendarIcon, Check, ChevronsUpDown } from 'lucide-react';
+import { Calendar as CalendarIcon } from 'lucide-react';
 import React from 'react';
 
 import {
@@ -31,7 +31,6 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Input } from './ui/input';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from './ui/command';
 import { Combobox } from './ui/combobox';
 
 interface CheckoutFormProps {
@@ -39,52 +38,51 @@ interface CheckoutFormProps {
   username: string;
   role: 'client' | 'librarian';
   onSuccess: (data: { userId: string; dueDate: string }) => void;
+  onCancel: () => void;
   submitButton?: React.ReactNode;
 }
 
-export function CheckoutForm({ book, username, role, onSuccess, submitButton }: CheckoutFormProps) {
+// Separate schemas for clarity and robustness
+const clientSchema = z.object({
+  loanDuration: z.string().min(1, "Debes seleccionar una duración."),
+  pickupDate: z.date({
+    required_error: "La fecha de retiro es obligatoria.",
+  }),
+});
+
+const librarianSchema = z.object({
+  loanDuration: z.string().min(1, "Debes seleccionar una duración."),
+  userId: z.string().optional(), // Matricula is optional for lookup
+  name: z.string().min(1, { message: "El nombre es obligatorio." }),
+  curp: z.string().min(1, { message: "La CURP es obligatoria." }),
+  phone: z.string().min(1, { message: "El teléfono es obligatorio." }),
+  email: z.string().email({ message: "El correo no es válido." }),
+  address: z.string().min(1, { message: "La dirección es obligatoria." }),
+});
+
+// Union schema for typing convenience, resolver will use the correct one.
+const formSchema = z.union([clientSchema, librarianSchema]);
+
+export function CheckoutForm({ book, username, role, onSuccess, onCancel, submitButton }: CheckoutFormProps) {
   const { toast } = useToast();
 
-  const baseSchema = z.object({
-    loanDuration: z.string(),
-    pickupDate: z.date().optional(),
-    name: z.string().optional(),
-    curp: z.string().optional(),
-    phone: z.string().optional(),
-    email: z.string().email().optional(),
-    address: z.string().optional(),
-  });
-
-  const dynamicSchema =
-    role === 'librarian'
-      ? baseSchema.extend({
-          userId: z.string().optional(), // Matricula is optional for lookup
-          name: z.string().min(1, { message: "El nombre es obligatorio." }),
-          curp: z.string().min(1, { message: "La CURP es obligatoria." }),
-          phone: z.string().min(1, { message: "El teléfono es obligatorio." }),
-          email: z.string().email({ message: "El correo no es válido." }),
-          address: z.string().min(1, { message: "La dirección es obligatoria." }),
-        })
-      : baseSchema.extend({
-          userId: z.string().optional(),
-          pickupDate: z.date({
-              required_error: "La fecha de retiro es obligatoria.",
-          }),
-        });
-
-
-  const form = useForm<z.infer<typeof dynamicSchema>>({
-    resolver: zodResolver(dynamicSchema),
-    defaultValues: {
-      loanDuration: "2-weeks",
-      userId: '',
-      name: '',
-      curp: '',
-      phone: '',
-      email: '',
-      address: '',
-      pickupDate: startOfDay(new Date()),
-    },
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(role === 'client' ? clientSchema : librarianSchema),
+    defaultValues:
+      role === 'client'
+        ? {
+            loanDuration: "2-weeks",
+            pickupDate: startOfDay(new Date()),
+          }
+        : {
+            loanDuration: "2-weeks",
+            userId: '',
+            name: '',
+            curp: '',
+            phone: '',
+            email: '',
+            address: '',
+          },
   });
 
   const handleUserLookup = (matricula: string) => {
@@ -128,8 +126,8 @@ export function CheckoutForm({ book, username, role, onSuccess, submitButton }: 
 
   const calculateDueDate = (pickupDate: Date | undefined, loanDuration: string) => {
     // For librarians, pickup date is today. For clients, it's the selected date.
-    const startDate = pickupDate || new Date();
-    if (!loanDuration) return '';
+    const startDate = role === 'client' ? pickupDate : new Date();
+    if (!startDate || !loanDuration) return '';
     
     let dueDate: Date;
     const [value, unit] = loanDuration.split('-');
@@ -147,7 +145,7 @@ export function CheckoutForm({ book, username, role, onSuccess, submitButton }: 
     return format(dueDate, 'yyyy-MM-dd');
   }
 
-  function onSubmit(values: z.infer<typeof dynamicSchema>) {
+  function onSubmit(values: z.infer<typeof formSchema>) {
     if (book.stock === 0) {
       toast({
         variant: 'destructive',
@@ -157,13 +155,15 @@ export function CheckoutForm({ book, username, role, onSuccess, submitButton }: 
       return;
     }
 
-    const dueDate = calculateDueDate(values.pickupDate, values.loanDuration);
     let checkoutUserId: string;
     let toastDescriptionName: string;
+    let dueDate: string;
 
     if (role === 'librarian') {
-        const matricula = values.userId;
-        const userName = values.name!;
+        const librarianValues = values as z.infer<typeof librarianSchema>;
+        const matricula = librarianValues.userId;
+        const userName = librarianValues.name!;
+        dueDate = calculateDueDate(undefined, librarianValues.loanDuration);
 
         if (matricula) {
             checkoutUserId = matricula;
@@ -171,47 +171,29 @@ export function CheckoutForm({ book, username, role, onSuccess, submitButton }: 
             const foundUser = users.find(u => u.username === clientUsername);
 
             if (!foundUser) {
-                // Register new user if matricula doesn't exist
                 const newUser: User = {
-                    username: clientUsername,
-                    password: 'password', // Default password, should be handled securely
-                    role: 'client',
-                    name: userName,
-                    curp: values.curp!,
-                    phone: values.phone!,
-                    email: values.email!,
-                    address: values.address!,
+                    username: clientUsername, password: 'password', role: 'client',
+                    name: userName, curp: librarianValues.curp!, phone: librarianValues.phone!, email: librarianValues.email!, address: librarianValues.address!,
                 };
                 users.push(newUser);
-                toast({
-                    title: '👤 Nuevo usuario registrado',
-                    description: `El usuario con matrícula ${matricula} ha sido creado.`,
-                });
+                toast({ title: '👤 Nuevo usuario registrado', description: `El usuario con matrícula ${matricula} ha sido creado.` });
             }
         } else {
-            // Register new user without matricula
             checkoutUserId = userName;
             const newUser: User = {
-                username: `${userName.toLowerCase().replace(/\s/g, '.')}@externos.uat.edu.mx`, // Example username
-                password: 'password',
-                role: 'client',
-                name: userName,
-                curp: values.curp!,
-                phone: values.phone!,
-                email: values.email!,
-                address: values.address!,
+                username: `${userName.toLowerCase().replace(/\s/g, '.')}@externos.uat.edu.mx`, password: 'password', role: 'client',
+                name: userName, curp: librarianValues.curp!, phone: librarianValues.phone!, email: librarianValues.email!, address: librarianValues.address!,
             };
             users.push(newUser);
-            toast({
-                title: '👤 Nuevo usuario registrado',
-                description: `El usuario ${userName} ha sido creado.`,
-            });
+            toast({ title: '👤 Nuevo usuario registrado', description: `El usuario ${userName} ha sido creado.` });
         }
         toastDescriptionName = userName;
     } else {
         // Client role
+        const clientValues = values as z.infer<typeof clientSchema>;
         checkoutUserId = username;
         toastDescriptionName = username;
+        dueDate = calculateDueDate(clientValues.pickupDate, clientValues.loanDuration);
     }
 
     onSuccess({ userId: checkoutUserId, dueDate });
@@ -234,7 +216,7 @@ export function CheckoutForm({ book, username, role, onSuccess, submitButton }: 
     <>
       <h3 className="font-semibold text-lg mb-4">Confirmar Préstamo</h3>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form id="checkout-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             
             {role === 'librarian' && (
               <>
@@ -273,7 +255,7 @@ export function CheckoutForm({ book, username, role, onSuccess, submitButton }: 
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
                                             e.preventDefault();
-                                            handleCurpLookup(field.value || '');
+                                            handleCurpLookup(form.getValues().curp || '');
                                         }
                                     }}
                                 />
@@ -357,11 +339,17 @@ export function CheckoutForm({ book, username, role, onSuccess, submitButton }: 
                 </FormItem>
               )}
             />
-          {submitButton && <div className="pt-4">{submitButton}</div>}
+          {submitButton && React.cloneElement(submitButton as React.ReactElement, { form: 'checkout-form' })}
         </form>
       </Form>
+       <div className='flex justify-end gap-2 mt-6'>
+          <Button type="button" variant="ghost" onClick={onCancel}>
+            Cancelar
+          </Button>
+          <Button type="submit" form="checkout-form">
+              Confirmar Préstamo
+          </Button>
+        </div>
     </>
   );
 }
-
-    
