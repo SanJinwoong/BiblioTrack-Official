@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
@@ -31,7 +32,7 @@ export default function AuthPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background p-4 sm:p-8">
-      <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 items-stretch bg-card text-card-foreground rounded-2xl shadow-2xl overflow-hidden">
+      <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 items-start bg-card text-card-foreground rounded-2xl shadow-2xl overflow-hidden">
         {/* Left Column: Form */}
         <div className="flex flex-col justify-center p-8 sm:p-12">
           <div className="flex items-center space-x-3 mb-6 text-primary">
