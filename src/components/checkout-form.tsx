@@ -81,6 +81,7 @@ export function CheckoutForm({ book, username, role, onSuccess, submitButton }: 
       phone: '',
       email: '',
       address: '',
+      pickupDate: startOfDay(new Date()),
     },
   });
 
@@ -355,3 +356,5 @@ export function CheckoutForm({ book, username, role, onSuccess, submitButton }: 
     </>
   );
 }
+
+    

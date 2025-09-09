@@ -19,9 +19,11 @@ export interface User {
     username: string;
     password: string; // In a real app, this should be a hashed password
     role: 'client' | 'librarian';
-    name: string;
-    curp: string;
-    phone: string;
-    email: string;
-    address: string;
+    name?: string;
+    curp?: string;
+    phone?: string;
+    email?: string;
+    address?: string;
 }
+
+    
