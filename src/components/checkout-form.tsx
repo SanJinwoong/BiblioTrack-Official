@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { format, addDays, startOfDay, addWeeks, addMonths } from 'date-fns';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, Check, ChevronsUpDown } from 'lucide-react';
 import React from 'react';
 
 import {
@@ -31,6 +31,8 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Input } from './ui/input';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from './ui/command';
+import { Combobox } from './ui/combobox';
 
 interface CheckoutFormProps {
   book: Book;
@@ -219,6 +221,14 @@ export function CheckoutForm({ book, username, role, onSuccess, submitButton }: 
       description: `"${book.title}" ha sido prestado a ${toastDescriptionName}. La fecha de entrega es ${dueDate}.`,
     });
   }
+  
+  const userOptions = users
+    .filter(user => user.role === 'client' && user.username.includes('@alumnos.uat.edu.mx'))
+    .map(user => ({
+      value: user.username.split('@')[0],
+      label: user.username.split('@')[0],
+    }));
+
 
   return (
     <>
@@ -232,21 +242,18 @@ export function CheckoutForm({ book, username, role, onSuccess, submitButton }: 
                     control={form.control}
                     name="userId"
                     render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Matrícula del Usuario (Opcional)</FormLabel>
-                            <FormControl>
-                                <Input 
-                                    placeholder="a1234567890 (presiona Enter para buscar)" 
-                                    {...field}
-                                    onBlur={(e) => handleUserLookup(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            e.preventDefault();
-                                            handleUserLookup(field.value || '');
-                                        }
-                                    }}
-                                />
-                            </FormControl>
+                        <FormItem className="flex flex-col">
+                            <FormLabel>Matrícula del Usuario</FormLabel>
+                            <Combobox
+                                options={userOptions}
+                                value={field.value || ''}
+                                onChange={(value) => {
+                                    form.setValue('userId', value);
+                                    handleUserLookup(value);
+                                }}
+                                placeholder="Busca o escribe una matrícula..."
+                                emptyText="No se encontró ninguna matrícula."
+                            />
                             <FormMessage />
                         </FormItem>
                     )}
