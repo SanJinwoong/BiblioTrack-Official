@@ -36,11 +36,11 @@ interface CheckoutFormProps {
   book: Book;
   username: string;
   role: 'client' | 'librarian';
-  formId: string;
   onSuccess: (data: { userId: string; dueDate: string }) => void;
+  submitButton?: React.ReactNode;
 }
 
-export function CheckoutForm({ book, username, role, formId, onSuccess }: CheckoutFormProps) {
+export function CheckoutForm({ book, username, role, onSuccess, submitButton }: CheckoutFormProps) {
   const { toast } = useToast();
 
   const baseSchema = z.object({
@@ -240,7 +240,7 @@ export function CheckoutForm({ book, username, role, formId, onSuccess }: Checko
     <>
       <h3 className="font-semibold text-lg mb-4">Confirmar Préstamo</h3>
       <Form {...form}>
-        <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             
             {role === 'librarian' && (
               <>
@@ -366,6 +366,7 @@ export function CheckoutForm({ book, username, role, formId, onSuccess }: Checko
                 </FormItem>
               )}
             />
+          {submitButton && <div className="pt-4">{submitButton}</div>}
         </form>
       </Form>
     </>

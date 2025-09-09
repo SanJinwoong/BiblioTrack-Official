@@ -78,7 +78,6 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
 
   const stockStatus = getStockStatus();
   const dueDateStatus = getDueDateStatus();
-  const formId = "checkout-form";
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -107,8 +106,17 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
                 book={book}
                 username={username}
                 role={role}
-                formId={formId}
                 onSuccess={handleSuccessfulCheckout}
+                submitButton={
+                  <div className='flex justify-end gap-2'>
+                    <Button type="button" variant="ghost" onClick={() => setShowCheckoutForm(false)}>
+                      Cancelar
+                    </Button>
+                    <Button type="submit">
+                        Confirmar Préstamo
+                    </Button>
+                  </div>
+                }
               />
             ) : (
               <>
@@ -153,29 +161,18 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
             )}
           </div>
           
-          <DialogFooter className="p-6 border-t bg-background">
-            {showCheckoutForm ? (
-                <>
-                    <Button type="button" variant="ghost" onClick={() => setShowCheckoutForm(false)}>
-                        Cancelar
+          {!showCheckoutForm && (
+            <DialogFooter className="p-6 border-t bg-background">
+                {(!checkout || role === 'librarian') && (
+                    <Button type="button" disabled={book.stock === 0} onClick={() => setShowCheckoutForm(true)}>
+                    Pedir Prestado
                     </Button>
-                    <Button type="submit" form={formId}>
-                        Confirmar Préstamo
-                    </Button>
-                </>
-            ) : (
-                <>
-                    {(!checkout || role === 'librarian') && (
-                        <Button type="button" disabled={book.stock === 0} onClick={() => setShowCheckoutForm(true)}>
-                        Pedir Prestado
-                        </Button>
-                    )}
-                    <Button type="button" variant="ghost" onClick={() => handleOpenChange(false)}>
-                        Cerrar
-                    </Button>
-                </>
-            )}
-          </DialogFooter>
+                )}
+                <Button type="button" variant="ghost" onClick={() => handleOpenChange(false)}>
+                    Cerrar
+                </Button>
+            </DialogFooter>
+          )}
         </div>
       </DialogContent>
     </Dialog>
