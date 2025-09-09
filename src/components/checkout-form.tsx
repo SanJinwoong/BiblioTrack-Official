@@ -172,60 +172,67 @@ export function CheckoutForm({ book, username, role, formId, onSuccess }: Checko
     }
 
     const dueDate = calculateDueDate(values.pickupDate, values.loanDuration);
-    
-    // For librarians, if a matricula (userId) is provided, use it. Otherwise, use the user's name.
-    // For clients, their username is always used.
     let checkoutUserId: string;
+    let toastDescriptionName: string;
+
     if (role === 'librarian') {
-        if (values.userId) {
-            checkoutUserId = values.userId;
-             // In a real app, you would also save the new/updated user data
-            if (!users.find(u => u.username === `${values.userId}@alumnos.uat.edu.mx`)) {
+        const matricula = values.userId;
+        const userName = values.name!;
+
+        if (matricula) {
+            checkoutUserId = matricula;
+            const clientUsername = `${matricula}@alumnos.uat.edu.mx`;
+            const foundUser = users.find(u => u.username === clientUsername);
+
+            if (!foundUser) {
+                // Register new user if matricula doesn't exist
                 const newUser: User = {
-                    username: `${values.userId}@alumnos.uat.edu.mx`,
+                    username: clientUsername,
                     password: 'password', // Default password, should be handled securely
                     role: 'client',
-                    name: values.name,
-                    curp: values.curp,
-                    phone: values.phone,
-                    email: values.email,
-                    address: values.address,
+                    name: userName,
+                    curp: values.curp!,
+                    phone: values.phone!,
+                    email: values.email!,
+                    address: values.address!,
                 };
                 users.push(newUser);
                 toast({
                     title: '👤 Nuevo usuario registrado',
-                    description: `El usuario con matrícula ${values.userId} ha sido creado.`,
+                    description: `El usuario con matrícula ${matricula} ha sido creado.`,
                 });
             }
         } else {
-            // No matricula provided, this is a new user without one. Use their name.
-            checkoutUserId = values.name!; 
-            // In a real app, you'd generate a unique ID for this user.
+            // Register new user without matricula
+            checkoutUserId = userName;
             const newUser: User = {
-                username: `${values.name!.toLowerCase().replace(/\s/g, '.')}@externos.uat.edu.mx`, // Example username
+                username: `${userName.toLowerCase().replace(/\s/g, '.')}@externos.uat.edu.mx`, // Example username
                 password: 'password',
                 role: 'client',
-                name: values.name,
-                curp: values.curp,
-                phone: values.phone,
-                email: values.email,
-                address: values.address,
+                name: userName,
+                curp: values.curp!,
+                phone: values.phone!,
+                email: values.email!,
+                address: values.address!,
             };
             users.push(newUser);
             toast({
                 title: '👤 Nuevo usuario registrado',
-                description: `El usuario ${values.name} ha sido creado.`,
+                description: `El usuario ${userName} ha sido creado.`,
             });
         }
+        toastDescriptionName = userName;
     } else {
+        // Client role
         checkoutUserId = username;
+        toastDescriptionName = username;
     }
 
     onSuccess({ userId: checkoutUserId, dueDate });
 
     toast({
       title: '✅ ¡Préstamo Exitoso!',
-      description: `"${book.title}" ha sido prestado a ${values.name || checkoutUserId}. La fecha de entrega es ${dueDate}.`,
+      description: `"${book.title}" ha sido prestado a ${toastDescriptionName}. La fecha de entrega es ${dueDate}.`,
     });
   }
 
