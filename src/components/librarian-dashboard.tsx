@@ -18,8 +18,8 @@ import { useToast } from '@/hooks/use-toast';
 
 export function LibrarianDashboard() {
   const [books, setBooks] = useState<BookType[]>(initialBooks);
-  const [checkouts, setCheckouts] = useState<Checkout[]>([]);
-  const [checkoutRequests, setCheckoutRequests] = useState<Checkout[]>([]);
+  const [checkouts, setCheckouts] = useState<Checkout[]>(initialCheckouts);
+  const [checkoutRequests, setCheckoutRequests] = useState<Checkout[]>(initialCheckoutRequests);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredBooks, setFilteredBooks] = useState<BookType[]>(books);
