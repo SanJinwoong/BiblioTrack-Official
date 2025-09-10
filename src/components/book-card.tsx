@@ -46,10 +46,10 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
               <span className="truncate pt-px">{book.title}</span>
               {isApproved && (
                  <div className="ml-1.5 shrink-0 relative flex items-center justify-center h-4 w-4">
-                    <svg className="absolute h-full w-full text-primary" fill="currentColor" viewBox="0 0 18 18">
+                    <svg className="absolute h-full w-full text-green-500" fill="currentColor" viewBox="0 0 18 18">
                         <path d="M9 18A9 9 0 109 0a9 9 0 000 18z"/>
                     </svg>
-                    <Check className="relative h-3 w-3 text-primary-foreground" strokeWidth={4} />
+                    <Check className="relative h-3 w-3 text-green-50" strokeWidth={4} />
                 </div>
               )}
             </CardTitle>
