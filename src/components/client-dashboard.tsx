@@ -30,6 +30,8 @@ export function ClientDashboard() {
 
   const [filteredBooks, setFilteredBooks] = useState<BookType[]>(books);
   const [selectedBook, setSelectedBook] = useState<BookType | null>(null);
+  const [selectedBookCheckout, setSelectedBookCheckout] = useState<Checkout | null>(null);
+
 
   useEffect(() => {
     const storedUsername = localStorage.getItem('userUsername') || '';
@@ -79,7 +81,21 @@ export function ClientDashboard() {
     };
     const updatedRequests = [...checkoutRequests, newRequest];
     setCheckoutRequests(updatedRequests);
+    localStorage.setItem('checkoutRequests', JSON.stringify(updatedRequests));
   };
+  
+  const handleOpenDialog = (book: BookType) => {
+    setSelectedBook(book);
+    const checkout = checkouts.find(c => c.bookId === book.id && c.userId === username);
+    const request = checkoutRequests.find(r => r.bookId === book.id && r.userId === username);
+    setSelectedBookCheckout(checkout || request || null);
+  };
+
+  const handleCloseDialog = () => {
+    setSelectedBook(null);
+    setSelectedBookCheckout(null);
+  };
+
 
   const userCheckouts = checkouts
     .filter((c) => c.userId === username && c.status === 'approved')
@@ -102,9 +118,10 @@ export function ClientDashboard() {
   return (
     <>
       <BookDetailsDialog 
-        book={selectedBook} 
+        book={selectedBook}
+        checkout={selectedBookCheckout}
         open={!!selectedBook} 
-        onOpenChange={(isOpen) => !isOpen && setSelectedBook(null)}
+        onOpenChange={(isOpen) => !isOpen && handleCloseDialog()}
         onSuccessfulCheckout={handleSuccessfulCheckoutRequest}
         username={username}
         role="client"
@@ -123,7 +140,7 @@ export function ClientDashboard() {
               <CarouselContent>
                 {featuredBooks.map((book) => (
                   <CarouselItem key={book.id}>
-                    <Card className="overflow-hidden cursor-pointer" onClick={() => setSelectedBook(book)}>
+                    <Card className="overflow-hidden cursor-pointer" onClick={() => handleOpenDialog(book)}>
                       <div className="relative h-64 md:h-80 w-full">
                         <Image
                           src={`https://picsum.photos/1200/400?random=${book.id}`}
@@ -154,7 +171,7 @@ export function ClientDashboard() {
                   <h2 className="text-2xl font-bold font-headline">Search Results</h2>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                       {filteredBooks.map((book) => (
-                          <BookCard key={book.id} book={book} onClick={() => setSelectedBook(book)} />
+                          <BookCard key={book.id} book={book} onClick={() => handleOpenDialog(book)} />
                       ))}
                   </div>
                   {filteredBooks.length === 0 && (
@@ -171,7 +188,7 @@ export function ClientDashboard() {
                           {userCheckouts.map((book) =>
                               book.id ? (
                               <div key={`checkout-${book.id}`} className="w-40 min-w-40">
-                                  <BookCard book={book as BookType} onClick={() => setSelectedBook(book)}>
+                                  <BookCard book={book as BookType} onClick={() => handleOpenDialog(book)}>
                                   <div className="p-3 pt-0 text-xs">
                                       <Badge variant="secondary" className="bg-green-100 text-green-800">Aprobado</Badge>
                                       <p className="text-muted-foreground mt-1">Vence: {book.dueDate}</p>
@@ -183,7 +200,7 @@ export function ClientDashboard() {
                            {userRequests.map((book) =>
                               book.id ? (
                               <div key={`request-${book.id}`} className="w-40 min-w-40">
-                                  <BookCard book={book as BookType} onClick={() => setSelectedBook(book)}>
+                                  <BookCard book={book as BookType} onClick={() => handleOpenDialog(book)}>
                                   <div className="p-3 pt-0 text-xs">
                                       <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 animate-pulse">Pendiente</Badge>
                                   </div>
@@ -203,7 +220,7 @@ export function ClientDashboard() {
                           <div className="flex space-x-4 pb-4">
                           {books.map((book) => (
                               <div key={book.id} className="w-40 min-w-40">
-                                  <BookCard book={book} onClick={() => setSelectedBook(book)} />
+                                  <BookCard book={book} onClick={() => handleOpenDialog(book)} />
                               </div>
                           ))}
                           </div>
@@ -212,7 +229,7 @@ export function ClientDashboard() {
                   </section>
 
                   <section id="recommendations">
-                      <Recommendations onBookSelect={setSelectedBook} />
+                      <Recommendations onBookSelect={handleOpenDialog} />
                   </section>
               </>
           )}

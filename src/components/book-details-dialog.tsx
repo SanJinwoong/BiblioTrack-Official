@@ -85,7 +85,8 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
 
   const stockStatus = getStockStatus();
   const dueDateStatus = getDueDateStatus();
-  const isRequest = checkout?.status === 'pending';
+  const isRequestByThisUser = checkout?.status === 'pending' && checkout?.userId === username;
+  const isPendingRequestForLibrarian = checkout?.status === 'pending';
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -119,12 +120,22 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
               />
             ) : (
               <>
-                {isRequest && role === 'librarian' && (
+                {isPendingRequestForLibrarian && role === 'librarian' && (
                     <div className="mb-4 flex items-center p-3 rounded-md bg-blue-50 text-blue-800 border border-blue-200">
                         <Bell className="h-5 w-5 mr-3 shrink-0" />
                         <div>
                             <h4 className="font-bold">Solicitud Pendiente</h4>
                             <p className="text-sm">El usuario <strong>{checkout.userId}</strong> ha solicitado este libro. Fecha de entrega propuesta: {checkout.dueDate}.</p>
+                        </div>
+                   </div>
+                )}
+                
+                {isRequestByThisUser && role === 'client' && (
+                     <div className="mb-4 flex items-center p-3 rounded-md bg-yellow-50 text-yellow-800 border border-yellow-200">
+                        <Bell className="h-5 w-5 mr-3 shrink-0 animate-pulse" />
+                        <div>
+                            <h4 className="font-bold">Solicitud Pendiente</h4>
+                            <p className="text-sm">Tu solicitud está pendiente de aprobación por el bibliotecario. Se te notificará cuando sea aprobada.</p>
                         </div>
                    </div>
                 )}
@@ -174,18 +185,18 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
           
           {!showCheckoutForm && (
             <DialogFooter className="p-6 border-t bg-background">
-                {role === 'librarian' && isRequest && (
+                {role === 'librarian' && isPendingRequestForLibrarian && (
                      <Button type="button" disabled={book.stock === 0} onClick={handleApprove}>
                         <Check className="mr-2 h-4 w-4" />
                         Aprobar Préstamo
                     </Button>
                 )}
-                {role === 'librarian' && !isRequest && (
+                {role === 'librarian' && !isPendingRequestForLibrarian && (
                     <Button type="button" disabled={book.stock === 0} onClick={() => setShowCheckoutForm(true)}>
                         Realizar Préstamo Directo
                     </Button>
                 )}
-                {role === 'client' && (
+                {role === 'client' && !isRequestByThisUser && (
                     <Button type="button" disabled={book.stock === 0} onClick={() => setShowCheckoutForm(true)}>
                         Solicitar Préstamo
                     </Button>
