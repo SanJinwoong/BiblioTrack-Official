@@ -42,9 +42,16 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
       </CardHeader>
       <CardContent className="flex flex-col flex-grow p-3">
         <div className="flex-grow">
-            <CardTitle className="font-headline text-sm mb-1 line-clamp-2 flex items-center">
-              <span className="truncate">{book.title}</span>
-              {isApproved && <Check className="ml-1 h-4 w-4 text-green-600 shrink-0" />}
+            <CardTitle className="font-headline text-sm mb-1 line-clamp-2 flex items-start">
+              <span className="truncate pt-px">{book.title}</span>
+              {isApproved && (
+                 <div className="ml-1.5 shrink-0 relative flex items-center justify-center h-4 w-4">
+                    <svg className="absolute h-full w-full text-primary" fill="currentColor" viewBox="0 0 18 18">
+                        <path d="M18 7.375a1.446 1.446 0 00-1.06-1.06L13.438 5.62l-1.031-3.407a1.446 1.446 0 00-2.782 0L8.594 5.62l-3.5.694a1.446 1.446 0 00-1.06 1.06L3.34 9.125l-2.094 2.812a1.446 1.446 0 00.375 2.031l2.844 2.063.694 3.5a1.446 1.446 0 002.03.938l3.407-1.032 3.407 1.032a1.446 1.446 0 002.03-.938l.695-3.5 2.844-2.062a1.446 1.446 0 00.375-2.031L14.66 9.125l.687-1.75z"></path>
+                    </svg>
+                    <Check className="relative h-3 w-3 text-primary-foreground" strokeWidth={4} />
+                </div>
+              )}
             </CardTitle>
             <CardDescription className="text-xs line-clamp-1">{book.author}</CardDescription>
         </div>
