@@ -18,9 +18,10 @@ interface BookCardProps {
   className?: string;
   onClick?: () => void;
   isApproved?: boolean;
+  isPending?: boolean;
 }
 
-export function BookCard({ book, children, className, onClick, isApproved = false }: BookCardProps) {
+export function BookCard({ book, children, className, onClick, isApproved = false, isPending = false }: BookCardProps) {
   const isAvailable = book.stock > 0;
 
   return (
@@ -55,7 +56,7 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
             </CardTitle>
             <CardDescription className="text-xs line-clamp-1">{book.author}</CardDescription>
         </div>
-        {!isApproved && (
+        {!isApproved && !isPending && (
           <div className="mt-2">
               <Badge 
                   variant={isAvailable ? 'default' : 'secondary'} 

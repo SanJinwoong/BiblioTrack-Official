@@ -215,7 +215,7 @@ export function ClientDashboard() {
                            {userRequests.map((book) =>
                               book.id ? (
                               <div key={`request-${book.id}`} className="w-40 min-w-40">
-                                  <BookCard book={book as BookType} onClick={() => handleOpenDialog(book as BookType)}>
+                                  <BookCard book={book as BookType} onClick={() => handleOpenDialog(book as BookType)} isPending={true}>
                                   <div className="p-3 pt-0 text-xs">
                                       <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 animate-pulse">Pendiente</Badge>
                                   </div>
