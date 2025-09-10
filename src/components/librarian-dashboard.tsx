@@ -17,9 +17,22 @@ import { UserDetailsTooltip } from './user-details-tooltip';
 import { useToast } from '@/hooks/use-toast';
 
 export function LibrarianDashboard() {
-  const [books, setBooks] = useState<BookType[]>(initialBooks);
-  const [checkouts, setCheckouts] = useState<Checkout[]>(initialCheckouts);
-  const [checkoutRequests, setCheckoutRequests] = useState<Checkout[]>(initialCheckoutRequests);
+  // Initialize state directly from localStorage to prevent race conditions
+  const [books, setBooks] = useState<BookType[]>(() => {
+    if (typeof window === 'undefined') return initialBooks;
+    const storedBooks = localStorage.getItem('books');
+    return storedBooks ? JSON.parse(storedBooks) : initialBooks;
+  });
+  const [checkouts, setCheckouts] = useState<Checkout[]>(() => {
+    if (typeof window === 'undefined') return initialCheckouts;
+    const storedCheckouts = localStorage.getItem('checkouts');
+    return storedCheckouts ? JSON.parse(storedCheckouts) : initialCheckouts;
+  });
+  const [checkoutRequests, setCheckoutRequests] = useState<Checkout[]>(() => {
+    if (typeof window === 'undefined') return initialCheckoutRequests;
+    const storedCheckoutRequests = localStorage.getItem('checkoutRequests');
+    return storedCheckoutRequests ? JSON.parse(storedCheckoutRequests) : initialCheckoutRequests;
+  });
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredBooks, setFilteredBooks] = useState<BookType[]>(books);
@@ -31,15 +44,6 @@ export function LibrarianDashboard() {
   useEffect(() => {
     const storedUsername = localStorage.getItem('userUsername') || '';
     setUsername(storedUsername);
-
-    // Load state from localStorage or use initial data
-    const storedBooks = localStorage.getItem('books');
-    const storedCheckouts = localStorage.getItem('checkouts');
-    const storedCheckoutRequests = localStorage.getItem('checkoutRequests');
-    
-    setBooks(storedBooks ? JSON.parse(storedBooks) : initialBooks);
-    setCheckouts(storedCheckouts ? JSON.parse(storedCheckouts) : initialCheckouts);
-    setCheckoutRequests(storedCheckoutRequests ? JSON.parse(storedCheckoutRequests) : initialCheckoutRequests);
   }, []);
 
   // Persist state to localStorage whenever it changes

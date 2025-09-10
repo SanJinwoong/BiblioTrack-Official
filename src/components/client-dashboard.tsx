@@ -24,9 +24,22 @@ export function ClientDashboard() {
   const [username, setUsername] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   
-  const [books, setBooks] = useState<BookType[]>(initialBooks);
-  const [checkouts, setCheckouts] = useState<Checkout[]>([]);
-  const [checkoutRequests, setCheckoutRequests] = useState<Checkout[]>([]);
+  // Initialize state directly from localStorage to prevent race conditions
+  const [books, setBooks] = useState<BookType[]>(() => {
+    if (typeof window === 'undefined') return initialBooks;
+    const storedBooks = localStorage.getItem('books');
+    return storedBooks ? JSON.parse(storedBooks) : initialBooks;
+  });
+  const [checkouts, setCheckouts] = useState<Checkout[]>(() => {
+    if (typeof window === 'undefined') return initialCheckouts;
+    const storedCheckouts = localStorage.getItem('checkouts');
+    return storedCheckouts ? JSON.parse(storedCheckouts) : initialCheckouts;
+  });
+  const [checkoutRequests, setCheckoutRequests] = useState<Checkout[]>(() => {
+    if (typeof window === 'undefined') return initialCheckoutRequests;
+    const storedCheckoutRequests = localStorage.getItem('checkoutRequests');
+    return storedCheckoutRequests ? JSON.parse(storedCheckoutRequests) : initialCheckoutRequests;
+  });
 
   const [filteredBooks, setFilteredBooks] = useState<BookType[]>(books);
   const [selectedBook, setSelectedBook] = useState<BookType | null>(null);
@@ -36,16 +49,6 @@ export function ClientDashboard() {
   useEffect(() => {
     const storedUsername = localStorage.getItem('userUsername') || '';
     setUsername(storedUsername);
-
-    // Load state from localStorage or use initial data
-    const storedCheckouts = localStorage.getItem('checkouts');
-    const storedCheckoutRequests = localStorage.getItem('checkoutRequests');
-    const storedBooks = localStorage.getItem('books');
-
-    setCheckouts(storedCheckouts ? JSON.parse(storedCheckouts) : initialCheckouts);
-    setCheckoutRequests(storedCheckoutRequests ? JSON.parse(storedCheckoutRequests) : initialCheckoutRequests);
-    setBooks(storedBooks ? JSON.parse(storedBooks) : initialBooks);
-
   }, []);
 
   // Persist state to localStorage whenever it changes
@@ -81,7 +84,6 @@ export function ClientDashboard() {
     };
     const updatedRequests = [...checkoutRequests, newRequest];
     setCheckoutRequests(updatedRequests);
-    localStorage.setItem('checkoutRequests', JSON.stringify(updatedRequests));
   };
   
   const handleOpenDialog = (book: BookType) => {
