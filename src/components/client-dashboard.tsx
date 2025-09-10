@@ -25,8 +25,8 @@ export function ClientDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   
   const [books, setBooks] = useState<BookType[]>(initialBooks);
-  const [checkouts, setCheckouts] = useState<Checkout[]>(initialCheckouts);
-  const [checkoutRequests, setCheckoutRequests] = useState<Checkout[]>(initialCheckoutRequests);
+  const [checkouts, setCheckouts] = useState<Checkout[]>([]);
+  const [checkoutRequests, setCheckoutRequests] = useState<Checkout[]>([]);
 
   const [filteredBooks, setFilteredBooks] = useState<BookType[]>(books);
   const [selectedBook, setSelectedBook] = useState<BookType | null>(null);
@@ -34,7 +34,31 @@ export function ClientDashboard() {
   useEffect(() => {
     const storedUsername = localStorage.getItem('userUsername') || '';
     setUsername(storedUsername);
+
+    // Load state from localStorage or use initial data
+    const storedCheckouts = localStorage.getItem('checkouts');
+    const storedCheckoutRequests = localStorage.getItem('checkoutRequests');
+    const storedBooks = localStorage.getItem('books');
+
+    setCheckouts(storedCheckouts ? JSON.parse(storedCheckouts) : initialCheckouts);
+    setCheckoutRequests(storedCheckoutRequests ? JSON.parse(storedCheckoutRequests) : initialCheckoutRequests);
+    setBooks(storedBooks ? JSON.parse(storedBooks) : initialBooks);
+
   }, []);
+
+  // Persist state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('checkouts', JSON.stringify(checkouts));
+  }, [checkouts]);
+
+  useEffect(() => {
+    localStorage.setItem('checkoutRequests', JSON.stringify(checkoutRequests));
+  }, [checkoutRequests]);
+
+  useEffect(() => {
+    localStorage.setItem('books', JSON.stringify(books));
+  }, [books]);
+
 
   useEffect(() => {
     const results = books.filter(
