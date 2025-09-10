@@ -17,7 +17,7 @@ import { UserDetailsTooltip } from './user-details-tooltip';
 import { useToast } from '@/hooks/use-toast';
 
 export function LibrarianDashboard() {
-  const [books, setBooks] = useState<BookType[]>([]);
+  const [books, setBooks] = useState<BookType[]>(initialBooks);
   const [checkouts, setCheckouts] = useState<Checkout[]>([]);
   const [checkoutRequests, setCheckoutRequests] = useState<Checkout[]>([]);
 
