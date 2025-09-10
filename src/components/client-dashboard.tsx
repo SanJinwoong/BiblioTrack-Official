@@ -24,21 +24,35 @@ export function ClientDashboard() {
   const [username, setUsername] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Initialize state directly from localStorage to prevent race conditions
   const [books, setBooks] = useState<BookType[]>(() => {
     if (typeof window === 'undefined') return initialBooks;
-    const storedBooks = localStorage.getItem('books');
-    return storedBooks ? JSON.parse(storedBooks) : initialBooks;
+    try {
+      const storedBooks = localStorage.getItem('books');
+      return storedBooks ? JSON.parse(storedBooks) : initialBooks;
+    } catch (error) {
+      console.error("Failed to parse books from localStorage", error);
+      return initialBooks;
+    }
   });
   const [checkouts, setCheckouts] = useState<Checkout[]>(() => {
     if (typeof window === 'undefined') return initialCheckouts;
-    const storedCheckouts = localStorage.getItem('checkouts');
-    return storedCheckouts ? JSON.parse(storedCheckouts) : initialCheckouts;
+    try {
+      const storedCheckouts = localStorage.getItem('checkouts');
+      return storedCheckouts ? JSON.parse(storedCheckouts) : initialCheckouts;
+    } catch (error) {
+      console.error("Failed to parse checkouts from localStorage", error);
+      return initialCheckouts;
+    }
   });
   const [checkoutRequests, setCheckoutRequests] = useState<Checkout[]>(() => {
     if (typeof window === 'undefined') return initialCheckoutRequests;
-    const storedCheckoutRequests = localStorage.getItem('checkoutRequests');
-    return storedCheckoutRequests ? JSON.parse(storedCheckoutRequests) : initialCheckoutRequests;
+    try {
+      const storedCheckoutRequests = localStorage.getItem('checkoutRequests');
+      return storedCheckoutRequests ? JSON.parse(storedCheckoutRequests) : initialCheckoutRequests;
+    } catch (error) {
+      console.error("Failed to parse checkoutRequests from localStorage", error);
+      return initialCheckoutRequests;
+    }
   });
 
   const [filteredBooks, setFilteredBooks] = useState<BookType[]>(books);
@@ -88,8 +102,8 @@ export function ClientDashboard() {
   
   const handleOpenDialog = (book: BookType) => {
     setSelectedBook(book);
-    const checkout = checkouts.find(c => c.bookId === book.id && c.userId === username);
-    const request = checkoutRequests.find(r => r.bookId === book.id && r.userId === username);
+    const checkout = checkouts.find(c => c.bookId === book.id && c.userId === username && c.status === 'approved');
+    const request = checkoutRequests.find(r => r.bookId === book.id && r.userId === username && r.status === 'pending');
     setSelectedBookCheckout(checkout || request || null);
   };
 
@@ -190,9 +204,8 @@ export function ClientDashboard() {
                           {userCheckouts.map((book) =>
                               book.id ? (
                               <div key={`checkout-${book.id}`} className="w-40 min-w-40">
-                                  <BookCard book={book as BookType} onClick={() => handleOpenDialog(book)}>
+                                  <BookCard book={book as BookType} onClick={() => handleOpenDialog(book as BookType)} isApproved={true}>
                                   <div className="p-3 pt-0 text-xs">
-                                      <Badge variant="secondary" className="bg-green-100 text-green-800">Aprobado</Badge>
                                       <p className="text-muted-foreground mt-1">Vence: {book.dueDate}</p>
                                   </div>
                                   </BookCard>
@@ -202,7 +215,7 @@ export function ClientDashboard() {
                            {userRequests.map((book) =>
                               book.id ? (
                               <div key={`request-${book.id}`} className="w-40 min-w-40">
-                                  <BookCard book={book as BookType} onClick={() => handleOpenDialog(book)}>
+                                  <BookCard book={book as BookType} onClick={() => handleOpenDialog(book as BookType)}>
                                   <div className="p-3 pt-0 text-xs">
                                       <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 animate-pulse">Pendiente</Badge>
                                   </div>
