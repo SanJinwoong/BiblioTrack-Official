@@ -1,4 +1,4 @@
-export function UatLogo(props: React.SVGProps<SVGSVGElement>) {
+export function Library(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -10,10 +10,8 @@ export function UatLogo(props: React.SVGProps<SVGSVGElement>) {
       strokeLinejoin="round"
       {...props}
     >
-      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-      <path d="M12 22V12" />
-      <path d="M22 7v10" />
-      <path d="M2 7v10" />
+      <path d="M16 6h3a1 1 0 0 1 1 1v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a1 1 0 0 1 1-1h3" />
+      <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
     </svg>
   );
 }
