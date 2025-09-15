@@ -63,6 +63,25 @@ export function LibrarianDashboard() {
   useEffect(() => { localStorage.setItem('checkoutRequests', JSON.stringify(checkoutRequests)); }, [checkoutRequests]);
 
   useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'books' && e.newValue) {
+        setBooks(JSON.parse(e.newValue));
+      }
+      if (e.key === 'categories' && e.newValue) {
+        setCategories(JSON.parse(e.newValue));
+      }
+      if (e.key === 'checkouts' && e.newValue) {
+        setCheckouts(JSON.parse(e.newValue));
+      }
+      if (e.key === 'checkoutRequests' && e.newValue) {
+        setCheckoutRequests(JSON.parse(e.newValue));
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  useEffect(() => {
     const results = books.filter(book => {
       const matchesSearch =
         book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -340,3 +359,5 @@ export function LibrarianDashboard() {
     </>
   );
 }
+
+    

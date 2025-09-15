@@ -95,6 +95,25 @@ export function ClientDashboard() {
     localStorage.setItem('categories', JSON.stringify(categories));
   }, [categories]);
 
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'books' && e.newValue) {
+        setBooks(JSON.parse(e.newValue));
+      }
+      if (e.key === 'categories' && e.newValue) {
+        setCategories(JSON.parse(e.newValue));
+      }
+      if (e.key === 'checkouts' && e.newValue) {
+        setCheckouts(JSON.parse(e.newValue));
+      }
+      if (e.key === 'checkoutRequests' && e.newValue) {
+        setCheckoutRequests(JSON.parse(e.newValue));
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
 
   useEffect(() => {
     const results = books.filter(
@@ -283,4 +302,5 @@ export function ClientDashboard() {
   );
 }
 
+    
     
