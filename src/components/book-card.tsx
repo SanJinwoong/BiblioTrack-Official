@@ -10,7 +10,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import type { Book } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Check } from 'lucide-react';
+import { Check, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 
 interface BookCardProps {
   book: Book;
@@ -26,22 +26,25 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
   const getStockBadge = () => {
     if (book.stock > 2) {
       return (
-        <Badge className="text-xs bg-green-100 text-green-800">
+        <div className="inline-flex items-center rounded-md bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800">
+          <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
           Disponible
-        </Badge>
+        </div>
       );
     }
     if (book.stock > 0) {
       return (
-        <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-200">
-          Disponible
-        </Badge>
+        <div className="inline-flex items-center rounded-md bg-orange-100 px-2.5 py-1 text-xs font-semibold text-orange-800">
+            <AlertTriangle className="mr-1.5 h-3.5 w-3.5" />
+            Disponible
+        </div>
       );
     }
     return (
-      <Badge variant="secondary" className="text-xs">
-        Agotado
-      </Badge>
+        <div className="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-800">
+            <XCircle className="mr-1.5 h-3.5 w-3.5" />
+            Agotado
+        </div>
     );
   };
 
