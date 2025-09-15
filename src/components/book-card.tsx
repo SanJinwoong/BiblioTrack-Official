@@ -26,7 +26,7 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
   const getStockBadge = () => {
     if (book.stock === 0) {
       return (
-        <Badge className={cn("text-xs font-bold", 'bg-gray-100 text-gray-800')}>
+        <Badge className={cn("text-xs font-bold", 'bg-gray-100 text-gray-600')}>
           Agotado
         </Badge>
       );
@@ -34,7 +34,7 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
     if (book.stock <= 3) {
       return (
         <Badge className={cn("text-xs font-bold", 'bg-yellow-100 text-yellow-800')}>
-          {`Quedan ${book.stock}`}
+          Disponible
         </Badge>
       );
     }
