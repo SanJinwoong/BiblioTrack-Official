@@ -20,30 +20,14 @@ import { DashboardHeader } from './dashboard-header';
 import { SettingsDialog } from './settings-dialog';
 
 export function LibrarianDashboard() {
-  const [books, setBooks] = useState<BookType[]>(() => {
-    if (typeof window === 'undefined') return initialBooks;
-    const storedBooks = localStorage.getItem('books');
-    return storedBooks ? JSON.parse(storedBooks) : initialBooks;
-  });
-  const [categories, setCategories] = useState<Category[]>(() => {
-    if (typeof window === 'undefined') return initialCategories;
-    const storedCategories = localStorage.getItem('categories');
-    return storedCategories ? JSON.parse(storedCategories) : initialCategories;
-  });
-  const [checkouts, setCheckouts] = useState<Checkout[]>(() => {
-    if (typeof window === 'undefined') return initialCheckouts;
-    const storedCheckouts = localStorage.getItem('checkouts');
-    return storedCheckouts ? JSON.parse(storedCheckouts) : initialCheckouts;
-  });
-  const [checkoutRequests, setCheckoutRequests] = useState<Checkout[]>(() => {
-    if (typeof window === 'undefined') return initialCheckoutRequests;
-    const storedCheckoutRequests = localStorage.getItem('checkoutRequests');
-    return storedCheckoutRequests ? JSON.parse(storedCheckoutRequests) : initialCheckoutRequests;
-  });
+  const [books, setBooks] = useState<BookType[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [checkouts, setCheckouts] = useState<Checkout[]>([]);
+  const [checkoutRequests, setCheckoutRequests] = useState<Checkout[]>([]);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [filteredBooks, setFilteredBooks] = useState<BookType[]>(books);
+  const [filteredBooks, setFilteredBooks] = useState<BookType[]>([]);
   const [selectedBook, setSelectedBook] = useState<BookType | null>(null);
   const [selectedCheckout, setSelectedCheckout] = useState<Checkout | null>(null);
   const [username, setUsername] = useState('');
@@ -51,11 +35,23 @@ export function LibrarianDashboard() {
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
   const [bookToEdit, setBookToEdit] = useState<BookType | null>(null);
   const { toast } = useToast();
-
+  
   useEffect(() => {
+    // This effect runs once on component mount to safely initialize state from localStorage.
+    const storedBooks = localStorage.getItem('books');
+    const storedCategories = localStorage.getItem('categories');
+    const storedCheckouts = localStorage.getItem('checkouts');
+    const storedCheckoutRequests = localStorage.getItem('checkoutRequests');
+    
+    setBooks(storedBooks ? JSON.parse(storedBooks) : initialBooks);
+    setCategories(storedCategories ? JSON.parse(storedCategories) : initialCategories);
+    setCheckouts(storedCheckouts ? JSON.parse(storedCheckouts) : initialCheckouts);
+    setCheckoutRequests(storedCheckoutRequests ? JSON.parse(storedCheckoutRequests) : initialCheckoutRequests);
+
     const storedUsername = localStorage.getItem('userUsername') || '';
     setUsername(storedUsername);
   }, []);
+
 
   useEffect(() => { localStorage.setItem('books', JSON.stringify(books)); }, [books]);
   useEffect(() => { localStorage.setItem('categories', JSON.stringify(categories)); }, [categories]);
@@ -178,7 +174,7 @@ export function LibrarianDashboard() {
           bookToEdit={bookToEdit}
           categories={categories}
         />
-        <SettingsDialog
+       <SettingsDialog
           open={isSettingsDialogOpen}
           onOpenChange={setIsSettingsDialogOpen}
           books={books}

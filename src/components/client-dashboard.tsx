@@ -25,55 +25,28 @@ export function ClientDashboard() {
   const [username, setUsername] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   
-  const [books, setBooks] = useState<BookType[]>(() => {
-    if (typeof window === 'undefined') return initialBooks;
-    try {
-      const storedBooks = localStorage.getItem('books');
-      return storedBooks ? JSON.parse(storedBooks) : initialBooks;
-    } catch (error) {
-      console.error("Failed to parse books from localStorage", error);
-      return initialBooks;
-    }
-  });
+  const [books, setBooks] = useState<BookType[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [checkouts, setCheckouts] = useState<Checkout[]>([]);
+  const [checkoutRequests, setCheckoutRequests] = useState<Checkout[]>([]);
 
-  const [categories, setCategories] = useState<Category[]>(() => {
-    if (typeof window === 'undefined') return initialCategories;
-    try {
-      const storedCategories = localStorage.getItem('categories');
-      return storedCategories ? JSON.parse(storedCategories) : initialCategories;
-    } catch (error) {
-      console.error("Failed to parse categories from localStorage", error);
-      return initialCategories;
-    }
-  });
-
-  const [checkouts, setCheckouts] = useState<Checkout[]>(() => {
-    if (typeof window === 'undefined') return initialCheckouts;
-    try {
-      const storedCheckouts = localStorage.getItem('checkouts');
-      return storedCheckouts ? JSON.parse(storedCheckouts) : initialCheckouts;
-    } catch (error) {
-      console.error("Failed to parse checkouts from localStorage", error);
-      return initialCheckouts;
-    }
-  });
-  const [checkoutRequests, setCheckoutRequests] = useState<Checkout[]>(() => {
-    if (typeof window === 'undefined') return initialCheckoutRequests;
-    try {
-      const storedCheckoutRequests = localStorage.getItem('checkoutRequests');
-      return storedCheckoutRequests ? JSON.parse(storedCheckoutRequests) : initialCheckoutRequests;
-    } catch (error) {
-      console.error("Failed to parse checkoutRequests from localStorage", error);
-      return initialCheckoutRequests;
-    }
-  });
-
-  const [filteredBooks, setFilteredBooks] = useState<BookType[]>(books);
+  const [filteredBooks, setFilteredBooks] = useState<BookType[]>([]);
   const [selectedBook, setSelectedBook] = useState<BookType | null>(null);
   const [selectedBookCheckout, setSelectedBookCheckout] = useState<Checkout | null>(null);
 
 
   useEffect(() => {
+    // This effect runs once on component mount to safely initialize state from localStorage.
+    const storedBooks = localStorage.getItem('books');
+    const storedCategories = localStorage.getItem('categories');
+    const storedCheckouts = localStorage.getItem('checkouts');
+    const storedCheckoutRequests = localStorage.getItem('checkoutRequests');
+    
+    setBooks(storedBooks ? JSON.parse(storedBooks) : initialBooks);
+    setCategories(storedCategories ? JSON.parse(storedCategories) : initialCategories);
+    setCheckouts(storedCheckouts ? JSON.parse(storedCheckouts) : initialCheckouts);
+    setCheckoutRequests(storedCheckoutRequests ? JSON.parse(storedCheckoutRequests) : initialCheckoutRequests);
+
     const storedUsername = localStorage.getItem('userUsername') || '';
     setUsername(storedUsername);
   }, []);
@@ -302,5 +275,4 @@ export function ClientDashboard() {
   );
 }
 
-    
     
