@@ -26,14 +26,14 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
   const getStockBadge = () => {
     if (book.stock === 0) {
       return (
-        <Badge className={cn("text-xs font-bold", 'bg-gray-500 text-gray-50')}>
+        <Badge className={cn("text-xs font-bold", 'bg-gray-100 text-gray-800')}>
           Agotado
         </Badge>
       );
     }
     if (book.stock <= 3) {
       return (
-        <Badge className={cn("text-xs font-bold", 'bg-yellow-500 text-yellow-900')}>
+        <Badge className={cn("text-xs font-bold", 'bg-yellow-400 text-white')}>
           {`Quedan ${book.stock}`}
         </Badge>
       );
