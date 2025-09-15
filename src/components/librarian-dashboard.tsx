@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AddBookDialog } from './add-book-dialog';
 import { DashboardHeader } from './dashboard-header';
 import { SettingsDialog } from './settings-dialog';
+import { isPast, parseISO } from 'date-fns';
 
 export function LibrarianDashboard() {
   const [books, setBooks] = useState<BookType[]>([]);
@@ -175,6 +176,10 @@ export function LibrarianDashboard() {
     toast({ title: '🗑️ Libro Eliminado', description: 'El libro ha sido eliminado del catálogo.' });
   };
 
+  const activeCheckouts = checkouts.filter(c => c.status === 'approved');
+  const overdueCheckoutsCount = activeCheckouts.filter(c => isPast(parseISO(c.dueDate))).length;
+
+
   return (
     <>
       <DashboardHeader onAddNewBook={handleOpenAddBookDialog} onSettingsClick={() => setIsSettingsDialogOpen(true)} />
@@ -218,7 +223,13 @@ export function LibrarianDashboard() {
                         <Badge variant="destructive" className="ml-2 animate-pulse">{checkoutRequests.length}</Badge>
                     )}
                 </TabsTrigger>
-                <TabsTrigger value="checkouts"><ListChecks className="mr-2 h-4 w-4" />Préstamos Activos</TabsTrigger>
+                <TabsTrigger value="checkouts">
+                  <ListChecks className="mr-2 h-4 w-4" />
+                  Préstamos Activos
+                  {overdueCheckoutsCount > 0 && (
+                      <Badge variant="destructive" className="ml-2 animate-pulse">{overdueCheckoutsCount}</Badge>
+                  )}
+                </TabsTrigger>
               </TabsList>
               
               <TabsContent value="search" className="mt-4">
@@ -325,9 +336,11 @@ export function LibrarianDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        {checkouts.filter(c => c.status === 'approved').map((checkout) => {
+                        {activeCheckouts.map((checkout) => {
                             const book = getBook(checkout.bookId);
                             if (!book) return null;
+
+                            const isOverdue = isPast(parseISO(checkout.dueDate));
                             
                             return (
                                 <BookCard key={`${checkout.userId}-${checkout.bookId}`} book={book} onClick={() => handleOpenDialog(book, checkout)}>
@@ -347,9 +360,12 @@ export function LibrarianDashboard() {
                                           </UserDetailsTooltip>
 
                                         </div>
-                                        <div className='flex items-center gap-2'>
-                                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                                          <p className="text-xs text-muted-foreground">Vence: {checkout.dueDate}</p>
+                                        <div className='flex items-center justify-between gap-2'>
+                                          <div className='flex items-center gap-2'>
+                                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                                            <p className="text-xs text-muted-foreground">Vence: {checkout.dueDate}</p>
+                                          </div>
+                                          {isOverdue && <Badge variant="destructive" className="animate-pulse">Vencido</Badge>}
                                         </div>
                                     </div>
                                 </BookCard>

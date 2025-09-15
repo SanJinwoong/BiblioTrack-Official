@@ -1,6 +1,7 @@
 
 import Image from 'next/image';
-import { differenceInDays, parseISO, isPast } from 'date-fns';
+import { differenceInDays, parseISO, isPast, formatDistanceToNowStrict } from 'date-fns';
+import { es } from 'date-fns/locale';
 import type { Book, Checkout } from '@/lib/types';
 import {
   Dialog,
@@ -81,11 +82,14 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
     const dueDate = parseISO(checkout.dueDate);
     const today = new Date();
     today.setHours(0,0,0,0);
+
+    if (isPast(dueDate)) {
+      const distance = formatDistanceToNowStrict(dueDate, { addSuffix: true, locale: es });
+      return { text: `Vencido (${distance})`, color: 'text-red-600 font-bold' };
+    }
+    
     const daysDiff = differenceInDays(dueDate, today);
 
-    if (isPast(dueDate) && daysDiff < 0) {
-      return { text: `Vencido por ${Math.abs(daysDiff)} día(s)`, color: 'text-red-600 font-bold' };
-    }
     if (daysDiff <= 3) {
         return { text: `Vence en ${daysDiff + 1} día(s)`, color: 'text-yellow-600 font-bold' };
     }
