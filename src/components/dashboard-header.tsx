@@ -21,7 +21,7 @@ export function DashboardHeader() {
   const [username, setUsername] = useState('');
 
   useEffect(() => {
-    setUsername(localStorage.getItem('userUsername') || 'usuario');
+    setUsername(localStorage.getItem('userUsername') || 'user');
   }, []);
 
   const handleLogout = () => {
@@ -36,7 +36,7 @@ export function DashboardHeader() {
         <div className="mr-4 flex">
           <Link href="/dashboard" className="flex items-center space-x-2">
             <Library className="h-8 w-8 text-primary" />
-            <span className="font-bold font-headline text-lg text-foreground">BiblioTrack UAT</span>
+            <span className="font-bold text-lg text-foreground">BiblioTrack</span>
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-4">
@@ -49,7 +49,7 @@ export function DashboardHeader() {
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">Mi Cuenta</p>
+                  <p className="text-sm font-medium leading-none">My Account</p>
                   <p className="text-xs leading-none text-muted-foreground">
                     {username}
                   </p>
@@ -58,7 +58,7 @@ export function DashboardHeader() {
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Cerrar Sesión</span>
+                <span>Log out</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
