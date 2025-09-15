@@ -146,11 +146,8 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
                 <div className="flex items-center space-x-2 my-4">
                   <span className="font-semibold text-sm">Disponibilidad:</span>
                   <Badge className={cn("text-xs font-bold", stockStatus.color)}>
-                    {stockStatus.text}
+                    {role === 'librarian' ? `${stockStatus.text} (${book.stock})` : stockStatus.text}
                   </Badge>
-                  {role === 'librarian' && (
-                    <span className='text-sm font-bold'>({book.stock})</span>
-                  )}
                 </div>
 
                 {checkout && checkout.status === 'approved' && (
