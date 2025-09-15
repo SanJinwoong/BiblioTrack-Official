@@ -10,10 +10,21 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { Book, Category } from '@/lib/types';
 import { Input } from './ui/input';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
@@ -109,10 +120,27 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
                                         <Edit className="h-4 w-4" />
                                         <span className="sr-only">Edit Book</span>
                                     </Button>
-                                    <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => onDeleteBook(book.id)}>
-                                        <Trash2 className="h-4 w-4" />
-                                        <span className="sr-only">Delete Book</span>
-                                    </Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="destructive" size="icon" className="h-8 w-8">
+                                                <Trash2 className="h-4 w-4" />
+                                                <span className="sr-only">Delete Book</span>
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    This action cannot be undone. This will permanently delete the book
+                                                    "{book.title}" and any associated checkout data.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => onDeleteBook(book.id)}>Continue</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 </div>
                             </div>
                         ))}
@@ -166,5 +194,3 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
     </Dialog>
   );
 }
-
-    

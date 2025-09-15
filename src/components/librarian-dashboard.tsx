@@ -140,13 +140,11 @@ export function LibrarianDashboard() {
   };
 
   const handleDeleteBook = (bookId: number) => {
-    if (window.confirm("Are you sure you want to delete this book? This action cannot be undone.")) {
-      setBooks(prev => prev.filter(b => b.id !== bookId));
-      // Also remove any checkouts or requests associated with this book
-      setCheckouts(prev => prev.filter(c => c.bookId !== bookId));
-      setCheckoutRequests(prev => prev.filter(r => r.bookId !== bookId));
-      toast({ title: '🗑️ Libro Eliminado', description: 'El libro ha sido eliminado del catálogo.' });
-    }
+    setBooks(prev => prev.filter(b => b.id !== bookId));
+    // Also remove any checkouts or requests associated with this book
+    setCheckouts(prev => prev.filter(c => c.bookId !== bookId));
+    setCheckoutRequests(prev => prev.filter(r => r.bookId !== bookId));
+    toast({ title: '🗑️ Libro Eliminado', description: 'El libro ha sido eliminado del catálogo.' });
   };
 
   return (
@@ -342,5 +340,3 @@ export function LibrarianDashboard() {
     </>
   );
 }
-
-    
