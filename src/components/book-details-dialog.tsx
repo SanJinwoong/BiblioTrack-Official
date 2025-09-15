@@ -57,13 +57,22 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
   }
 
   const getStockStatus = () => {
+    let text;
+    let color;
+
     if (book.stock === 0) {
-      return { text: 'Agotado', color: 'bg-gray-100 text-gray-600' };
+        text = 'Agotado';
+        color = 'bg-gray-100 text-gray-600';
+    } else {
+        text = 'Disponible';
+        color = book.stock <= 3 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-500 text-green-50';
     }
-    if (book.stock <= 3) {
-      return { text: 'Disponible', color: 'bg-yellow-100 text-yellow-800' };
+
+    if (role === 'librarian') {
+        text = `${text} ${book.stock}`;
     }
-    return { text: 'Disponible', color: 'bg-green-500 text-green-50' };
+    
+    return { text, color };
   };
 
   const getDueDateStatus = () => {
@@ -151,7 +160,7 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
                 <div className="flex items-center space-x-2 my-4">
                   <span className="font-semibold text-sm">Disponibilidad:</span>
                   <Badge className={cn("text-xs font-bold", stockStatus.color)}>
-                    {role === 'librarian' ? `${stockStatus.text} ${book.stock}` : stockStatus.text}
+                    {stockStatus.text}
                   </Badge>
                 </div>
 
