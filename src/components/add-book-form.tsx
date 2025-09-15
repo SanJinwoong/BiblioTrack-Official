@@ -15,11 +15,12 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Book } from '@/lib/types';
+import type { Book, Category } from '@/lib/types';
 import { ScrollArea } from './ui/scroll-area';
 import Image from 'next/image';
 import { Upload, Image as ImageIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required.'),
@@ -27,9 +28,9 @@ const formSchema = z.object({
   description: z.string().min(1, 'Description is required.'),
   coverUrl: z.string().optional(),
   coverFile: z.any().optional(),
-  genre: z.string().min(1, 'Genre is required.'),
+  category: z.string().min(1, 'Category is required.'),
   stock: z.coerce.number().int().min(0, 'Stock cannot be negative.'),
-}).refine(data => data.coverUrl || (data.coverFile && data.coverFile.length > 0), {
+}).refine(data => data.coverUrl || (data.coverFile && data.coverFile.length > 0) || data.category, {
   message: "You must provide a cover URL or upload a file.",
   path: ["coverUrl"],
 });
@@ -38,22 +39,27 @@ const formSchema = z.object({
 type FormValues = Omit<Book, 'id'>;
 
 interface AddBookFormProps {
-  onSuccess: (data: FormValues) => void;
+  bookToEdit?: Book | null;
+  categories: Category[];
+  onSuccess: (data: FormValues | Book) => void;
   onCancel: () => void;
   onFormDirtyChange: (isDirty: boolean) => void;
 }
 
-export function AddBookForm({ onSuccess, onCancel, onFormDirtyChange }: AddBookFormProps) {
+export function AddBookForm({ bookToEdit, categories, onSuccess, onCancel, onFormDirtyChange }: AddBookFormProps) {
     const [previewUrl, setPreviewUrl] = useState<string>('');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: bookToEdit ? {
+        ...bookToEdit,
+        coverFile: undefined,
+    } : {
       title: '',
       author: '',
       description: '',
       coverUrl: '',
-      genre: '',
+      category: '',
       stock: 1,
     },
   });
@@ -61,6 +67,12 @@ export function AddBookForm({ onSuccess, onCancel, onFormDirtyChange }: AddBookF
   const coverUrlValue = form.watch('coverUrl');
   const coverFileValue = form.watch('coverFile');
   const { isDirty } = form.formState;
+
+  useEffect(() => {
+    if (bookToEdit) {
+      setPreviewUrl(bookToEdit.coverUrl);
+    }
+  }, [bookToEdit]);
 
   useEffect(() => {
     onFormDirtyChange(isDirty);
@@ -72,6 +84,8 @@ export function AddBookForm({ onSuccess, onCancel, onFormDirtyChange }: AddBookF
         newPreviewUrl = URL.createObjectURL(coverFileValue[0]);
     } else if (coverUrlValue) {
         newPreviewUrl = coverUrlValue;
+    } else if (bookToEdit?.coverUrl) {
+        newPreviewUrl = bookToEdit.coverUrl;
     }
     setPreviewUrl(newPreviewUrl);
     
@@ -81,7 +95,7 @@ export function AddBookForm({ onSuccess, onCancel, onFormDirtyChange }: AddBookF
             URL.revokeObjectURL(newPreviewUrl);
         }
     };
-  }, [coverUrlValue, coverFileValue]);
+  }, [coverUrlValue, coverFileValue, bookToEdit?.coverUrl]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     let finalCoverUrl = values.coverUrl;
@@ -94,10 +108,16 @@ export function AddBookForm({ onSuccess, onCancel, onFormDirtyChange }: AddBookF
     
     const { coverFile, ...bookData } = values;
 
-    onSuccess({
-      ...bookData,
-      coverUrl: finalCoverUrl || '',
-    });
+    const finalData = {
+        ...bookData,
+        coverUrl: finalCoverUrl || '',
+    };
+
+    if(bookToEdit) {
+        onSuccess({ ...bookToEdit, ...finalData });
+    } else {
+        onSuccess(finalData);
+    }
 
     form.reset();
   }
@@ -111,7 +131,28 @@ export function AddBookForm({ onSuccess, onCancel, onFormDirtyChange }: AddBookF
             <FormField control={form.control} name="title" render={({ field }) => ( <FormItem> <FormLabel>Title</FormLabel> <FormControl><Input placeholder="The Great Gatsby" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
             <FormField control={form.control} name="author" render={({ field }) => ( <FormItem> <FormLabel>Author</FormLabel> <FormControl><Input placeholder="F. Scott Fitzgerald" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
             <FormField control={form.control} name="description" render={({ field }) => ( <FormItem> <FormLabel>Description</FormLabel> <FormControl><Textarea placeholder="A novel about the American dream..." {...field} rows={5} /></FormControl> <FormMessage /> </FormItem>)} />
-            <FormField control={form.control} name="genre" render={({ field }) => ( <FormItem> <FormLabel>Genre</FormLabel> <FormControl><Input placeholder="Classic, Fiction, etc." {...field} /></FormControl> <FormMessage /> </FormItem>)} />
+             <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {categories.map(cat => (
+                        <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField control={form.control} name="stock" render={({ field }) => ( <FormItem> <FormLabel>Stock</FormLabel> <FormControl><Input type="number" placeholder="5" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
             
             <FormField control={form.control} name="coverUrl" render={({ field }) => ( <FormItem> <FormLabel>Cover URL</FormLabel> <FormControl><Input placeholder="https://example.com/cover.jpg" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
@@ -167,7 +208,7 @@ export function AddBookForm({ onSuccess, onCancel, onFormDirtyChange }: AddBookF
                     Cancel
                 </Button>
                 <Button type="submit">
-                    Add Book
+                    {bookToEdit ? 'Update Book' : 'Add Book'}
                 </Button>
             </div>
         </div>

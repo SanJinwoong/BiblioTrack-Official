@@ -58,7 +58,7 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
             fill
             className="object-cover"
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 15vw"
-            data-ai-hint={`${book.genre} book cover`}
+            data-ai-hint={`${book.category} book cover`}
           />
         </div>
       </CardHeader>

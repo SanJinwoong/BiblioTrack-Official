@@ -1,5 +1,5 @@
 
-import type { Book, Checkout, User } from './types';
+import type { Book, Checkout, User, Category } from './types';
 
 export const users: User[] = [
     { 
@@ -44,6 +44,15 @@ export const users: User[] = [
     },
 ];
 
+export const categories: Category[] = [
+  { id: 'classic', name: 'Classic' },
+  { id: 'dystopian', name: 'Dystopian' },
+  { id: 'romance', name: 'Romance' },
+  { id: 'fantasy', name: 'Fantasy' },
+  { id: 'sci-fi', name: 'Sci-Fi' },
+  { id: 'action', name: 'Acción' },
+];
+
 export const books: Book[] = [
   {
     id: 1,
@@ -51,7 +60,7 @@ export const books: Book[] = [
     author: 'F. Scott Fitzgerald',
     description: 'A novel about the American dream.',
     coverUrl: 'https://picsum.photos/300/450?random=1',
-    genre: 'Classic',
+    category: 'Classic',
     stock: 5,
   },
   {
@@ -60,7 +69,7 @@ export const books: Book[] = [
     author: 'Harper Lee',
     description: 'A novel about justice and racism in the American South.',
     coverUrl: 'https://picsum.photos/300/450?random=2',
-    genre: 'Classic',
+    category: 'Classic',
     stock: 3,
   },
   {
@@ -69,7 +78,7 @@ export const books: Book[] = [
     author: 'George Orwell',
     description: 'A dystopian novel about totalitarianism.',
     coverUrl: 'https://picsum.photos/300/450?random=3',
-    genre: 'Dystopian',
+    category: 'Dystopian',
     stock: 2,
   },
   {
@@ -78,7 +87,7 @@ export const books: Book[] = [
     author: 'Jane Austen',
     description: 'A romantic novel of manners.',
     coverUrl: 'https://picsum.photos/300/450?random=4',
-    genre: 'Romance',
+    category: 'Romance',
     stock: 10,
   },
   {
@@ -87,7 +96,7 @@ export const books: Book[] = [
     author: 'J.R.R. Tolkien',
     description: 'A fantasy novel about the adventures of Bilbo Baggins.',
     coverUrl: 'https://picsum.photos/300/450?random=5',
-    genre: 'Fantasy',
+    category: 'Fantasy',
     stock: 1,
   },
   {
@@ -96,7 +105,7 @@ export const books: Book[] = [
     author: 'Frank Herbert',
     description: 'A science fiction novel set in a distant future amidst a feudal interstellar society.',
     coverUrl: 'https://picsum.photos/300/450?random=6',
-    genre: 'Sci-Fi',
+    category: 'Sci-Fi',
     stock: 8,
   },
   {
@@ -105,7 +114,7 @@ export const books: Book[] = [
     author: 'J.D. Salinger',
     description: 'A story about adolescent alienation and loss of innocence.',
     coverUrl: 'https://picsum.photos/300/450?random=7',
-    genre: 'Classic',
+    category: 'Classic',
     stock: 1,
   },
   {
@@ -114,7 +123,7 @@ export const books: Book[] = [
     author: 'Aldous Huxley',
     description: 'A dystopian novel which anticipates developments in reproductive technology, sleep-learning, and psychological manipulation.',
     coverUrl: 'https://picsum.photos/300/450?random=8',
-    genre: 'Dystopian',
+    category: 'Dystopian',
     stock: 4,
   },
 ];

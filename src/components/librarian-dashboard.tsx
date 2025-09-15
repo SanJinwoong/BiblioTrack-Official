@@ -2,11 +2,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { books as initialBooks, checkouts as initialCheckouts, users, checkoutRequests as initialCheckoutRequests } from '@/lib/data';
-import type { Book as BookType, Checkout, User as UserType } from '@/lib/types';
-import { Book, ListChecks, Search, User, Calendar, MoreHorizontal, Bell } from 'lucide-react';
+import { books as initialBooks, checkouts as initialCheckouts, users, checkoutRequests as initialCheckoutRequests, categories as initialCategories } from '@/lib/data';
+import type { Book as BookType, Checkout, User as UserType, Category } from '@/lib/types';
+import { Book, ListChecks, Search, User, Calendar, MoreHorizontal, Bell, BookCopy } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { BookCard } from '@/components/book-card';
 import { BookDetailsDialog } from './book-details-dialog';
@@ -17,13 +17,19 @@ import { UserDetailsTooltip } from './user-details-tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { AddBookDialog } from './add-book-dialog';
 import { DashboardHeader } from './dashboard-header';
+import { SettingsDialog } from './settings-dialog';
+import { Separator } from './ui/separator';
 
 export function LibrarianDashboard() {
-  // Initialize state directly from localStorage to prevent race conditions
   const [books, setBooks] = useState<BookType[]>(() => {
     if (typeof window === 'undefined') return initialBooks;
     const storedBooks = localStorage.getItem('books');
     return storedBooks ? JSON.parse(storedBooks) : initialBooks;
+  });
+  const [categories, setCategories] = useState<Category[]>(() => {
+    if (typeof window === 'undefined') return initialCategories;
+    const storedCategories = localStorage.getItem('categories');
+    return storedCategories ? JSON.parse(storedCategories) : initialCategories;
   });
   const [checkouts, setCheckouts] = useState<Checkout[]>(() => {
     if (typeof window === 'undefined') return initialCheckouts;
@@ -42,6 +48,8 @@ export function LibrarianDashboard() {
   const [selectedCheckout, setSelectedCheckout] = useState<Checkout | null>(null);
   const [username, setUsername] = useState('');
   const [isAddBookDialogOpen, setIsAddBookDialogOpen] = useState(false);
+  const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
+  const [bookToEdit, setBookToEdit] = useState<BookType | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -49,19 +57,10 @@ export function LibrarianDashboard() {
     setUsername(storedUsername);
   }, []);
 
-  // Persist state to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('books', JSON.stringify(books));
-  }, [books]);
-
-  useEffect(() => {
-    localStorage.setItem('checkouts', JSON.stringify(checkouts));
-  }, [checkouts]);
-
-  useEffect(() => {
-    localStorage.setItem('checkoutRequests', JSON.stringify(checkoutRequests));
-  }, [checkoutRequests]);
-
+  useEffect(() => { localStorage.setItem('books', JSON.stringify(books)); }, [books]);
+  useEffect(() => { localStorage.setItem('categories', JSON.stringify(categories)); }, [categories]);
+  useEffect(() => { localStorage.setItem('checkouts', JSON.stringify(checkouts)); }, [checkouts]);
+  useEffect(() => { localStorage.setItem('checkoutRequests', JSON.stringify(checkoutRequests)); }, [checkoutRequests]);
 
   useEffect(() => {
     setFilteredBooks(
@@ -69,7 +68,7 @@ export function LibrarianDashboard() {
         (book) =>
           book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
           book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          book.genre.toLowerCase().includes(searchTerm.toLowerCase())
+          book.category.toLowerCase().includes(searchTerm.toLowerCase())
       )
     );
   }, [searchTerm, books]);
@@ -90,85 +89,91 @@ export function LibrarianDashboard() {
   };
 
   const handleApproveRequest = (requestToApprove: Checkout) => {
-    // 1. Find the book and check stock
     const bookToCheckout = getBook(requestToApprove.bookId);
     if (!bookToCheckout || bookToCheckout.stock === 0) {
-      toast({
-        variant: 'destructive',
-        title: 'Error de aprobación',
-        description: `El libro "${bookToCheckout?.title}" no está disponible.`,
-      });
-      // Optional: remove the request if the book is gone
+      toast({ variant: 'destructive', title: 'Error de aprobación', description: `El libro "${bookToCheckout?.title}" no está disponible.` });
       setCheckoutRequests(prev => prev.filter(r => r.bookId !== requestToApprove.bookId || r.userId !== requestToApprove.userId));
       return;
     }
 
-    // 2. Decrement stock
-    const updatedBooks = books.map(b => 
-      b.id === requestToApprove.bookId ? { ...b, stock: b.stock - 1 } : b
-    );
+    const updatedBooks = books.map(b => b.id === requestToApprove.bookId ? { ...b, stock: b.stock - 1 } : b);
     setBooks(updatedBooks);
-
-    // 3. Move request from pending to approved checkouts
     const approvedCheckout: Checkout = { ...requestToApprove, status: 'approved' };
     setCheckouts(prev => [...prev, approvedCheckout]);
     setCheckoutRequests(prev => prev.filter(r => r.bookId !== requestToApprove.bookId || r.userId !== requestToApprove.userId));
     
     handleCloseDialog();
-    
-    toast({
-      title: '✅ Préstamo Aprobado',
-      description: `El préstamo de "${bookToCheckout.title}" a ${requestToApprove.userId} ha sido confirmado.`,
-    });
+    toast({ title: '✅ Préstamo Aprobado', description: `El préstamo de "${bookToCheckout.title}" a ${requestToApprove.userId} ha sido confirmado.` });
   };
 
   const handleSuccessfulCheckout = (bookId: number, checkoutData: {userId: string; dueDate: string}) => {
     const bookToCheckout = getBook(bookId);
      if (!bookToCheckout || bookToCheckout.stock === 0) {
-      toast({
-        variant: 'destructive',
-        title: 'Error de aprobación',
-        description: `El libro "${bookToCheckout?.title}" no está disponible.`,
-      });
+      toast({ variant: 'destructive', title: 'Error de aprobación', description: `El libro "${bookToCheckout?.title}" no está disponible.` });
       return;
     }
-
-    // 1. Decrement stock
-    const updatedBooks = books.map(b => 
-      b.id === bookId ? { ...b, stock: b.stock - 1 } : b
-    );
+    const updatedBooks = books.map(b => b.id === bookId ? { ...b, stock: b.stock - 1 } : b);
     setBooks(updatedBooks);
-
-    // 2. Add directly to approved checkouts
-    const newCheckout: Checkout = {
-      ...checkoutData,
-      bookId: bookId,
-      status: 'approved',
-    };
-    const updatedCheckouts = [...checkouts, newCheckout];
-    setCheckouts(updatedCheckouts);
+    const newCheckout: Checkout = { ...checkoutData, bookId: bookId, status: 'approved' };
+    setCheckouts(prev => [...prev, newCheckout]);
   };
   
   const handleAddNewBook = (newBookData: Omit<BookType, 'id'>) => {
-    const newBook: BookType = {
-      ...newBookData,
-      id: Math.max(...books.map(b => b.id), 0) + 1, // Generate a new ID
-    };
+    const newBook: BookType = { ...newBookData, id: Math.max(...books.map(b => b.id), 0) + 1 };
     setBooks(prev => [...prev, newBook]);
-    toast({
-      title: '📖 ¡Libro Añadido!',
-      description: `"${newBook.title}" ha sido añadido al catálogo.`,
-    });
+    toast({ title: '📖 ¡Libro Añadido!', description: `"${newBook.title}" ha sido añadido al catálogo.` });
   };
+
+  const handleUpdateBook = (updatedBook: BookType) => {
+    setBooks(prev => prev.map(b => b.id === updatedBook.id ? updatedBook : b));
+    toast({ title: '📘 ¡Libro Actualizado!', description: `"${updatedBook.title}" ha sido actualizado.` });
+  };
+  
+  const handleOpenAddBookDialog = () => {
+    setBookToEdit(null);
+    setIsAddBookDialogOpen(true);
+  };
+  
+  const handleOpenEditBookDialog = (book: BookType) => {
+    setBookToEdit(book);
+    setIsAddBookDialogOpen(true);
+  };
+
+  const handleDeleteBook = (bookId: number) => {
+    if (window.confirm("Are you sure you want to delete this book? This action cannot be undone.")) {
+      setBooks(prev => prev.filter(b => b.id !== bookId));
+      // Also remove any checkouts or requests associated with this book
+      setCheckouts(prev => prev.filter(c => c.bookId !== bookId));
+      setCheckoutRequests(prev => prev.filter(r => r.bookId !== bookId));
+      toast({ title: '🗑️ Libro Eliminado', description: 'El libro ha sido eliminado del catálogo.' });
+    }
+  };
+
+  const booksByCategory = categories.map(category => ({
+    ...category,
+    books: filteredBooks.filter(book => book.category === category.name)
+  })).filter(category => category.books.length > 0);
 
   return (
     <>
-      <DashboardHeader onAddNewBook={() => setIsAddBookDialogOpen(true)} />
+      <DashboardHeader onAddNewBook={handleOpenAddBookDialog} onSettingsClick={() => setIsSettingsDialogOpen(true)} />
       <div className="container mx-auto p-4 md:p-8">
         <AddBookDialog
           open={isAddBookDialogOpen}
           onOpenChange={setIsAddBookDialogOpen}
           onBookAdded={handleAddNewBook}
+          onBookUpdated={handleUpdateBook}
+          bookToEdit={bookToEdit}
+          categories={categories}
+        />
+        <SettingsDialog
+          open={isSettingsDialogOpen}
+          onOpenChange={setIsSettingsDialogOpen}
+          books={books}
+          categories={categories}
+          setCategories={setCategories}
+          onEditBook={handleOpenEditBookDialog}
+          onDeleteBook={handleDeleteBook}
         />
         <BookDetailsDialog 
             book={selectedBook} 
@@ -183,7 +188,7 @@ export function LibrarianDashboard() {
           <div className="space-y-6">
             <h1 className="text-3xl font-bold font-headline">Librarian Dashboard</h1>
             <Tabs defaultValue="catalog">
-              <TabsList className="grid w-full grid-cols-3 md:w-auto">
+              <TabsList className="grid w-full grid-cols-4 md:w-auto">
                 <TabsTrigger value="catalog"><Book className="mr-2 h-4 w-4" />Catálogo</TabsTrigger>
                 <TabsTrigger value="requests">
                     <Bell className="mr-2 h-4 w-4" />
@@ -193,33 +198,28 @@ export function LibrarianDashboard() {
                     )}
                 </TabsTrigger>
                 <TabsTrigger value="checkouts"><ListChecks className="mr-2 h-4 w-4" />Préstamos Activos</TabsTrigger>
+                <TabsTrigger value="search"><Search className="mr-2 h-4 w-4" />Buscar</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="catalog" className="mt-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="font-headline">Catálogo de la Biblioteca</CardTitle>
-                      <div className="relative w-full max-w-sm">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input
-                            placeholder="Buscar por título, autor, o género..."
-                            className="pl-10"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+              <TabsContent value="catalog" className="mt-4 space-y-8">
+                  {booksByCategory.length > 0 ? booksByCategory.map((category, index) => (
+                      <div key={category.id}>
+                        <h3 className="text-2xl font-bold font-headline mb-4">{category.name}</h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                            {category.books.map((book) => (
+                                <BookCard key={book.id} book={book} onClick={() => handleOpenDialog(book)} />
+                            ))}
+                        </div>
+                         {index < booksByCategory.length - 1 && <Separator className="mt-8"/>}
                       </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        {filteredBooks.map((book) => (
-                            <BookCard key={book.id} book={book} onClick={() => handleOpenDialog(book)} />
-                        ))}
-                    </div>
-                    {filteredBooks.length === 0 && (
-                        <p className="text-muted-foreground text-center py-8">No se encontraron libros para &quot;{searchTerm}&quot;.</p>
-                    )}
-                  </CardContent>
-                </Card>
+                  )) : (
+                    <div className="text-center py-16">
+                      <BookCopy className="mx-auto h-12 w-12 text-muted-foreground"/>
+                      <h3 className="mt-4 text-lg font-medium">No Books in Catalog</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">Get started by adding a book to the library.</p>
+                      <Button className="mt-4" onClick={handleOpenAddBookDialog}><PlusCircle className="mr-2 h-4 w-4" /> Add First Book</Button>
+                  </div>
+                  )}
               </TabsContent>
               
               <TabsContent value="requests" className="mt-4">
@@ -296,6 +296,33 @@ export function LibrarianDashboard() {
                     </div>
                     {checkouts.filter(c => c.status === 'approved').length === 0 && (
                         <p className="text-muted-foreground text-center py-8">No hay libros prestados actualmente.</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              <TabsContent value="search" className="mt-4">
+                 <Card>
+                  <CardHeader>
+                    <CardTitle className="font-headline">Buscar en el Catálogo</CardTitle>
+                     <CardDescription>Busca por título, autor o categoría.</CardDescription>
+                      <div className="relative w-full max-w-sm pt-2">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input
+                            placeholder="Buscar..."
+                            className="pl-10"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                      </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                        {filteredBooks.map((book) => (
+                            <BookCard key={book.id} book={book} onClick={() => handleOpenDialog(book)} />
+                        ))}
+                    </div>
+                    {filteredBooks.length === 0 && searchTerm && (
+                        <p className="text-muted-foreground text-center py-8">No se encontraron libros para &quot;{searchTerm}&quot;.</p>
                     )}
                   </CardContent>
                 </Card>

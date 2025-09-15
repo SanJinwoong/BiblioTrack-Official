@@ -9,20 +9,27 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { AddBookForm } from './add-book-form';
-import type { Book } from '@/lib/types';
+import type { Book, Category } from '@/lib/types';
 import { useState } from 'react';
 
 interface AddBookDialogProps {
+  bookToEdit?: Book | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onBookAdded: (book: Omit<Book, 'id'>) => void;
+  onBookUpdated: (book: Book) => void;
+  categories: Category[];
 }
 
-export function AddBookDialog({ open, onOpenChange, onBookAdded }: AddBookDialogProps) {
+export function AddBookDialog({ open, onOpenChange, onBookAdded, onBookUpdated, bookToEdit, categories }: AddBookDialogProps) {
   const [isFormDirty, setIsFormDirty] = useState(false);
   
-  const handleSuccess = (data: Omit<Book, 'id'>) => {
-    onBookAdded(data);
+  const handleSuccess = (data: Omit<Book, 'id'> | Book) => {
+    if ('id' in data) {
+      onBookUpdated(data);
+    } else {
+      onBookAdded(data);
+    }
     onOpenChange(false); // Close dialog on success
   };
 
@@ -34,7 +41,9 @@ export function AddBookDialog({ open, onOpenChange, onBookAdded }: AddBookDialog
       }
     } else {
       onOpenChange(isOpen);
-      if (!isOpen) setIsFormDirty(false);
+      if (!isOpen) {
+        setIsFormDirty(false)
+      };
     }
   }
 
@@ -42,13 +51,15 @@ export function AddBookDialog({ open, onOpenChange, onBookAdded }: AddBookDialog
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-4xl max-h-[80vh] flex flex-col p-0 overflow-hidden">
         <DialogHeader className="p-6 pb-4 border-b">
-          <DialogTitle className="font-headline text-2xl">Add New Book</DialogTitle>
+          <DialogTitle className="font-headline text-2xl">{bookToEdit ? 'Edit Book' : 'Add New Book'}</DialogTitle>
           <DialogDescription>
-            Fill in the fields to add a new book to the library catalog.
+            {bookToEdit ? 'Update the details for this book.' : 'Fill in the fields to add a new book to the library catalog.'}
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto">
            <AddBookForm 
+              bookToEdit={bookToEdit}
+              categories={categories}
               onSuccess={handleSuccess} 
               onCancel={() => handleOpenChange(false)}
               onFormDirtyChange={setIsFormDirty}

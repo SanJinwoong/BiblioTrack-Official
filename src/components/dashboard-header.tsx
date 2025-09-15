@@ -20,9 +20,10 @@ import { Library } from './icons/uat-logo';
 
 interface DashboardHeaderProps {
   onAddNewBook: () => void;
+  onSettingsClick: () => void;
 }
 
-export function DashboardHeader({ onAddNewBook }: DashboardHeaderProps) {
+export function DashboardHeader({ onAddNewBook, onSettingsClick }: DashboardHeaderProps) {
   const router = useRouter();
   const [username, setUsername] = useState('');
 
@@ -67,7 +68,7 @@ export function DashboardHeader({ onAddNewBook }: DashboardHeaderProps) {
                     <PlusCircle className="mr-2 h-5 w-5" />
                     <span>Add new book</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={onSettingsClick}>
                   <Settings className="mr-2 h-5 w-5" />
                   <span>Settings</span>
                 </DropdownMenuItem>

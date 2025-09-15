@@ -3,8 +3,8 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { books as initialBooks, checkouts as initialCheckouts, checkoutRequests as initialCheckoutRequests } from '@/lib/data';
-import type { Book as BookType, Checkout } from '@/lib/types';
+import { books as initialBooks, checkouts as initialCheckouts, checkoutRequests as initialCheckoutRequests, categories as initialCategories } from '@/lib/data';
+import type { Book as BookType, Checkout, Category } from '@/lib/types';
 import { BookCard } from './book-card';
 import { Recommendations } from './recommendations';
 import { Badge } from './ui/badge';
@@ -19,6 +19,7 @@ import {
 import { Card } from './ui/card';
 import { ClientHeader } from './client-header';
 import { BookDetailsDialog } from './book-details-dialog';
+import { Separator } from './ui/separator';
 
 export function ClientDashboard() {
   const [username, setUsername] = useState('');
@@ -34,6 +35,18 @@ export function ClientDashboard() {
       return initialBooks;
     }
   });
+
+  const [categories, setCategories] = useState<Category[]>(() => {
+    if (typeof window === 'undefined') return initialCategories;
+    try {
+      const storedCategories = localStorage.getItem('categories');
+      return storedCategories ? JSON.parse(storedCategories) : initialCategories;
+    } catch (error) {
+      console.error("Failed to parse categories from localStorage", error);
+      return initialCategories;
+    }
+  });
+
   const [checkouts, setCheckouts] = useState<Checkout[]>(() => {
     if (typeof window === 'undefined') return initialCheckouts;
     try {
@@ -77,6 +90,10 @@ export function ClientDashboard() {
   useEffect(() => {
     localStorage.setItem('books', JSON.stringify(books));
   }, [books]);
+
+  useEffect(() => {
+    localStorage.setItem('categories', JSON.stringify(categories));
+  }, [categories]);
 
 
   useEffect(() => {
@@ -130,6 +147,12 @@ export function ClientDashboard() {
 
 
   const featuredBooks = [...books].sort(() => 0.5 - Math.random()).slice(0, 5);
+  
+  const booksByCategory = categories.map(category => ({
+    ...category,
+    books: books.filter(book => book.category === category.name)
+  })).filter(category => category.books.length > 0);
+
 
   return (
     <>
@@ -163,7 +186,7 @@ export function ClientDashboard() {
                           alt={`Promotional image for ${book.title}`}
                           fill
                           className="object-cover"
-                          data-ai-hint={`${book.genre} landscape`}
+                          data-ai-hint={`${book.category} landscape`}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                         <div className="absolute bottom-0 left-0 p-6 md:p-8 text-white">
@@ -229,18 +252,24 @@ export function ClientDashboard() {
                       </section>
                   )}
 
-                  <section id="browse" className="space-y-4">
-                      <h2 className="text-2xl font-bold font-headline">Browse Catalog</h2>
-                      <ScrollArea>
+                  <section id="browse" className="space-y-8">
+                    <h2 className="text-2xl font-bold font-headline">Browse Catalog</h2>
+                    {booksByCategory.map((category, index) => (
+                      <div key={category.id}>
+                        <h3 className="text-xl font-semibold mb-4">{category.name}</h3>
+                        <ScrollArea>
                           <div className="flex space-x-4 pb-4">
-                          {books.map((book) => (
+                            {category.books.map((book) => (
                               <div key={book.id} className="w-40 min-w-40">
-                                  <BookCard book={book} onClick={() => handleOpenDialog(book)} />
+                                <BookCard book={book} onClick={() => handleOpenDialog(book)} />
                               </div>
-                          ))}
+                            ))}
                           </div>
                           <ScrollBar orientation="horizontal" />
-                      </ScrollArea>
+                        </ScrollArea>
+                        {index < booksByCategory.length - 1 && <Separator className="mt-8"/>}
+                      </div>
+                    ))}
                   </section>
 
                   <section id="recommendations">

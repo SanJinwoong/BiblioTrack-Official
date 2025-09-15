@@ -5,7 +5,7 @@ export interface Book {
   author: string;
   description: string;
   coverUrl: string;
-  genre: string;
+  category: string;
   stock: number;
 }
 
@@ -25,4 +25,9 @@ export interface User {
     phone?: string;
     email?: string;
     address?: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
 }
