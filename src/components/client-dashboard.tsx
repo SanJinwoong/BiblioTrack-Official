@@ -42,10 +42,19 @@ export function ClientDashboard() {
     const storedCheckouts = localStorage.getItem('checkouts');
     const storedCheckoutRequests = localStorage.getItem('checkoutRequests');
     
-    setBooks(storedBooks ? JSON.parse(storedBooks) : initialBooks);
-    setCategories(storedCategories ? JSON.parse(storedCategories) : initialCategories);
-    setCheckouts(storedCheckouts ? JSON.parse(storedCheckouts) : initialCheckouts);
-    setCheckoutRequests(storedCheckoutRequests ? JSON.parse(storedCheckoutRequests) : initialCheckoutRequests);
+    // If the number of books in the initial data is different from what's in storage,
+    // it implies the source data has been updated, so we should re-initialize storage.
+    if (storedBooks && JSON.parse(storedBooks).length !== initialBooks.length) {
+      setBooks(initialBooks);
+      setCategories(initialCategories);
+      setCheckouts(initialCheckouts);
+      setCheckoutRequests(initialCheckoutRequests);
+    } else {
+      setBooks(storedBooks ? JSON.parse(storedBooks) : initialBooks);
+      setCategories(storedCategories ? JSON.parse(storedCategories) : initialCategories);
+      setCheckouts(storedCheckouts ? JSON.parse(storedCheckouts) : initialCheckouts);
+      setCheckoutRequests(storedCheckoutRequests ? JSON.parse(storedCheckoutRequests) : initialCheckoutRequests);
+    }
 
     const storedUsername = localStorage.getItem('userUsername') || '';
     setUsername(storedUsername);
@@ -274,5 +283,7 @@ export function ClientDashboard() {
     </>
   );
 }
+
+    
 
     
