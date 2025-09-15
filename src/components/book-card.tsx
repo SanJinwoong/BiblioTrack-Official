@@ -33,7 +33,7 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
     }
     if (book.stock <= 3) {
       return (
-        <Badge className={cn("text-xs font-bold", 'bg-yellow-400 text-white')}>
+        <Badge className={cn("text-xs font-bold", 'bg-yellow-100 text-yellow-800')}>
           {`Quedan ${book.stock}`}
         </Badge>
       );
