@@ -40,17 +40,21 @@ export function DashboardHeader({ onAddNewBook, onSettingsClick }: DashboardHead
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card/80 backdrop-blur-sm">
       <div className="container flex h-16 items-center">
-        <div className="mr-4 flex">
+        <div className="mr-4 flex items-center">
           <Link href="/dashboard" className="flex items-center space-x-2">
             <Library className="h-8 w-8 text-primary" />
             <span className="font-bold text-lg text-foreground">BiblioTrack</span>
           </Link>
         </div>
-        <div className="flex flex-1 items-center justify-end space-x-2">
+        <div className="flex flex-1 items-center justify-end space-x-4">
+          <Button onClick={onAddNewBook}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add Book
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-12 w-12 rounded-full">
-                <User className="h-8 w-8" />
+              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                <User className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -64,18 +68,14 @@ export function DashboardHeader({ onAddNewBook, onSettingsClick }: DashboardHead
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-                <DropdownMenuItem onClick={onAddNewBook}>
-                    <PlusCircle className="mr-2 h-5 w-5" />
-                    <span>Add new book</span>
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={onSettingsClick}>
-                  <Settings className="mr-2 h-5 w-5" />
+                  <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="mr-2 h-5 w-5" />
+                <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>
             </DropdownMenuContent>

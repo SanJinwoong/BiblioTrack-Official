@@ -46,6 +46,10 @@ export function LibrarianDashboard() {
     // If the number of books in the initial data is different from what's in storage,
     // it implies the source data has been updated, so we should re-initialize storage.
     if (storedBooks && JSON.parse(storedBooks).length !== initialBooks.length) {
+      localStorage.setItem('books', JSON.stringify(initialBooks));
+      localStorage.setItem('categories', JSON.stringify(initialCategories));
+      localStorage.setItem('checkouts', JSON.stringify(initialCheckouts));
+      localStorage.setItem('checkoutRequests', JSON.stringify(initialCheckoutRequests));
       setBooks(initialBooks);
       setCategories(initialCategories);
       setCheckouts(initialCheckouts);
@@ -364,7 +368,3 @@ export function LibrarianDashboard() {
     </>
   );
 }
-
-    
-
-    
