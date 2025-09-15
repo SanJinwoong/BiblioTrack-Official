@@ -37,19 +37,19 @@ export function DashboardHeader() {
       <div className="container flex h-16 items-center">
         <div className="mr-4 flex">
           <Link href="/dashboard" className="flex items-center space-x-2">
-            <Library className="h-16 w-16 text-primary" />
+            <Library className="h-8 w-8 text-primary" />
             <span className="font-bold text-lg text-foreground">BiblioTrack</span>
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
             <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                <Bell className="h-5 w-5" />
+                <Bell className="h-6 w-6" />
                 <span className="absolute top-2 right-2 block h-2 w-2 rounded-full bg-red-500" />
             </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                <User className="h-5 w-5" />
+                <User className="h-6 w-6" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>

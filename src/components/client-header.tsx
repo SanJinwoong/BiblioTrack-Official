@@ -43,7 +43,7 @@ export function ClientHeader({ username, searchTerm, setSearchTerm }: ClientHead
       <div className="container flex h-16 items-center">
         <div className="mr-4 md:flex">
           <Link href="/dashboard" className="flex items-center space-x-2">
-            <Library className="h-16 w-16 text-primary" />
+            <Library className="h-8 w-8 text-primary" />
             <span className="hidden font-bold sm:inline-block text-lg text-foreground">
               BiblioTrack
             </span>
