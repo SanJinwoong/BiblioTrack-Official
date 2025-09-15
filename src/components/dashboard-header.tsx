@@ -52,7 +52,7 @@ export function DashboardHeader({ onAddNewBook, onSettingsClick }: DashboardHead
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                 <User className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
