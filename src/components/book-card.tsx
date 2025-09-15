@@ -22,7 +22,28 @@ interface BookCardProps {
 }
 
 export function BookCard({ book, children, className, onClick, isApproved = false, isPending = false }: BookCardProps) {
-  const isAvailable = book.stock > 0;
+
+  const getStockBadge = () => {
+    if (book.stock > 2) {
+      return (
+        <Badge className="text-xs bg-green-100 text-green-800">
+          Disponible ({book.stock})
+        </Badge>
+      );
+    }
+    if (book.stock > 0) {
+      return (
+        <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-200">
+          Poco stock ({book.stock})
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="secondary" className="text-xs">
+        Agotado
+      </Badge>
+    );
+  };
 
   return (
     <Card 
@@ -58,14 +79,7 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
         </div>
         {!isApproved && !isPending && (
           <div className="mt-2">
-              <Badge 
-                  variant={isAvailable ? 'default' : 'secondary'} 
-                  className={cn('text-xs', {
-                      'bg-green-500 text-green-50': isAvailable,
-                  })}
-              >
-                  {isAvailable ? 'Disponible' : 'Agotado'}
-              </Badge>
+              {getStockBadge()}
           </div>
         )}
       </CardContent>
