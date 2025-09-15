@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { books as initialBooks, checkouts as initialCheckouts, users, checkoutRequests as initialCheckoutRequests, categories as initialCategories } from '@/lib/data';
 import type { Book as BookType, Checkout, User as UserType, Category } from '@/lib/types';
-import { Book, ListChecks, Search, User, Calendar, MoreHorizontal, Bell, BookCopy } from 'lucide-react';
+import { Book, ListChecks, Search, User, Calendar, MoreHorizontal, Bell, BookCopy, PlusCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
