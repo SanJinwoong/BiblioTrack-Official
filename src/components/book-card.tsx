@@ -7,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import type { Book } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Check } from 'lucide-react';
@@ -26,14 +25,14 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
   const getStockBadge = () => {
     if (book.stock > 2) {
       return (
-        <div className="inline-flex items-center rounded-md bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800">
+        <div className="inline-flex items-center rounded-md bg-[#A3E6B1] px-2.5 py-1 text-xs font-semibold text-[#34A853]">
           Disponible
         </div>
       );
     }
     if (book.stock > 0) {
       return (
-        <div className="inline-flex items-center rounded-md bg-yellow-100 px-2.5 py-1 text-xs font-semibold text-yellow-800">
+        <div className="inline-flex items-center rounded-md bg-[#FCE7B2] px-2.5 py-1 text-xs font-semibold text-[#C6881F]">
             Disponible
         </div>
       );
