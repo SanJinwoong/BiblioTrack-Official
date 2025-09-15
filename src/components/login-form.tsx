@@ -84,13 +84,13 @@ export function LoginForm() {
 
   return (
     <>
-      <CardHeader className="px-0">
-        <CardTitle className="font-headline text-3xl">Inicia Sesión</CardTitle>
+      <CardHeader className="px-0 pt-0">
+        <CardTitle className="font-headline text-2xl">Iniciar Sesión</CardTitle>
         <CardDescription>
           Ingresa tus credenciales para acceder a tu cuenta.
         </CardDescription>
       </CardHeader>
-      <CardContent className="px-0">
+      <CardContent className="px-0 pb-0">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -119,7 +119,7 @@ export function LoginForm() {
                 </FormItem>
               )}
             />
-            <Button type="submit" size="lg" className="w-full mt-4 bg-primary hover:bg-primary/90">
+            <Button type="submit" size="lg" className="w-full mt-4 bg-accent text-accent-foreground hover:bg-accent/90">
               <LogIn className="mr-2 h-4 w-4" />
               Entrar
             </Button>

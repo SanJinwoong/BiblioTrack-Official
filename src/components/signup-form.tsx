@@ -139,18 +139,18 @@ export function SignUpForm() {
   if (!role) {
     return (
       <>
-        <CardHeader className="px-0">
-            <CardTitle className="font-headline text-3xl">Elige tu rol</CardTitle>
+        <CardHeader className="px-0 pt-0">
+            <CardTitle className="font-headline text-2xl">Elige tu Rol</CardTitle>
             <CardDescription>
             Dinos qué tipo de cuenta necesitas para empezar.
             </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col space-y-4 pt-6 px-0">
-            <Button onClick={() => setRole('client')} size="lg" className="w-full">
+        <CardContent className="flex flex-col space-y-4 pt-4 px-0 pb-0">
+            <Button onClick={() => setRole('client')} size="lg" className="w-full bg-primary hover:bg-primary/90">
                 <User className="mr-2 h-4 w-4" />
                 Soy Alumno
             </Button>
-            <Button onClick={() => setRole('librarian')} size="lg" variant="outline" className="w-full">
+            <Button onClick={() => setRole('librarian')} size="lg" variant="secondary" className="w-full">
                 <Library className="mr-2 h-4 w-4" />
                 Soy Bibliotecario
             </Button>
@@ -161,13 +161,13 @@ export function SignUpForm() {
 
   return (
     <>
-      <CardHeader className="px-0">
-        <CardTitle className="font-headline text-3xl">Crear una cuenta de {role === 'client' ? 'Alumno' : 'Bibliotecario'}</CardTitle>
+      <CardHeader className="px-0 pt-0">
+        <CardTitle className="font-headline text-2xl">Crear Cuenta de {role === 'client' ? 'Alumno' : 'Bibliotecario'}</CardTitle>
         <CardDescription>
           ¡Es rápido y fácil! Empieza a explorar la biblioteca ahora.
         </CardDescription>
       </CardHeader>
-      <CardContent className="px-0">
+      <CardContent className="px-0 pb-0">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {role === 'client' && (
@@ -234,12 +234,12 @@ export function SignUpForm() {
             />
             
             <div className="flex flex-col space-y-2 pt-4">
-                <Button type="submit" size="lg" className="w-full bg-primary hover:bg-primary/90">
-                <UserPlus className="mr-2 h-4 w-4" />
-                Crear mi cuenta
+                <Button type="submit" size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Crear mi cuenta
                 </Button>
                 <Button variant="link" size="sm" onClick={() => { form.reset(); setRole(null);}}>
-                    &larr; Volver a la selección de rol
+                    &larr; Volver
                 </Button>
             </div>
           </form>
