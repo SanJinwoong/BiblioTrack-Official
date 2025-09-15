@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, Settings, BookPlus, Bell } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -13,6 +14,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
 import { Library } from './icons/uat-logo';
 
@@ -39,7 +41,11 @@ export function DashboardHeader() {
             <span className="font-bold text-lg text-foreground">BiblioTrack</span>
           </Link>
         </div>
-        <div className="flex flex-1 items-center justify-end space-x-4">
+        <div className="flex flex-1 items-center justify-end space-x-2">
+            <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                <Bell className="h-5 w-5" />
+                <span className="absolute top-2 right-2 block h-2 w-2 rounded-full bg-red-500" />
+            </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-9 w-9 rounded-full">
@@ -55,6 +61,17 @@ export function DashboardHeader() {
                   </p>
                 </div>
               </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                <DropdownMenuItem>
+                    <BookPlus className="mr-2 h-4 w-4" />
+                    <span>Add new book</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
