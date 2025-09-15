@@ -34,7 +34,7 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
     if (book.stock <= 3) {
       return (
         <Badge className={cn("text-xs font-semibold", 'bg-yellow-100 text-yellow-800')}>
-          Pocos
+          Disponible
         </Badge>
       );
     }
@@ -69,7 +69,7 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
       </CardHeader>
       <CardContent className="flex flex-col flex-grow p-3">
         <div className="flex-grow">
-            <CardTitle className="font-bold text-sm mb-1 line-clamp-2">
+            <CardTitle className="font-semibold text-sm mb-1 line-clamp-2">
               {book.title}
             </CardTitle>
             <CardDescription className="text-xs line-clamp-1">{book.author}</CardDescription>
