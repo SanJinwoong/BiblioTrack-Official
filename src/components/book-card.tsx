@@ -27,14 +27,14 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
     if (book.stock > 2) {
       return (
         <Badge className="text-xs bg-green-100 text-green-800">
-          Disponible ({book.stock})
+          Disponible
         </Badge>
       );
     }
     if (book.stock > 0) {
       return (
         <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-200">
-          Poco stock ({book.stock})
+          Disponible
         </Badge>
       );
     }
