@@ -23,7 +23,7 @@ export default function AuthPage() {
   return (
     <main className="grid grid-cols-1 md:grid-cols-2 min-h-screen bg-background">
       {/* Left side: Form */}
-      <div className="flex flex-col items-center justify-center p-8 bg-card shadow-lg z-10">
+      <div className="flex flex-col items-center justify-center p-8 bg-background shadow-lg z-10">
         <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
           <div className="flex flex-col space-y-2 text-center">
             <div className="flex items-center justify-center space-x-2">
@@ -62,17 +62,17 @@ export default function AuthPage() {
       </div>
 
       {/* Right side: Image Carousel */}
-      <div className="hidden md:flex flex-col items-center justify-center bg-muted/50 p-8">
+      <div className="hidden md:flex flex-col items-center justify-center bg-primary p-8">
         <Carousel
           opts={{
             align: 'start',
             loop: true,
           }}
-          className="w-full max-w-sm"
+          className="w-full max-w-md"
         >
           <CarouselContent className="-ml-4">
             {books.map((book) => (
-              <CarouselItem key={book.id} className="pl-4 basis-2/3">
+              <CarouselItem key={book.id} className="pl-4 basis-1/2">
                 <Card className="overflow-hidden">
                   <CardContent className="flex flex-col items-center justify-center p-0">
                     <div className="w-full h-64 relative">
@@ -83,8 +83,8 @@ export default function AuthPage() {
                             className="rounded-t-lg object-cover"
                         />
                     </div>
-                    <div className="p-4 w-full text-center">
-                        <h3 className="font-semibold text-lg truncate">{book.title}</h3>
+                    <div className="p-4 w-full text-center bg-card">
+                        <h3 className="font-semibold font-headline text-lg truncate">{book.title}</h3>
                         <p className="text-sm text-muted-foreground">{book.author}</p>
                     </div>
                   </CardContent>
@@ -92,8 +92,8 @@ export default function AuthPage() {
               </CarouselItem>
             ))}
           </CarouselContent>
-          <CarouselPrevious className='-left-12' />
-          <CarouselNext className='-right-12' />
+          <CarouselPrevious className='-left-16' />
+          <CarouselNext className='-right-16' />
         </Carousel>
       </div>
     </main>

@@ -1,9 +1,18 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { PT_Sans, Literata } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const ptSans = PT_Sans({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: '--font-pt-sans',
+});
+const literata = Literata({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: '--font-literata',
+});
 
 export const metadata: Metadata = {
   title: "BiblioTrack",
@@ -17,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} antialiased min-h-screen bg-background`}>
+      <body className={`${ptSans.variable} ${literata.variable} font-body antialiased min-h-screen bg-background`}>
         {children}
         <Toaster />
       </body>
