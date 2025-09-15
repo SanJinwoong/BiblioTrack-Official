@@ -18,8 +18,6 @@ import { useToast } from '@/hooks/use-toast';
 import { AddBookDialog } from './add-book-dialog';
 import { DashboardHeader } from './dashboard-header';
 import { SettingsDialog } from './settings-dialog';
-import { Separator } from './ui/separator';
-import { cn } from '@/lib/utils';
 
 export function LibrarianDashboard() {
   const [books, setBooks] = useState<BookType[]>(() => {
@@ -344,3 +342,5 @@ export function LibrarianDashboard() {
     </>
   );
 }
+
+    
