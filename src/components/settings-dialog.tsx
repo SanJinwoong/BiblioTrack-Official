@@ -166,3 +166,5 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
     </Dialog>
   );
 }
+
+    
