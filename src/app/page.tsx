@@ -21,19 +21,21 @@ export default function AuthPage() {
   const [view, setView] = useState<'login' | 'signup'>('login');
 
   return (
-    <main className="grid grid-cols-1 md:grid-cols-2 min-h-screen bg-secondary/50">
+    <main className="grid grid-cols-1 md:grid-cols-2 min-h-screen bg-background">
       {/* Left side: Form */}
-      <div className="flex flex-col items-center justify-center p-8">
+      <div className="flex flex-col items-center justify-center p-8 bg-card shadow-lg z-10">
         <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
           <div className="flex flex-col space-y-2 text-center">
-            <Library className="mx-auto h-8 w-8" />
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {view === 'login' ? 'Welcome Back' : 'Create an Account'}
-            </h1>
+            <div className="flex items-center justify-center space-x-2">
+                <Library className="h-8 w-8 text-primary" />
+                <h1 className="text-2xl font-bold tracking-tight font-headline">
+                    BiblioTrack
+                </h1>
+            </div>
             <p className="text-sm text-muted-foreground">
               {view === 'login'
-                ? 'Enter your credentials to access your account'
-                : 'Enter your details to get started'}
+                ? 'Ingresa tus credenciales para acceder a tu cuenta.'
+                : 'Crea una cuenta para empezar a explorar.'}
             </p>
           </div>
 
@@ -42,16 +44,16 @@ export default function AuthPage() {
           <p className="px-8 text-center text-sm text-muted-foreground">
             {view === 'login' ? (
               <>
-                Don&apos;t have an account?{' '}
+                ¿No tienes una cuenta?{' '}
                 <Button variant="link" className="p-0 h-auto" onClick={() => setView('signup')}>
-                  Sign up
+                  Regístrate
                 </Button>
               </>
             ) : (
               <>
-                Already have an account?{' '}
+                ¿Ya tienes una cuenta?{' '}
                 <Button variant="link" className="p-0 h-auto" onClick={() => setView('login')}>
-                  Login
+                  Inicia Sesión
                 </Button>
               </>
             )}
@@ -60,7 +62,7 @@ export default function AuthPage() {
       </div>
 
       {/* Right side: Image Carousel */}
-      <div className="hidden md:flex flex-col items-center justify-center bg-primary p-8">
+      <div className="hidden md:flex flex-col items-center justify-center bg-muted/50 p-8">
         <Carousel
           opts={{
             align: 'start',
@@ -68,21 +70,21 @@ export default function AuthPage() {
           }}
           className="w-full max-w-sm"
         >
-          <CarouselContent>
+          <CarouselContent className="-ml-4">
             {books.map((book) => (
-              <CarouselItem key={book.id}>
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center p-6 space-y-4">
-                    <div className="w-48 h-64 relative">
+              <CarouselItem key={book.id} className="pl-4 basis-2/3">
+                <Card className="overflow-hidden">
+                  <CardContent className="flex flex-col items-center justify-center p-0">
+                    <div className="w-full h-64 relative">
                         <Image
                             src={book.coverUrl}
                             alt={`Cover of ${book.title}`}
                             fill
-                            className="rounded-md object-cover"
+                            className="rounded-t-lg object-cover"
                         />
                     </div>
-                    <div className="text-center">
-                        <h3 className="font-semibold text-lg">{book.title}</h3>
+                    <div className="p-4 w-full text-center">
+                        <h3 className="font-semibold text-lg truncate">{book.title}</h3>
                         <p className="text-sm text-muted-foreground">{book.author}</p>
                     </div>
                   </CardContent>

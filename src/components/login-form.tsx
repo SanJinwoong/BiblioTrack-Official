@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,12 +17,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { users } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 
@@ -83,49 +78,39 @@ export function LoginForm() {
   }
 
   return (
-    <>
-      <CardHeader className="px-0 pt-0">
-        <CardTitle className="font-headline text-2xl">Iniciar Sesión</CardTitle>
-        <CardDescription>
-          Ingresa tus credenciales para acceder a tu cuenta.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="px-0 pb-0">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="emailOrMatricula"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Correo Institucional o Usuario</FormLabel>
-                  <FormControl>
-                    <Input placeholder="a1234567890 o admin" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Contraseña</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" size="lg" className="w-full mt-4 bg-accent text-accent-foreground hover:bg-accent/90">
-              <LogIn className="mr-2 h-4 w-4" />
-              Entrar
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
-    </>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="emailOrMatricula"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Correo Institucional o Usuario</FormLabel>
+              <FormControl>
+                <Input placeholder="a1234567890 o admin" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Contraseña</FormLabel>
+              <FormControl>
+                <Input type="password" placeholder="••••••••" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit" size="lg" className="w-full mt-4">
+          <LogIn className="mr-2 h-4 w-4" />
+          Entrar
+        </Button>
+      </form>
+    </Form>
   );
 }
