@@ -10,6 +10,7 @@ import {
 import type { Book } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Check } from 'lucide-react';
+import { Badge } from './ui/badge';
 
 interface BookCardProps {
   book: Book;
@@ -23,24 +24,24 @@ interface BookCardProps {
 export function BookCard({ book, children, className, onClick, isApproved = false, isPending = false }: BookCardProps) {
 
   const getStockBadge = () => {
-    if (book.stock > 2) {
+    if (book.stock === 0) {
       return (
-        <div className="inline-flex items-center rounded-md bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800">
-          Disponible
-        </div>
+        <Badge className={cn("text-xs font-bold", 'bg-gray-500 text-gray-50')}>
+          Agotado
+        </Badge>
       );
     }
-    if (book.stock > 0) {
+    if (book.stock <= 3) {
       return (
-        <div className="inline-flex items-center rounded-md bg-yellow-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
-            Disponible
-        </div>
+        <Badge className={cn("text-xs font-bold", 'bg-yellow-500 text-yellow-900')}>
+          {`Quedan ${book.stock}`}
+        </Badge>
       );
     }
     return (
-        <div className="inline-flex items-center rounded-md bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-800">
-            Agotado
-        </div>
+      <Badge className={cn("text-xs font-bold", 'bg-green-500 text-green-50')}>
+        Disponible
+      </Badge>
     );
   };
 
