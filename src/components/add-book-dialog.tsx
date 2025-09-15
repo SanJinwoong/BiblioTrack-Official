@@ -26,7 +26,7 @@ export function AddBookDialog({ open, onOpenChange, onBookAdded }: AddBookDialog
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-headline text-2xl">Añadir Nuevo Libro</DialogTitle>
           <DialogDescription>

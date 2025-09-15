@@ -21,10 +21,15 @@ const formSchema = z.object({
   title: z.string().min(1, 'El título es obligatorio.'),
   author: z.string().min(1, 'El autor es obligatorio.'),
   description: z.string().min(1, 'La descripción es obligatoria.'),
-  coverUrl: z.string().url('Debe ser una URL válida.'),
+  coverUrl: z.string().optional(),
+  coverFile: z.any().optional(),
   genre: z.string().min(1, 'El género es obligatorio.'),
   stock: z.coerce.number().int().min(0, 'El stock no puede ser negativo.'),
+}).refine(data => data.coverUrl || data.coverFile, {
+  message: "Debe proporcionar una URL de portada o subir un archivo.",
+  path: ["coverUrl"],
 });
+
 
 type FormValues = Omit<Book, 'id'>;
 
@@ -46,8 +51,23 @@ export function AddBookForm({ onSuccess, onCancel }: AddBookFormProps) {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    onSuccess(values);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    let coverUrl = values.coverUrl;
+
+    if (values.coverFile && values.coverFile.length > 0) {
+      const file = values.coverFile[0];
+      // In a real app, you'd upload this to a storage service (like Firebase Storage)
+      // and get a URL back. For now, we'll use a local object URL for preview.
+      coverUrl = URL.createObjectURL(file);
+    }
+    
+    // We remove coverFile as it's not part of the Book type
+    const { coverFile, ...bookData } = values;
+
+    onSuccess({
+      ...bookData,
+      coverUrl: coverUrl || '', // Ensure coverUrl is not undefined
+    });
   }
 
   return (
@@ -58,7 +78,28 @@ export function AddBookForm({ onSuccess, onCancel }: AddBookFormProps) {
         <FormField control={form.control} name="description" render={({ field }) => ( <FormItem> <FormLabel>Descripción</FormLabel> <FormControl><Textarea placeholder="Una novela sobre el sueño americano..." {...field} /></FormControl> <FormMessage /> </FormItem>)} />
         <FormField control={form.control} name="genre" render={({ field }) => ( <FormItem> <FormLabel>Género</FormLabel> <FormControl><Input placeholder="Clásico" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
         <FormField control={form.control} name="stock" render={({ field }) => ( <FormItem> <FormLabel>Stock</FormLabel> <FormControl><Input type="number" placeholder="5" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
+        
         <FormField control={form.control} name="coverUrl" render={({ field }) => ( <FormItem> <FormLabel>URL de Portada</FormLabel> <FormControl><Input placeholder="https://ejemplo.com/portada.jpg" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
+
+        <div className="text-center text-sm text-muted-foreground my-2">o</div>
+
+        <FormField
+            control={form.control}
+            name="coverFile"
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Subir Portada (Archivo)</FormLabel>
+                    <FormControl>
+                        <Input 
+                            type="file"
+                            accept="image/png, image/jpeg, image/webp"
+                            onChange={(e) => field.onChange(e.target.files)}
+                         />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+            )}
+        />
         
         <div className='flex justify-end gap-2 pt-4'>
           <Button type="button" variant="ghost" onClick={onCancel}>
