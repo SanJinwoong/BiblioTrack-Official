@@ -47,9 +47,8 @@ export function DashboardHeader({ onAddNewBook, onSettingsClick }: DashboardHead
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
-          <Button onClick={onAddNewBook} variant="ghost" size="icon" className="h-10 w-10 rounded-full">
-              <PlusCircle className="h-5 w-5" />
-              <span className="sr-only">Add Book</span>
+           <Button onClick={onAddNewBook} className="rounded-full">
+              <PlusCircle className="mr-2 h-4 w-4" /> Add Book
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
