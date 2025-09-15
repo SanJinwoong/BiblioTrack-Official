@@ -148,6 +148,9 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
                   <Badge className={cn("text-xs font-bold", stockStatus.color)}>
                     {stockStatus.text}
                   </Badge>
+                  {role === 'librarian' && (
+                    <span className='text-sm font-bold'>({book.stock})</span>
+                  )}
                 </div>
 
                 {checkout && checkout.status === 'approved' && (
