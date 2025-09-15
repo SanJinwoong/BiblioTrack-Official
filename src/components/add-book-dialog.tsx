@@ -40,14 +40,14 @@ export function AddBookDialog({ open, onOpenChange, onBookAdded }: AddBookDialog
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[80vh] flex flex-col p-0">
+      <DialogContent className="sm:max-w-4xl max-h-[80vh] flex flex-col p-0 overflow-hidden">
         <DialogHeader className="p-6 pb-4 border-b">
           <DialogTitle className="font-headline text-2xl">Add New Book</DialogTitle>
           <DialogDescription>
             Fill in the fields to add a new book to the library catalog.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-y-auto">
            <AddBookForm 
               onSuccess={handleSuccess} 
               onCancel={() => handleOpenChange(false)}
