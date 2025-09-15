@@ -58,10 +58,10 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
 
   const getStockStatus = () => {
     if (book.stock === 0) {
-      return { text: 'Agotado', color: 'bg-gray-500 text-gray-50' };
+      return { text: 'Agotado', color: 'bg-gray-100 text-gray-600' };
     }
     if (book.stock <= 3) {
-      return { text: `Quedan ${book.stock}`, color: 'bg-yellow-500 text-yellow-900' };
+      return { text: 'Disponible', color: 'bg-yellow-100 text-yellow-800' };
     }
     return { text: 'Disponible', color: 'bg-green-500 text-green-50' };
   };
