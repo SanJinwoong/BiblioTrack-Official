@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { LogOut, User, Settings, BookPlus, Bell } from 'lucide-react';
+import { LogOut, User, Settings, PlusCircle, Bell } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -64,7 +64,7 @@ export function DashboardHeader() {
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
                 <DropdownMenuItem>
-                    <BookPlus className="mr-2 h-4 w-4" />
+                    <PlusCircle className="mr-2 h-4 w-4" />
                     <span>Add new book</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
