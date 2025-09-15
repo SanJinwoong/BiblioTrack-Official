@@ -25,20 +25,20 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
   const getStockBadge = () => {
     if (book.stock > 2) {
       return (
-        <div className="inline-flex items-center rounded-md bg-[#A3E6B1] px-2.5 py-1 text-xs font-semibold text-[#34A853]">
+        <div className="inline-flex items-center rounded-md bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800">
           Disponible
         </div>
       );
     }
     if (book.stock > 0) {
       return (
-        <div className="inline-flex items-center rounded-md bg-[#FCE7B2] px-2.5 py-1 text-xs font-semibold text-[#C6881F]">
+        <div className="inline-flex items-center rounded-md bg-yellow-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
             Disponible
         </div>
       );
     }
     return (
-        <div className="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-800">
+        <div className="inline-flex items-center rounded-md bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-800">
             Agotado
         </div>
     );
