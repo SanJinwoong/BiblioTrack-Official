@@ -85,7 +85,16 @@ export function CheckoutForm({ book, username, role, onSuccess, onCancel }: Chec
   });
 
   const handleUserLookup = (matricula: string) => {
-    if (!matricula) return;
+    if (!matricula) {
+        // Clear fields if matricula is empty
+        form.setValue('name', '');
+        form.setValue('curp', '');
+        form.setValue('phone', '');
+        form.setValue('email', '');
+        form.setValue('address', '');
+        return;
+    }
+    
     const clientUsername = `${matricula}@alumnos.uat.edu.mx`;
     const foundUser = users.find(u => u.username === clientUsername);
 
@@ -234,7 +243,7 @@ export function CheckoutForm({ book, username, role, onSuccess, onCancel }: Chec
                                 options={userOptions}
                                 value={field.value || ''}
                                 onChange={(value) => {
-                                    form.setValue('userId', value);
+                                    form.setValue('userId', value, { shouldValidate: true });
                                     handleUserLookup(value);
                                 }}
                                 placeholder="Busca o escribe una matrícula..."
