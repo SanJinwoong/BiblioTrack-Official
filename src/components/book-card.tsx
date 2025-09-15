@@ -33,7 +33,7 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
     }
     if (book.stock > 0) {
       return (
-        <div className="inline-flex items-center rounded-md bg-orange-100 px-2.5 py-1 text-xs font-semibold text-orange-800">
+        <div className="inline-flex items-center rounded-md bg-yellow-100 px-2.5 py-1 text-xs font-semibold text-yellow-800">
             Disponible
         </div>
       );
