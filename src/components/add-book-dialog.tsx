@@ -28,7 +28,7 @@ export function AddBookDialog({ open, onOpenChange, onBookAdded }: AddBookDialog
 
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen && isFormDirty) {
-      if (window.confirm("¿Estás seguro de que quieres cerrar? Los cambios no guardados se perderán.")) {
+      if (window.confirm("Are you sure you want to close? Unsaved changes will be lost.")) {
          onOpenChange(false);
          setIsFormDirty(false);
       }
@@ -42,9 +42,9 @@ export function AddBookDialog({ open, onOpenChange, onBookAdded }: AddBookDialog
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-4xl max-h-[80vh] flex flex-col p-0">
         <DialogHeader className="p-6 pb-4 border-b">
-          <DialogTitle className="font-headline text-2xl">Añadir Nuevo Libro</DialogTitle>
+          <DialogTitle className="font-headline text-2xl">Add New Book</DialogTitle>
           <DialogDescription>
-            Rellena los campos para añadir un nuevo libro al catálogo de la biblioteca.
+            Fill in the fields to add a new book to the library catalog.
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-hidden">

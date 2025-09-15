@@ -22,15 +22,15 @@ import { Upload, Image as ImageIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 const formSchema = z.object({
-  title: z.string().min(1, 'El título es obligatorio.'),
-  author: z.string().min(1, 'El autor es obligatorio.'),
-  description: z.string().min(1, 'La descripción es obligatoria.'),
+  title: z.string().min(1, 'Title is required.'),
+  author: z.string().min(1, 'Author is required.'),
+  description: z.string().min(1, 'Description is required.'),
   coverUrl: z.string().optional(),
   coverFile: z.any().optional(),
-  genre: z.string().min(1, 'El género es obligatorio.'),
-  stock: z.coerce.number().int().min(0, 'El stock no puede ser negativo.'),
+  genre: z.string().min(1, 'Genre is required.'),
+  stock: z.coerce.number().int().min(0, 'Stock cannot be negative.'),
 }).refine(data => data.coverUrl || (data.coverFile && data.coverFile.length > 0), {
-  message: "Debe proporcionar una URL de portada o subir un archivo.",
+  message: "You must provide a cover URL or upload a file.",
   path: ["coverUrl"],
 });
 
@@ -108,22 +108,22 @@ export function AddBookForm({ onSuccess, onCancel, onFormDirtyChange }: AddBookF
         {/* Columna de Formulario */}
         <ScrollArea className="md:col-span-2 h-full pr-6">
           <div className="space-y-4">
-            <FormField control={form.control} name="title" render={({ field }) => ( <FormItem> <FormLabel>Título</FormLabel> <FormControl><Input placeholder="El Gran Gatsby" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
-            <FormField control={form.control} name="author" render={({ field }) => ( <FormItem> <FormLabel>Autor</FormLabel> <FormControl><Input placeholder="F. Scott Fitzgerald" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
-            <FormField control={form.control} name="description" render={({ field }) => ( <FormItem> <FormLabel>Descripción</FormLabel> <FormControl><Textarea placeholder="Una novela sobre el sueño americano..." {...field} rows={5} /></FormControl> <FormMessage /> </FormItem>)} />
-            <FormField control={form.control} name="genre" render={({ field }) => ( <FormItem> <FormLabel>Género</FormLabel> <FormControl><Input placeholder="Clásico, Ficción, etc." {...field} /></FormControl> <FormMessage /> </FormItem>)} />
+            <FormField control={form.control} name="title" render={({ field }) => ( <FormItem> <FormLabel>Title</FormLabel> <FormControl><Input placeholder="The Great Gatsby" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
+            <FormField control={form.control} name="author" render={({ field }) => ( <FormItem> <FormLabel>Author</FormLabel> <FormControl><Input placeholder="F. Scott Fitzgerald" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
+            <FormField control={form.control} name="description" render={({ field }) => ( <FormItem> <FormLabel>Description</FormLabel> <FormControl><Textarea placeholder="A novel about the American dream..." {...field} rows={5} /></FormControl> <FormMessage /> </FormItem>)} />
+            <FormField control={form.control} name="genre" render={({ field }) => ( <FormItem> <FormLabel>Genre</FormLabel> <FormControl><Input placeholder="Classic, Fiction, etc." {...field} /></FormControl> <FormMessage /> </FormItem>)} />
             <FormField control={form.control} name="stock" render={({ field }) => ( <FormItem> <FormLabel>Stock</FormLabel> <FormControl><Input type="number" placeholder="5" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
             
-            <FormField control={form.control} name="coverUrl" render={({ field }) => ( <FormItem> <FormLabel>URL de Portada</FormLabel> <FormControl><Input placeholder="https://ejemplo.com/portada.jpg" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
+            <FormField control={form.control} name="coverUrl" render={({ field }) => ( <FormItem> <FormLabel>Cover URL</FormLabel> <FormControl><Input placeholder="https://example.com/cover.jpg" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
             
-            <div className="text-center text-sm text-muted-foreground my-2">o</div>
+            <div className="text-center text-sm text-muted-foreground my-2">or</div>
             
             <FormField
                 control={form.control}
                 name="coverFile"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Subir Archivo de Portada</FormLabel>
+                        <FormLabel>Upload Cover File</FormLabel>
                         <FormControl>
                             <Input 
                                 type="file"
@@ -142,12 +142,12 @@ export function AddBookForm({ onSuccess, onCancel, onFormDirtyChange }: AddBookF
         {/* Columna de Vista Previa */}
         <div className="md:col-span-1 flex flex-col justify-between items-center space-y-4">
             <div className='w-full'>
-                <FormLabel>Vista Previa de la Portada</FormLabel>
+                <FormLabel>Cover Preview</FormLabel>
                 <div className="mt-2 w-full aspect-[3/4.5] rounded-md border border-dashed flex items-center justify-center bg-muted/50 overflow-hidden">
                 {previewUrl ? (
                     <Image
                         src={previewUrl}
-                        alt="Vista previa de la portada"
+                        alt="Cover preview"
                         width={300}
                         height={450}
                         className="object-cover w-full h-full"
@@ -156,7 +156,7 @@ export function AddBookForm({ onSuccess, onCancel, onFormDirtyChange }: AddBookF
                 ) : (
                     <div className="text-center text-muted-foreground p-4">
                     <ImageIcon className="mx-auto h-12 w-12" />
-                    <p className="mt-2 text-sm">Sube o introduce la URL de una portada</p>
+                    <p className="mt-2 text-sm">Upload or enter a URL for the cover</p>
                     </div>
                 )}
                 </div>
@@ -164,10 +164,10 @@ export function AddBookForm({ onSuccess, onCancel, onFormDirtyChange }: AddBookF
 
             <div className='flex justify-end gap-2 w-full'>
                 <Button type="button" variant="ghost" onClick={onCancel}>
-                    Cancelar
+                    Cancel
                 </Button>
                 <Button type="submit">
-                    Añadir Libro
+                    Add Book
                 </Button>
             </div>
         </div>
