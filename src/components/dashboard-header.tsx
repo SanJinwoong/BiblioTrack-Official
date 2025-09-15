@@ -42,14 +42,14 @@ export function DashboardHeader() {
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
-            <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                <Bell className="h-6 w-6" />
+            <Button variant="ghost" className="relative h-12 w-12 rounded-full">
+                <Bell className="h-8 w-8" />
                 <span className="absolute top-2 right-2 block h-2 w-2 rounded-full bg-red-500" />
             </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                <User className="h-6 w-6" />
+              <Button variant="ghost" className="relative h-12 w-12 rounded-full">
+                <User className="h-8 w-8" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
