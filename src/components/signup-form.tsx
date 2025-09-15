@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
-import { UserPlus, Library, User } from 'lucide-react';
+import { UserPlus, User } from 'lucide-react';
 import React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,7 @@ import {
 import { users } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import type { User as UserType } from '@/lib/types';
+import { Library } from '@/components/icons/uat-logo';
 
 const studentEmailRegex = /^a\d{10}@alumnos\.uat\.edu\.mx$/;
 

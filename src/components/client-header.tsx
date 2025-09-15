@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from './ui/input';
-import { UatLogo } from './icons/uat-logo';
+import { Library } from './icons/uat-logo';
 
 interface ClientHeaderProps {
     username: string;
@@ -42,7 +42,7 @@ export function ClientHeader({ username, searchTerm, setSearchTerm }: ClientHead
       <div className="container flex h-16 items-center">
         <div className="mr-4 md:flex">
           <Link href="/dashboard" className="flex items-center space-x-2">
-            <UatLogo className="h-8 w-8 text-primary" />
+            <Library className="h-8 w-8 text-primary" />
             <span className="hidden font-bold sm:inline-block font-headline text-lg text-foreground">
               BiblioTrack UAT
             </span>
