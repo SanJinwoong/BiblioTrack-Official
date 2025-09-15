@@ -28,7 +28,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
-import { PlusCircle, Trash2, Edit, X } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, X, Search } from 'lucide-react';
 import { Card, CardContent } from './ui/card';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -49,6 +49,8 @@ const categorySchema = z.object({
 
 export function SettingsDialog({ open, onOpenChange, books, categories, setCategories, onEditBook, onDeleteBook }: SettingsDialogProps) {
   const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = useState('');
+  
   const form = useForm({
     resolver: zodResolver(categorySchema),
     defaultValues: { name: '' },
@@ -90,6 +92,11 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
     })
   };
 
+  const filteredBooks = books.filter(book =>
+    book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    book.author.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-4xl max-h-[80vh] flex flex-col p-0">
@@ -108,42 +115,58 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
             <TabsContent value="books" className="mt-4">
                 <Card>
                     <CardContent className="p-4 space-y-4">
-                        {books.map(book => (
-                            <div key={book.id} className="flex items-center gap-4 p-2 rounded-md hover:bg-muted/50">
-                                <Image src={book.coverUrl} alt={book.title} width={40} height={60} className="rounded-sm object-cover" />
-                                <div className="flex-1">
-                                    <p className="font-semibold">{book.title}</p>
-                                    <p className="text-sm text-muted-foreground">{book.author} &middot; <span className="font-medium">{book.category}</span></p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => onEditBook(book)}>
-                                        <Edit className="h-4 w-4" />
-                                        <span className="sr-only">Edit Book</span>
-                                    </Button>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="destructive" size="icon" className="h-8 w-8">
-                                                <Trash2 className="h-4 w-4" />
-                                                <span className="sr-only">Delete Book</span>
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    This action cannot be undone. This will permanently delete the book
-                                                    "{book.title}" and any associated checkout data.
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => onDeleteBook(book.id)}>Continue</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </div>
-                            </div>
-                        ))}
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Search book by title or author..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          {filteredBooks.map(book => (
+                              <div key={book.id} className="flex items-center gap-4 p-2 rounded-md hover:bg-muted/50">
+                                  <Image src={book.coverUrl} alt={book.title} width={40} height={60} className="rounded-sm object-cover" />
+                                  <div className="flex-1">
+                                      <p className="font-semibold">{book.title}</p>
+                                      <p className="text-sm text-muted-foreground">{book.author} &middot; <span className="font-medium">{book.category}</span></p>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => onEditBook(book)}>
+                                          <Edit className="h-4 w-4" />
+                                          <span className="sr-only">Edit Book</span>
+                                      </Button>
+                                      <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                              <Button variant="destructive" size="icon" className="h-8 w-8">
+                                                  <Trash2 className="h-4 w-4" />
+                                                  <span className="sr-only">Delete Book</span>
+                                              </Button>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                              <AlertDialogHeader>
+                                                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                  <AlertDialogDescription>
+                                                      This action cannot be undone. This will permanently delete the book
+                                                      "{book.title}" and any associated checkout data.
+                                                  </AlertDialogDescription>
+                                              </AlertDialogHeader>
+                                              <AlertDialogFooter>
+                                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                  <AlertDialogAction onClick={() => onDeleteBook(book.id)}>Continue</AlertDialogAction>
+                                              </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                      </AlertDialog>
+                                  </div>
+                              </div>
+                          ))}
+                        </div>
+                         {filteredBooks.length === 0 && (
+                          <div className="text-center text-muted-foreground py-8">
+                            <p>No books found for "{searchTerm}".</p>
+                          </div>
+                        )}
                     </CardContent>
                 </Card>
             </TabsContent>
