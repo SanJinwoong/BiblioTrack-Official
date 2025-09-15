@@ -19,6 +19,7 @@ import { AddBookDialog } from './add-book-dialog';
 import { DashboardHeader } from './dashboard-header';
 import { SettingsDialog } from './settings-dialog';
 import { Separator } from './ui/separator';
+import { cn } from '@/lib/utils';
 
 export function LibrarianDashboard() {
   const [books, setBooks] = useState<BookType[]>(() => {
@@ -43,6 +44,7 @@ export function LibrarianDashboard() {
   });
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [filteredBooks, setFilteredBooks] = useState<BookType[]>(books);
   const [selectedBook, setSelectedBook] = useState<BookType | null>(null);
   const [selectedCheckout, setSelectedCheckout] = useState<Checkout | null>(null);
@@ -63,15 +65,15 @@ export function LibrarianDashboard() {
   useEffect(() => { localStorage.setItem('checkoutRequests', JSON.stringify(checkoutRequests)); }, [checkoutRequests]);
 
   useEffect(() => {
-    setFilteredBooks(
-      books.filter(
-        (book) =>
-          book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          book.category.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    );
-  }, [searchTerm, books]);
+    const results = books.filter(book => {
+      const matchesSearch =
+        book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        book.author.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = !selectedCategory || book.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+    setFilteredBooks(results);
+  }, [searchTerm, selectedCategory, books]);
 
 
   const getBook = (bookId: number): BookType | undefined => {
@@ -149,11 +151,6 @@ export function LibrarianDashboard() {
     }
   };
 
-  const booksByCategory = categories.map(category => ({
-    ...category,
-    books: filteredBooks.filter(book => book.category === category.name)
-  })).filter(category => category.books.length > 0);
-
   return (
     <>
       <DashboardHeader onAddNewBook={handleOpenAddBookDialog} onSettingsClick={() => setIsSettingsDialogOpen(true)} />
@@ -187,9 +184,9 @@ export function LibrarianDashboard() {
           />
           <div className="space-y-6">
             <h1 className="text-3xl font-bold font-headline">Librarian Dashboard</h1>
-            <Tabs defaultValue="catalog">
-              <TabsList className="grid w-full grid-cols-4 md:w-auto">
-                <TabsTrigger value="catalog"><Book className="mr-2 h-4 w-4" />Catálogo</TabsTrigger>
+            <Tabs defaultValue="search">
+              <TabsList className="grid w-full grid-cols-3 md:w-auto">
+                <TabsTrigger value="search"><Search className="mr-2 h-4 w-4" />Buscar</TabsTrigger>
                 <TabsTrigger value="requests">
                     <Bell className="mr-2 h-4 w-4" />
                     Solicitudes
@@ -198,30 +195,71 @@ export function LibrarianDashboard() {
                     )}
                 </TabsTrigger>
                 <TabsTrigger value="checkouts"><ListChecks className="mr-2 h-4 w-4" />Préstamos Activos</TabsTrigger>
-                <TabsTrigger value="search"><Search className="mr-2 h-4 w-4" />Buscar</TabsTrigger>
               </TabsList>
-
-              <TabsContent value="catalog" className="mt-4 space-y-8">
-                  {booksByCategory.length > 0 ? booksByCategory.map((category, index) => (
-                      <div key={category.id}>
-                        <h3 className="text-2xl font-bold font-headline mb-4">{category.name}</h3>
+              
+              <TabsContent value="search" className="mt-4">
+                 <Card>
+                  <CardHeader>
+                    <CardTitle className="font-headline">Buscar en el Catálogo</CardTitle>
+                     <CardDescription>Busca por título, autor o filtra por categoría.</CardDescription>
+                      <div className="relative w-full max-w-sm pt-2">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input
+                            placeholder="Buscar..."
+                            className="pl-10"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex flex-wrap gap-2 pt-4">
+                        <Button
+                          variant={!selectedCategory ? 'default' : 'secondary'}
+                          size="sm"
+                          onClick={() => setSelectedCategory(null)}
+                        >
+                          Todos
+                        </Button>
+                        {categories.map((category) => (
+                          <Button
+                            key={category.id}
+                            variant={selectedCategory === category.name ? 'default' : 'secondary'}
+                            size="sm"
+                            onClick={() => setSelectedCategory(category.name)}
+                          >
+                            {category.name}
+                          </Button>
+                        ))}
+                      </div>
+                  </CardHeader>
+                  <CardContent>
+                    {books.length === 0 ? (
+                       <div className="text-center py-16">
+                        <BookCopy className="mx-auto h-12 w-12 text-muted-foreground"/>
+                        <h3 className="mt-4 text-lg font-medium">No Books in Catalog</h3>
+                        <p className="mt-1 text-sm text-muted-foreground">Get started by adding a book to the library.</p>
+                        <Button className="mt-4" onClick={handleOpenAddBookDialog}><PlusCircle className="mr-2 h-4 w-4" /> Add First Book</Button>
+                      </div>
+                    ) : (
+                      <>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                            {category.books.map((book) => (
+                            {filteredBooks.map((book) => (
                                 <BookCard key={book.id} book={book} onClick={() => handleOpenDialog(book)} />
                             ))}
                         </div>
-                         {index < booksByCategory.length - 1 && <Separator className="mt-8"/>}
-                      </div>
-                  )) : (
-                    <div className="text-center py-16">
-                      <BookCopy className="mx-auto h-12 w-12 text-muted-foreground"/>
-                      <h3 className="mt-4 text-lg font-medium">No Books in Catalog</h3>
-                      <p className="mt-1 text-sm text-muted-foreground">Get started by adding a book to the library.</p>
-                      <Button className="mt-4" onClick={handleOpenAddBookDialog}><PlusCircle className="mr-2 h-4 w-4" /> Add First Book</Button>
-                  </div>
-                  )}
+                        {filteredBooks.length === 0 && (
+                            <p className="text-muted-foreground text-center py-8">
+                              {selectedCategory 
+                                ? `No se encontraron libros para "${searchTerm}" en la categoría "${selectedCategory}".`
+                                : `No se encontraron libros para "${searchTerm}".`
+                              }
+                            </p>
+                        )}
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
               </TabsContent>
-              
+
               <TabsContent value="requests" className="mt-4">
                 <Card>
                     <CardHeader>
@@ -300,36 +338,11 @@ export function LibrarianDashboard() {
                   </CardContent>
                 </Card>
               </TabsContent>
-              <TabsContent value="search" className="mt-4">
-                 <Card>
-                  <CardHeader>
-                    <CardTitle className="font-headline">Buscar en el Catálogo</CardTitle>
-                     <CardDescription>Busca por título, autor o categoría.</CardDescription>
-                      <div className="relative w-full max-w-sm pt-2">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input
-                            placeholder="Buscar..."
-                            className="pl-10"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                      </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        {filteredBooks.map((book) => (
-                            <BookCard key={book.id} book={book} onClick={() => handleOpenDialog(book)} />
-                        ))}
-                    </div>
-                    {filteredBooks.length === 0 && searchTerm && (
-                        <p className="text-muted-foreground text-center py-8">No se encontraron libros para &quot;{searchTerm}&quot;.</p>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
             </Tabs>
           </div>
         </div>
     </>
   );
 }
+
+    
