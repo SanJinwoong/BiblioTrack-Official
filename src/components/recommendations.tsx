@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -26,7 +27,7 @@ export function Recommendations({ onBookSelect }: RecommendationsProps) {
 
   const handleGetRecommendations = async () => {
     if (!username) {
-        setError("Could not find user information.");
+        setError("No se pudo encontrar la información del usuario.");
         return;
     }
     setLoading(true);
@@ -47,11 +48,11 @@ export function Recommendations({ onBookSelect }: RecommendationsProps) {
       if (result.recommendations) {
         setRecommendations(result.recommendations);
       } else {
-        setError('Could not generate recommendations.');
+        setError('No se pudieron generar recomendaciones.');
       }
     } catch (e) {
       console.error(e);
-      setError('An error occurred while fetching recommendations.');
+      setError('Ocurrió un error al obtener las recomendaciones.');
     } finally {
       setLoading(false);
     }
@@ -60,35 +61,38 @@ export function Recommendations({ onBookSelect }: RecommendationsProps) {
   const recommendedBooks: Book[] = recommendations.map(title => books.find(b => b.title === title)).filter(Boolean) as Book[];
 
   return (
-    <div className="w-full">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold font-headline flex items-center"><BookHeart className="mr-2 h-6 w-6 text-primary"/> AI-Powered Recommendations</h2>
+    <div className="w-full bg-muted/50 p-8 rounded-2xl">
+      <div className="flex flex-col md:flex-row justify-between items-center mb-6 text-center md:text-left">
+        <div>
+          <h2 className="text-3xl font-bold flex items-center justify-center md:justify-start"><BookHeart className="mr-3 h-8 w-8 text-primary"/> Recomendaciones para ti</h2>
+          <p className="text-muted-foreground mt-1">Sugerencias de la IA basadas en tu historial de lectura.</p>
+        </div>
         {recommendations.length === 0 && (
-             <Button onClick={handleGetRecommendations} disabled={loading || !username}>
+             <Button onClick={handleGetRecommendations} disabled={loading || !username} className="mt-4 md:mt-0 rounded-full">
                 {loading ? (
                 <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
+                    Generando...
                 </>
                 ) : (
                 <>
                     <Sparkles className="mr-2 h-4 w-4" />
-                    Get My Recommendations
+                    Obtener mis Recomendaciones
                 </>
                 )}
             </Button>
         )}
       </div>
       
-      {loading && <div className="flex justify-center items-center h-48"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}
+      {loading && <div className="flex justify-center items-center h-56"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}
 
-      {error && <p className="text-destructive">{error}</p>}
+      {error && <p className="text-destructive text-center">{error}</p>}
       
       {recommendations.length > 0 && (
           <ScrollArea>
-              <div className="flex space-x-4 pb-4">
+              <div className="flex space-x-6 pb-4">
                   {recommendedBooks.map(book => (
-                      <div key={book.id} className="w-40 min-w-40">
+                      <div key={book.id} className="w-44 min-w-44">
                           <BookCard book={book} onClick={() => onBookSelect(book)} />
                       </div>
                   ))}
@@ -98,10 +102,10 @@ export function Recommendations({ onBookSelect }: RecommendationsProps) {
       )}
 
       {recommendations.length === 0 && !loading && !error && (
-        <Card className="flex flex-col items-center justify-center text-center p-8 border-dashed">
+        <Card className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed bg-transparent shadow-none min-h-[220px]">
             <CardHeader>
-                <CardTitle>Discover your next read</CardTitle>
-                <CardDescription>Click the button to get personalized book recommendations based on your reading history.</CardDescription>
+                <CardTitle className="text-xl font-semibold">Descubre tu próxima lectura</CardTitle>
+                <CardDescription>Haz clic en el botón para obtener recomendaciones personalizadas.</CardDescription>
             </CardHeader>
         </Card>
       )}

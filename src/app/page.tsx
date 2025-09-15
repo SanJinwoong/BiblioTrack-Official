@@ -6,36 +6,30 @@ import Image from 'next/image';
 import { LoginForm } from '@/components/login-form';
 import { SignUpForm } from '@/components/signup-form';
 import { Button } from '@/components/ui/button';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from '@/components/ui/carousel';
-import { Card, CardContent } from '@/components/ui/card';
 import { Library } from '@/components/icons/uat-logo';
 import { books } from '@/lib/data';
 
 export default function AuthPage() {
   const [view, setView] = useState<'login' | 'signup'>('login');
 
+  const featuredBooks = books.slice(0, 3);
+
   return (
-    <main className="grid grid-cols-1 md:grid-cols-2 min-h-screen bg-background">
+    <main className="grid grid-cols-1 md:grid-cols-2 min-h-screen bg-background text-foreground">
       {/* Left side: Form */}
-      <div className="flex flex-col items-center justify-center p-8 bg-card shadow-lg z-10">
-        <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-          <div className="flex flex-col space-y-2 text-center">
-            <div className="flex items-center justify-center space-x-2">
+      <div className="flex flex-col items-center justify-center p-8 lg:p-16">
+        <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[380px]">
+          <div className="flex flex-col space-y-2 text-center mb-6">
+            <div className="flex items-center justify-center space-x-3">
                 <Library className="h-8 w-8 text-primary" />
-                <h1 className="text-2xl font-bold tracking-tight">
+                <h1 className="text-3xl font-bold tracking-tight">
                     BiblioTrack
                 </h1>
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground pt-1">
               {view === 'login'
-                ? 'Enter your credentials to access your account.'
-                : 'Create an account to get started.'}
+                ? 'Ingresa tus credenciales para acceder a tu cuenta.'
+                : 'Crea una cuenta para empezar a explorar.'}
             </p>
           </div>
 
@@ -44,16 +38,16 @@ export default function AuthPage() {
           <p className="px-8 text-center text-sm text-muted-foreground">
             {view === 'login' ? (
               <>
-                Don&apos;t have an account?{' '}
-                <Button variant="link" className="p-0 h-auto" onClick={() => setView('signup')}>
-                  Sign up
+                ¿No tienes una cuenta?{' '}
+                <Button variant="link" className="p-0 h-auto font-semibold" onClick={() => setView('signup')}>
+                  Regístrate
                 </Button>
               </>
             ) : (
               <>
-                Already have an account?{' '}
-                <Button variant="link" className="p-0 h-auto" onClick={() => setView('login')}>
-                  Sign in
+                ¿Ya tienes una cuenta?{' '}
+                <Button variant="link" className="p-0 h-auto font-semibold" onClick={() => setView('login')}>
+                  Inicia Sesión
                 </Button>
               </>
             )}
@@ -61,40 +55,20 @@ export default function AuthPage() {
         </div>
       </div>
 
-      {/* Right side: Image Carousel */}
-      <div className="hidden md:flex flex-col items-center justify-center bg-muted p-8">
-        <Carousel
-          opts={{
-            align: 'start',
-            loop: true,
-          }}
-          className="w-full max-w-lg"
-        >
-          <CarouselContent className="-ml-4">
-            {books.map((book) => (
-              <CarouselItem key={book.id} className="pl-4 md:basis-1/2 lg:basis-1/3">
-                <Card className="overflow-hidden">
-                  <CardContent className="flex flex-col items-center justify-center p-0">
-                    <div className="w-full h-64 relative">
-                        <Image
-                            src={book.coverUrl}
-                            alt={`Cover of ${book.title}`}
-                            fill
-                            className="rounded-t-lg object-cover"
-                        />
-                    </div>
-                    <div className="p-4 w-full text-center">
-                        <h3 className="font-semibold text-lg truncate">{book.title}</h3>
-                        <p className="text-sm text-muted-foreground">{book.author}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious />
-          <CarouselNext />
-        </Carousel>
+      {/* Right side: Image Composition */}
+      <div className="hidden md:flex flex-col items-center justify-center bg-muted/50 p-8 relative overflow-hidden">
+        <div className="grid grid-cols-12 grid-rows-6 gap-4 w-full max-w-2xl h-full max-h-[80vh]">
+            <div className="col-span-7 row-span-4 rounded-xl overflow-hidden shadow-lg transform hover:scale-105 transition-transform duration-300">
+                <Image src="https://picsum.photos/seed/auth-1/800/600" alt="Libro destacado 1" className="object-cover w-full h-full" width={800} height={600} data-ai-hint="library shelf" />
+            </div>
+            <div className="col-span-5 row-span-3 rounded-xl overflow-hidden shadow-lg transform hover:scale-105 transition-transform duration-300">
+                <Image src="https://picsum.photos/seed/auth-2/600/400" alt="Libro destacado 2" className="object-cover w-full h-full" width={600} height={400} data-ai-hint="reading book" />
+            </div>
+            <div className="col-span-5 row-span-3 col-start-8 row-start-4 rounded-xl overflow-hidden shadow-lg transform hover:scale-105 transition-transform duration-300">
+                <Image src="https://picsum.photos/seed/auth-3/600/400" alt="Libro destacado 3" className="object-cover w-full h-full" width={600} height={400} data-ai-hint="open book" />
+            </div>
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-muted/30 to-transparent"></div>
       </div>
     </main>
   );

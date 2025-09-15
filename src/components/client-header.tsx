@@ -39,56 +39,56 @@ export function ClientHeader({ username, searchTerm, setSearchTerm }: ClientHead
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-card/80 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/90 backdrop-blur-sm">
       <div className="container flex h-16 items-center">
-        <div className="mr-4 md:flex">
+        <div className="mr-6 md:flex">
           <Link href="/dashboard" className="flex items-center space-x-2">
-            <Library className="h-8 w-8 text-primary" />
-            <span className="hidden font-bold sm:inline-block text-lg text-foreground">
+            <Library className="h-7 w-7 text-primary" />
+            <span className="hidden font-bold sm:inline-block text-xl text-foreground">
               BiblioTrack
             </span>
           </Link>
         </div>
         <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
           <Link
-            href="#my-books"
+            href="#my-activity"
             className="text-muted-foreground transition-colors hover:text-foreground"
           >
-            My Activity
+            Mi Actividad
           </Link>
           <Link
-            href="#browse"
+            href="#browse-categories"
             className="text-muted-foreground transition-colors hover:text-foreground"
           >
-            Catalog
+            Catálogo
           </Link>
           <Link
             href="#recommendations"
             className="text-muted-foreground transition-colors hover:text-foreground"
           >
-            Recommendations
+            Recomendaciones
           </Link>
         </nav>
         <div className="flex flex-1 items-center justify-end space-x-2 md:space-x-4">
-            <form onSubmit={handleSearchSubmit} className="relative w-full max-w-xs">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <form onSubmit={handleSearchSubmit} className="relative w-full max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                    placeholder="Search books..."
-                    className="pl-10"
+                    placeholder="Buscar libros por título o autor..."
+                    className="pl-9 h-9"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </form>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                 <User className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">My Account</p>
+                  <p className="text-sm font-medium leading-none">Mi Cuenta</p>
                   <p className="text-xs leading-none text-muted-foreground">
                     {username}
                   </p>
@@ -97,7 +97,7 @@ export function ClientHeader({ username, searchTerm, setSearchTerm }: ClientHead
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
+                <span>Cerrar Sesión</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

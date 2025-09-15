@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Poppins } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const poppins = Poppins({ 
+  subsets: ["latin"],
+  weight: ['300', '400', '500', '600', '700', '800']
+});
 
 export const metadata: Metadata = {
   title: "BiblioTrack",
-  description: "Your personal library assistant.",
+  description: "Tu asistente personal de biblioteca.",
 };
 
 export default function RootLayout({
@@ -16,8 +19,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} antialiased min-h-screen bg-background`}>
+    <html lang="es" suppressHydrationWarning>
+      <body className={`${poppins.className} antialiased min-h-screen bg-background`}>
         {children}
         <Toaster />
       </body>

@@ -26,20 +26,20 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
   const getStockBadge = () => {
     if (book.stock === 0) {
       return (
-        <Badge className={cn("text-xs font-bold", 'bg-gray-100 text-gray-600')}>
+        <Badge className={cn("text-xs font-semibold", 'bg-gray-100 text-gray-600')}>
           Agotado
         </Badge>
       );
     }
     if (book.stock <= 3) {
       return (
-        <Badge className={cn("text-xs font-bold", 'bg-yellow-100 text-yellow-800')}>
-          Disponible
+        <Badge className={cn("text-xs font-semibold", 'bg-yellow-100 text-yellow-800')}>
+          Pocos
         </Badge>
       );
     }
     return (
-      <Badge className={cn("text-xs font-bold", 'bg-green-500 text-green-50')}>
+      <Badge className={cn("text-xs font-semibold", 'bg-green-100 text-green-800')}>
         Disponible
       </Badge>
     );
@@ -47,41 +47,37 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
 
   return (
     <Card 
-        className={cn("flex flex-col overflow-hidden transition-shadow hover:shadow-lg h-full cursor-pointer", className)}
+        className={cn("group flex flex-col overflow-hidden transition-shadow hover:shadow-xl h-full cursor-pointer border-0 shadow-md", className)}
         onClick={onClick}
     >
       <CardHeader className="p-0">
-        <div className="relative aspect-[3/4.5] w-full">
+        <div className="relative aspect-[3/4.5] w-full overflow-hidden rounded-t-lg">
           <Image
             src={book.coverUrl}
-            alt={`Cover of ${book.title}`}
+            alt={`Portada de ${book.title}`}
             fill
-            className="object-cover"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 15vw"
             data-ai-hint={`${book.category} book cover`}
           />
+           {isApproved && (
+             <div className="absolute top-2 right-2 flex items-center justify-center h-6 w-6 rounded-full bg-green-500/90 backdrop-blur-sm">
+                <Check className="h-4 w-4 text-white" strokeWidth={3} />
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent className="flex flex-col flex-grow p-3">
         <div className="flex-grow">
-            <CardTitle className="font-headline text-sm mb-1 line-clamp-2 flex items-start">
-              <span className="truncate pt-px">{book.title}</span>
-              {isApproved && (
-                 <div className="ml-1.5 shrink-0 relative flex items-center justify-center h-4 w-4">
-                    <svg className="absolute h-full w-full text-green-500" fill="currentColor" viewBox="0 0 18 18">
-                        <path d="M9 18A9 9 0 109 0a9 9 0 000 18z"/>
-                    </svg>
-                    <Check className="relative h-3 w-3 text-green-50" strokeWidth={4} />
-                </div>
-              )}
+            <CardTitle className="font-bold text-sm mb-1 line-clamp-2">
+              {book.title}
             </CardTitle>
             <CardDescription className="text-xs line-clamp-1">{book.author}</CardDescription>
         </div>
-        {!isApproved && !isPending && (
-          <div className="mt-2">
-              {getStockBadge()}
-          </div>
-        )}
+        <div className="mt-3 flex justify-between items-center">
+            {!isApproved && !isPending && getStockBadge()}
+            {isPending && <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 animate-pulse">Pendiente</Badge>}
+        </div>
       </CardContent>
       {children}
     </Card>

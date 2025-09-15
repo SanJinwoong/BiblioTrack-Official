@@ -13,13 +13,12 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
 } from '@/components/ui/carousel';
-import { Card } from './ui/card';
 import { ClientHeader } from './client-header';
 import { BookDetailsDialog } from './book-details-dialog';
 import { Separator } from './ui/separator';
+import { Button } from './ui/button';
+import { ArrowRight } from 'lucide-react';
 
 export function ClientDashboard() {
   const [username, setUsername] = useState('');
@@ -46,9 +45,13 @@ export function ClientDashboard() {
     // it implies the source data has been updated, so we should re-initialize storage.
     if (storedBooks && JSON.parse(storedBooks).length !== initialBooks.length) {
       setBooks(initialBooks);
+      localStorage.setItem('books', JSON.stringify(initialBooks));
       setCategories(initialCategories);
+      localStorage.setItem('categories', JSON.stringify(initialCategories));
       setCheckouts(initialCheckouts);
+      localStorage.setItem('checkouts', JSON.stringify(initialCheckouts));
       setCheckoutRequests(initialCheckoutRequests);
+      localStorage.setItem('checkoutRequests', JSON.stringify(initialCheckoutRequests));
     } else {
       setBooks(storedBooks ? JSON.parse(storedBooks) : initialBooks);
       setCategories(storedCategories ? JSON.parse(storedCategories) : initialCategories);
@@ -61,21 +64,10 @@ export function ClientDashboard() {
   }, []);
 
   // Persist state to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('checkouts', JSON.stringify(checkouts));
-  }, [checkouts]);
-
-  useEffect(() => {
-    localStorage.setItem('checkoutRequests', JSON.stringify(checkoutRequests));
-  }, [checkoutRequests]);
-
-  useEffect(() => {
-    localStorage.setItem('books', JSON.stringify(books));
-  }, [books]);
-
-  useEffect(() => {
-    localStorage.setItem('categories', JSON.stringify(categories));
-  }, [categories]);
+  useEffect(() => { localStorage.setItem('books', JSON.stringify(books)); }, [books]);
+  useEffect(() => { localStorage.setItem('categories', JSON.stringify(categories)); }, [categories]);
+  useEffect(() => { localStorage.setItem('checkouts', JSON.stringify(checkouts)); }, [checkouts]);
+  useEffect(() => { localStorage.setItem('checkoutRequests', JSON.stringify(checkoutRequests)); }, [checkoutRequests]);
 
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
@@ -147,11 +139,11 @@ export function ClientDashboard() {
     });
 
 
-  const featuredBooks = [...books].sort(() => 0.5 - Math.random()).slice(0, 5);
+  const latestBooks = [...books].sort((a, b) => b.id - a.id).slice(0, 5);
   
   const booksByCategory = categories.map(category => ({
     ...category,
-    books: books.filter(book => book.category === category.name)
+    books: books.filter(book => book.category === category.name).slice(0, 10)
   })).filter(category => category.books.length > 0);
 
 
@@ -169,65 +161,54 @@ export function ClientDashboard() {
       <div className="bg-background min-h-screen">
         <ClientHeader username={username} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
 
-        <div className="container mx-auto p-4 md:p-8 space-y-12">
-          <section id="discover">
-            <Carousel
-              opts={{
-                loop: true,
-              }}
-              className="w-full"
-            >
-              <CarouselContent>
-                {featuredBooks.map((book) => (
-                  <CarouselItem key={book.id}>
-                    <Card className="overflow-hidden cursor-pointer" onClick={() => handleOpenDialog(book)}>
-                      <div className="relative h-64 md:h-80 w-full">
-                        <Image
-                          src={`https://picsum.photos/1200/400?random=${book.id}`}
-                          alt={`Promotional image for ${book.title}`}
-                          fill
-                          className="object-cover"
-                          data-ai-hint={`${book.category} landscape`}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-                        <div className="absolute bottom-0 left-0 p-6 md:p-8 text-white">
-                          <h2 className="text-2xl md:text-4xl font-bold font-headline">
-                            {book.title}
-                          </h2>
-                          <p className="text-sm md:text-lg">{book.author}</p>
-                        </div>
-                      </div>
-                    </Card>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious className="left-4" />
-              <CarouselNext className="right-4" />
-            </Carousel>
-          </section>
-
+        <main className="container mx-auto p-4 md:p-8 lg:p-12 space-y-16">
           {searchTerm ? (
-              <section id="search-results" className="space-y-6">
-                  <h2 className="text-2xl font-bold font-headline">Search Results</h2>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                      {filteredBooks.map((book) => (
-                          <BookCard key={book.id} book={book} onClick={() => handleOpenDialog(book)} />
-                      ))}
-                  </div>
-                  {filteredBooks.length === 0 && (
-                      <p className="text-muted-foreground">No books found for &quot;{searchTerm}&quot;.</p>
+              <section id="search-results" className="pt-8 space-y-8">
+                  <h2 className="text-3xl font-bold">Resultados de Búsqueda</h2>
+                  {filteredBooks.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                        {filteredBooks.map((book) => (
+                            <BookCard key={book.id} book={book} onClick={() => handleOpenDialog(book)} />
+                        ))}
+                    </div>
+                  ) : (
+                      <p className="text-muted-foreground text-lg text-center py-16">No se encontraron libros para &quot;{searchTerm}&quot;.</p>
                   )}
               </section>
           ) : (
               <>
-                  {(userCheckouts.length > 0 || userRequests.length > 0) && (
-                      <section id="my-books" className="space-y-4">
-                      <h2 className="text-2xl font-bold font-headline">My Activity</h2>
+                <section id="hero" className="flex flex-col lg:flex-row items-center gap-12">
+                  <div className="lg:w-1/2 text-center lg:text-left">
+                    <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tighter mb-4">
+                      Explora un Universo de Historias
+                    </h1>
+                    <p className="text-lg md:text-xl text-muted-foreground mb-8">
+                      Encuentra tu próxima aventura literaria. Desde clásicos atemporales hasta las últimas novedades, todo está a tu alcance.
+                    </p>
+                    <Button size="lg" className="rounded-full">
+                      Explorar el Catálogo
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Button>
+                  </div>
+                  <div className="lg:w-1/2 relative h-80 lg:h-[450px] w-full">
+                     <Image
+                        src="https://picsum.photos/seed/hero-main/1200/800"
+                        alt="Explora la biblioteca"
+                        fill
+                        className="object-cover rounded-2xl shadow-2xl"
+                        data-ai-hint="library books"
+                      />
+                  </div>
+                </section>
+                
+                {(userCheckouts.length > 0 || userRequests.length > 0) && (
+                    <section id="my-activity" className="space-y-6">
+                      <h2 className="text-3xl font-bold">Mi Actividad</h2>
                       <ScrollArea>
-                          <div className="flex space-x-4 pb-4">
+                          <div className="flex space-x-6 pb-4">
                           {userCheckouts.map((book) =>
                               book.id ? (
-                              <div key={`checkout-${book.id}`} className="w-40 min-w-40">
+                              <div key={`checkout-${book.id}`} className="w-44 min-w-44">
                                   <BookCard book={book as BookType} onClick={() => handleOpenDialog(book as BookType)} isApproved={true}>
                                   <div className="p-3 pt-0 text-xs">
                                       <p className="text-muted-foreground mt-1">Vence: {book.dueDate}</p>
@@ -238,7 +219,7 @@ export function ClientDashboard() {
                           )}
                            {userRequests.map((book) =>
                               book.id ? (
-                              <div key={`request-${book.id}`} className="w-40 min-w-40">
+                              <div key={`request-${book.id}`} className="w-44 min-w-44">
                                   <BookCard book={book as BookType} onClick={() => handleOpenDialog(book as BookType)} isPending={true}>
                                   <div className="p-3 pt-0 text-xs">
                                       <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 animate-pulse">Pendiente</Badge>
@@ -250,40 +231,47 @@ export function ClientDashboard() {
                           </div>
                           <ScrollBar orientation="horizontal" />
                       </ScrollArea>
-                      </section>
-                  )}
+                    </section>
+                )}
 
-                  <section id="browse" className="space-y-8">
-                    <h2 className="text-2xl font-bold font-headline">Browse Catalog</h2>
-                    {booksByCategory.map((category, index) => (
-                      <div key={category.id}>
-                        <h3 className="text-xl font-semibold mb-4">{category.name}</h3>
-                        <ScrollArea>
-                          <div className="flex space-x-4 pb-4">
-                            {category.books.map((book) => (
-                              <div key={book.id} className="w-40 min-w-40">
-                                <BookCard book={book} onClick={() => handleOpenDialog(book)} />
-                              </div>
-                            ))}
-                          </div>
-                          <ScrollBar orientation="horizontal" />
-                        </ScrollArea>
-                        {index < booksByCategory.length - 1 && <Separator className="mt-8"/>}
-                      </div>
+                <section id="latest-additions" className="space-y-6">
+                  <h2 className="text-3xl font-bold">Últimos Libros Añadidos</h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-8">
+                    {latestBooks.map((book) => (
+                      <BookCard key={book.id} book={book} onClick={() => handleOpenDialog(book)} />
                     ))}
-                  </section>
+                  </div>
+                </section>
 
-                  <section id="recommendations">
-                      <Recommendations onBookSelect={handleOpenDialog} />
-                  </section>
+                <Separator className="my-12"/>
+
+                <section id="browse-categories" className="space-y-12">
+                  <h2 className="text-3xl font-bold text-center">Explora por Categorías</h2>
+                  {booksByCategory.map((category) => (
+                    <div key={category.id}>
+                      <h3 className="text-2xl font-semibold mb-4">{category.name}</h3>
+                       <Carousel opts={{ align: 'start' }} className="w-full">
+                        <CarouselContent className="-ml-4">
+                           {category.books.map((book) => (
+                            <CarouselItem key={book.id} className="basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 xl:basis-1/6 pl-4">
+                              <BookCard book={book} onClick={() => handleOpenDialog(book)} />
+                            </CarouselItem>
+                          ))}
+                        </CarouselContent>
+                      </Carousel>
+                    </div>
+                  ))}
+                </section>
+
+                <Separator className="my-12"/>
+
+                <section id="recommendations">
+                    <Recommendations onBookSelect={handleOpenDialog} />
+                </section>
               </>
           )}
-        </div>
+        </main>
       </div>
     </>
   );
 }
-
-    
-
-    
