@@ -13,7 +13,7 @@ import {
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
-import { User, Calendar, AlertCircle, MoreHorizontal, Bell, Check } from 'lucide-react';
+import { User, Calendar, AlertCircle, MoreHorizontal, Bell, Check, FolderKanban } from 'lucide-react';
 import { CheckoutForm } from './checkout-form';
 import { useState } from 'react';
 import { UserDetailsTooltip } from './user-details-tooltip';
@@ -140,8 +140,13 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
                    </div>
                 )}
 
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-muted-foreground mb-4">
                   <p>{book.description}</p>
+                </div>
+                 <div className="flex items-center space-x-2 my-4">
+                  <FolderKanban className="mr-2 h-4 w-4 text-muted-foreground" />
+                  <span className="font-semibold text-sm">Categoría:</span>
+                  <Badge variant="secondary">{book.category}</Badge>
                 </div>
                 <div className="flex items-center space-x-2 my-4">
                   <span className="font-semibold text-sm">Disponibilidad:</span>
