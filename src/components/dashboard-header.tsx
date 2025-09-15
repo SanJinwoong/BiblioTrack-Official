@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { LogOut, User, Settings, PlusCircle, Bell } from 'lucide-react';
+import { LogOut, User, Settings, PlusCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -18,7 +18,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Library } from './icons/uat-logo';
 
-export function DashboardHeader() {
+interface DashboardHeaderProps {
+  onAddNewBook: () => void;
+}
+
+export function DashboardHeader({ onAddNewBook }: DashboardHeaderProps) {
   const router = useRouter();
   const [username, setUsername] = useState('');
 
@@ -42,10 +46,6 @@ export function DashboardHeader() {
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
-            <Button variant="ghost" className="relative h-12 w-12 rounded-full">
-                <Bell className="h-8 w-8" />
-                <span className="absolute top-2 right-2 block h-2 w-2 rounded-full bg-red-500" />
-            </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-12 w-12 rounded-full">
@@ -63,7 +63,7 @@ export function DashboardHeader() {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={onAddNewBook}>
                     <PlusCircle className="mr-2 h-5 w-5" />
                     <span>Add new book</span>
                 </DropdownMenuItem>

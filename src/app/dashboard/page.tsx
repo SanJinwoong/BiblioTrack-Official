@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -51,14 +52,7 @@ export default function DashboardPage() {
   }
 
   if (role === 'librarian') {
-    return (
-      <>
-        <DashboardHeader />
-        <div className="container mx-auto p-4 md:p-8">
-            <LibrarianDashboard />
-        </div>
-      </>
-    )
+    return <LibrarianDashboard />
   }
 
   if (role === 'client') {
