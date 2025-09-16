@@ -69,7 +69,9 @@ export function LibrarianDashboard() {
 
 
   useEffect(() => { 
-      if (books.length > initialBooks.length || categories.length > initialCategories.length || checkouts.length > initialCheckouts.length || checkoutRequests.length > initialCheckoutRequests.length || users.length > initialUsers.length) {
+      // This effect runs only when there's a meaningful change to persist.
+      const hasInitialData = books.length > 0 || categories.length > 0 || checkouts.length > 0 || checkoutRequests.length > 0 || users.length > 0;
+      if (hasInitialData) {
         localStorage.setItem('books', JSON.stringify(books));
         localStorage.setItem('categories', JSON.stringify(categories));
         localStorage.setItem('checkouts', JSON.stringify(checkouts));
@@ -555,3 +557,4 @@ export function LibrarianDashboard() {
     </>
   );
 }
+

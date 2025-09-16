@@ -87,11 +87,16 @@ export function ClientDashboard() {
   }, [toast]);
 
   // Persist state to localStorage whenever it changes
-  useEffect(() => { if (books.length > 0) localStorage.setItem('books', JSON.stringify(books)); }, [books]);
-  useEffect(() => { if (categories.length > 0) localStorage.setItem('categories', JSON.stringify(categories)); }, [categories]);
-  useEffect(() => { if (checkouts.length > 0) localStorage.setItem('checkouts', JSON.stringify(checkouts)); }, [checkouts]);
-  useEffect(() => { if (checkoutRequests.length > 0) localStorage.setItem('checkoutRequests', JSON.stringify(checkoutRequests)); }, [checkoutRequests]);
-  useEffect(() => { if (users.length > 0) localStorage.setItem('users', JSON.stringify(users)); }, [users]);
+  useEffect(() => {
+      const hasInitialData = books.length > 0 || categories.length > 0 || checkouts.length > 0 || checkoutRequests.length > 0 || users.length > 0;
+      if (hasInitialData) {
+        localStorage.setItem('books', JSON.stringify(books));
+        localStorage.setItem('categories', JSON.stringify(categories));
+        localStorage.setItem('checkouts', JSON.stringify(checkouts));
+        localStorage.setItem('checkoutRequests', JSON.stringify(checkoutRequests));
+        localStorage.setItem('users', JSON.stringify(users));
+      }
+  }, [books, categories, checkouts, checkoutRequests, users]);
 
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
