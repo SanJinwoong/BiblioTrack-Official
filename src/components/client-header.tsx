@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { LogOut, Search, User, UserCog } from 'lucide-react';
+import { LogOut, Search, User, UserCog, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -12,25 +12,38 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal,
 } from '@/components/ui/dropdown-menu';
 import { Input } from './ui/input';
 import { Library } from './icons/uat-logo';
 import { useEffect, useState } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { User as UserType } from '@/lib/types';
+import type { User as UserType, Category } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 
 
 interface ClientHeaderProps {
     username: string;
     searchTerm: string;
     setSearchTerm: (term: string) => void;
+    onSelectCategory: (category: string | null) => void;
+    categories: Category[];
 }
 
-export function ClientHeader({ username, searchTerm, setSearchTerm }: ClientHeaderProps) {
+export function ClientHeader({ username, searchTerm, setSearchTerm, onSelectCategory, categories }: ClientHeaderProps) {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<UserType | null>(null);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (!username) return;
@@ -53,8 +66,6 @@ export function ClientHeader({ username, searchTerm, setSearchTerm }: ClientHead
 
   const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // In a real app, you might want to navigate to a search results page
-    // or trigger a search action here.
     console.log("Searching for:", searchTerm);
   }
 
@@ -62,6 +73,13 @@ export function ClientHeader({ username, searchTerm, setSearchTerm }: ClientHead
     const element = document.getElementById(id);
     if (element) {
         element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setOpen(false); // Close sheet on navigation
+    } else {
+        // If on a different page like profile, navigate first then scroll
+        router.push('/dashboard');
+        setTimeout(() => {
+            document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
     }
   }
 
@@ -78,9 +96,23 @@ export function ClientHeader({ username, searchTerm, setSearchTerm }: ClientHead
           </Link>
         </div>
 
-        <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
+        <nav className="hidden md:flex items-center space-x-1 text-sm font-medium">
             <Button variant="link" className="text-muted-foreground hover:text-primary p-0" onClick={() => handleScrollTo('my-activity')}>Mi Actividad</Button>
             <Button variant="link" className="text-muted-foreground hover:text-primary p-0" onClick={() => handleScrollTo('browse-categories')}>Explorar</Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                  <Button variant="link" className="text-muted-foreground hover:text-primary p-0">Categorías</Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => onSelectCategory(null)}>Todas</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {categories.map(cat => (
+                  <DropdownMenuItem key={cat.id} onClick={() => onSelectCategory(cat.name)}>
+                    {cat.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button variant="link" className="text-muted-foreground hover:text-primary p-0" onClick={() => handleScrollTo('recommendations')}>Recomendaciones</Button>
         </nav>
 
@@ -129,8 +161,32 @@ export function ClientHeader({ username, searchTerm, setSearchTerm }: ClientHead
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          
+          <div className="md:hidden">
+            <Sheet open={open} onOpenChange={setOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu />
+                  <span className="sr-only">Abrir menú</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left">
+                <nav className="grid gap-6 text-lg font-medium mt-8">
+                  <Link href="/dashboard" className="flex items-center gap-2 text-lg font-semibold" onClick={() => setOpen(false)}>
+                      <Library className="h-7 w-7 text-primary" />
+                      <span>BiblioTrack</span>
+                  </Link>
+                  <a href="#my-activity" className="text-muted-foreground hover:text-foreground" onClick={() => handleScrollTo('my-activity')}>Mi Actividad</a>
+                  <a href="#browse-categories" className="text-muted-foreground hover:text-foreground" onClick={() => handleScrollTo('browse-categories')}>Explorar</a>
+                  <a href="#recommendations" className="text-muted-foreground hover:text-foreground" onClick={() => handleScrollTo('recommendations')}>Recomendaciones</a>
+                </nav>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </div>
     </header>
   );
 }
+
+    

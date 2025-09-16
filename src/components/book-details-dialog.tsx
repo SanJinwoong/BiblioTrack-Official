@@ -15,13 +15,13 @@ import {
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
-import { User, Calendar, AlertCircle, MoreHorizontal, Bell, Check, FolderKanban, BookCheck, UserX, Loader2, MessageSquare, Star } from 'lucide-react';
+import { User, Calendar, AlertCircle, MoreHorizontal, Bell, Check, FolderKanban, BookCheck, Loader2, MessageSquare, Heart } from 'lucide-react';
 import { CheckoutForm } from './checkout-form';
 import { useEffect, useState } from 'react';
 import { UserDetailsTooltip } from './user-details-tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, addDoc } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { StarRating } from './star-rating';
 import { Textarea } from './ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -45,6 +45,7 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
   const [isProcessing, setIsProcessing] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [users, setUsers] = useState<UserType[]>([]);
+  const [currentUser, setCurrentUser] = useState<UserType | null>(null);
   const [newRating, setNewRating] = useState(0);
   const [newComment, setNewComment] = useState('');
   const { toast } = useToast();
@@ -58,14 +59,17 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
     });
 
     const usersUnsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
-        setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserType)));
+        const allUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserType));
+        setUsers(allUsers);
+        const foundUser = allUsers.find(u => u.username === username);
+        setCurrentUser(foundUser || null);
     });
 
     return () => {
         reviewsUnsubscribe();
         usersUnsubscribe();
     }
-  }, [book?.id]);
+  }, [book?.id, username]);
 
   if (!book) {
     return null;
@@ -73,8 +77,8 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
   
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
-      setShowCheckoutForm(false); // Reset form view on close
-      setIsProcessing(false); // Reset processing state on close
+      setShowCheckoutForm(false);
+      setIsProcessing(false);
       setNewRating(0);
       setNewComment('');
     }
@@ -127,13 +131,9 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
 
   const handleApprove = () => {
     if (checkout && onApproveRequest) {
-      setIsProcessing(true); // Visually disable the button immediately
-      
-      // Don't await this. Let it run in the background.
-      // The UI will update reactively via onSnapshot.
+      setIsProcessing(true); 
       onApproveRequest(checkout);
-      
-      handleOpenChange(false); // Close the dialog immediately
+      handleOpenChange(false);
     }
   }
 
@@ -143,6 +143,26 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
       handleOpenChange(false);
     }
   }
+
+  const handleToggleFavorite = async () => {
+    if (!currentUser || !book) return;
+    
+    const userRef = doc(db, 'users', currentUser.id);
+    const isFavorite = currentUser.favoriteBooks?.includes(book.title);
+
+    try {
+        if (isFavorite) {
+            await updateDoc(userRef, { favoriteBooks: arrayRemove(book.title) });
+            toast({ description: `"${book.title}" eliminado de tus favoritos.` });
+        } else {
+            await updateDoc(userRef, { favoriteBooks: arrayUnion(book.title) });
+            toast({ description: `"${book.title}" añadido a tus favoritos.` });
+        }
+    } catch (error) {
+        console.error("Error updating favorites:", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'No se pudo actualizar tus favoritos.' });
+    }
+  };
 
   const getStockStatus = () => {
     let text;
@@ -194,6 +214,7 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
   });
   
   const userHasReviewed = reviews.some(r => r.userId === username);
+  const isFavorite = currentUser?.favoriteBooks?.includes(book.title);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -212,8 +233,17 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
 
         <div className="flex flex-col h-full overflow-hidden">
           <DialogHeader className="p-6 pb-4 border-b">
-              <DialogTitle className="font-headline text-2xl mb-1">{book.title}</DialogTitle>
-              <DialogDescription className="text-base">{book.author}</DialogDescription>
+            <div className="flex justify-between items-start">
+              <div>
+                <DialogTitle className="font-headline text-2xl mb-1">{book.title}</DialogTitle>
+                <DialogDescription className="text-base">{book.author}</DialogDescription>
+              </div>
+              {role === 'client' && (
+                <Button variant="ghost" size="icon" onClick={handleToggleFavorite} className="shrink-0">
+                    <Heart className={cn("h-6 w-6", isFavorite ? "text-red-500 fill-red-500" : "text-muted-foreground")} />
+                </Button>
+              )}
+            </div>
           </DialogHeader>
           
           <div className="flex-1 overflow-y-auto">
@@ -396,3 +426,5 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
     </Dialog>
   );
 }
+
+    

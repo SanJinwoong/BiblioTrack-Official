@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import type { Book as BookType, Checkout, Category, User } from '@/lib/types';
+import type { Book as BookType, Checkout, Category, User, Review } from '@/lib/types';
 import { BookCard } from './book-card';
 import { Recommendations } from './recommendations';
 import { Badge } from './ui/badge';
@@ -30,6 +30,7 @@ export function ClientDashboard() {
   const [username, setUsername] = useState('');
   const [user, setUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
   const [books, setBooks] = useState<BookType[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -84,11 +85,12 @@ export function ClientDashboard() {
   useEffect(() => {
     const results = books.filter(
       (book) =>
-        book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        book.author.toLowerCase().includes(searchTerm.toLowerCase())
+        (book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        book.author.toLowerCase().includes(searchTerm.toLowerCase())) &&
+        (!selectedCategory || book.category === selectedCategory)
     );
     setFilteredBooks(results);
-  }, [searchTerm, books]);
+  }, [searchTerm, books, selectedCategory]);
 
   const handleSuccessfulCheckoutRequest = async (bookId: string, checkoutData: {userId: string; dueDate: string}) => {
     const newRequest: Omit<Checkout, 'id'> = {
@@ -142,6 +144,8 @@ export function ClientDashboard() {
     return <RestrictedView user={user} checkouts={userCheckoutsWithId} />;
   }
 
+  const displayBooks = searchTerm || selectedCategory ? filteredBooks : [];
+
   return (
     <>
       <BookDetailsDialog 
@@ -156,20 +160,30 @@ export function ClientDashboard() {
         role="client"
       />
       <div className="bg-background min-h-screen">
-        <ClientHeader username={username} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+        <ClientHeader 
+            username={username} 
+            searchTerm={searchTerm} 
+            setSearchTerm={setSearchTerm} 
+            onSelectCategory={setSelectedCategory}
+            categories={categories}
+        />
 
         <main className="container mx-auto p-4 md:p-8 lg:p-12 space-y-16">
-          {searchTerm ? (
+          {searchTerm || selectedCategory ? (
               <section id="search-results" className="pt-8 space-y-8">
-                  <h2 className="text-3xl font-bold">Resultados de Búsqueda</h2>
-                  {filteredBooks.length > 0 ? (
+                  <h2 className="text-3xl font-bold">
+                    {selectedCategory ? `Explorando: ${selectedCategory}` : 'Resultados de Búsqueda'}
+                  </h2>
+                  {displayBooks.length > 0 ? (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-                        {filteredBooks.map((book) => (
+                        {displayBooks.map((book) => (
                             <BookCard key={book.id} book={book} onClick={() => handleOpenDialog(book)} />
                         ))}
                     </div>
                   ) : (
-                      <p className="text-muted-foreground text-lg text-center py-16">No se encontraron libros para &quot;{searchTerm}&quot;.</p>
+                      <p className="text-muted-foreground text-lg text-center py-16">
+                        {selectedCategory && !searchTerm ? `No hay libros en la categoría "${selectedCategory}".` : `No se encontraron libros para tu búsqueda.`}
+                      </p>
                   )}
               </section>
           ) : (
@@ -239,7 +253,12 @@ export function ClientDashboard() {
                   <h2 className="text-3xl font-bold text-center">Explora por Categorías</h2>
                   {booksByCategory.map((category) => (
                     <div key={category.id}>
-                      <h3 className="text-2xl font-semibold mb-4">{category.name}</h3>
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-2xl font-semibold">{category.name}</h3>
+                        <Button variant="ghost" onClick={() => setSelectedCategory(category.name)}>
+                            Ver todo <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </div>
                        <Carousel opts={{ align: 'start' }} className="w-full">
                         <CarouselContent className="-ml-4">
                            {category.books.map((book) => (
@@ -265,3 +284,5 @@ export function ClientDashboard() {
     </>
   );
 }
+
+    
