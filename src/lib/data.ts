@@ -12,6 +12,7 @@ export const users: User[] = [
         phone: '123-456-7890',
         address: 'Library Address',
         status: 'active',
+        avatarUrl: 'https://i.pravatar.cc/150?u=librarian'
     },
     { 
         username: 'a1234567890@alumnos.uat.edu.mx', 
@@ -22,7 +23,8 @@ export const users: User[] = [
         phone: '834-111-2233',
         email: 'a1234567890@alumnos.uat.edu.mx',
         address: 'Calle Falsa 123, Ciudad Victoria',
-        status: 'active',
+        status: 'deactivated',
+        avatarUrl: 'https://i.pravatar.cc/150?u=a1234567890'
     },
     { 
         username: 'a0987654321@alumnos.uat.edu.mx', 
@@ -34,6 +36,7 @@ export const users: User[] = [
         email: 'a0987654321@alumnos.uat.edu.mx',
         address: 'Avenida Siempre Viva 742, Ciudad Victoria',
         status: 'active',
+        avatarUrl: 'https://i.pravatar.cc/150?u=a0987654321'
     },
     { 
         username: 'admin', 
@@ -45,6 +48,7 @@ export const users: User[] = [
         phone: '098-765-4321',
         address: 'Admin Address',
         status: 'active',
+        avatarUrl: 'https://i.pravatar.cc/150?u=admin'
     },
 ];
 
@@ -245,18 +249,22 @@ export const books: Book[] = [
 ];
 
 export const checkouts: Checkout[] = [
-  // Préstamo Vencido
+  // Préstamo Vencido para Juan Perez (causa de desactivación)
   { userId: 'a1234567890', bookId: 2, dueDate: '2024-05-10', status: 'approved' },
-  // Préstamo Activo (no vencido)
+  // Otro Préstamo Vencido para Juan Perez
+  { userId: 'a1234567890', bookId: 10, dueDate: '2024-06-15', status: 'approved' },
+
+  // Préstamo Vencido para Maria Rodriguez (pero aún no desactivada)
+  { userId: 'a0987654321', bookId: 13, dueDate: '2024-08-15', status: 'approved' },
+  // Préstamo Activo para Maria Rodriguez
   { userId: 'a0987654321', bookId: 8, dueDate: '2024-09-25', status: 'approved' },
-  // Otro préstamo vencido para que haya más de uno
-  { userId: 'a0987654321', bookId: 13, dueDate: '2024-06-01', status: 'approved' },
-  // Préstamo activo casi por vencer
+
+  // Préstamo activo casi por vencer para otro usuario
   { userId: 'a1234567890', bookId: 15, dueDate: '2024-08-30', status: 'approved' },
 ];
 
 export const checkoutRequests: Checkout[] = [
-    { userId: 'a1234567890', bookId: 5, dueDate: '2024-09-22', status: 'pending' },
+    { userId: 'a0987654321', bookId: 5, dueDate: '2024-09-22', status: 'pending' },
     { userId: 'a0987654321', bookId: 11, dueDate: '2024-09-20', status: 'pending' },
     { userId: 'a1234567890', bookId: 14, dueDate: '2024-09-18', status: 'pending' },
 ];
@@ -265,3 +273,5 @@ export const readingHistory: { [key: string]: number[] } = {
     'a1234567890': [4, 6],
     'a0987654321': [1],
 };
+
+    

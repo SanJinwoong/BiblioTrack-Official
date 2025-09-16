@@ -24,15 +24,16 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { Book, Category, User } from '@/lib/types';
 import { Input } from './ui/input';
-import { useForm } from 'react-hook-form';
+import { useForm, useForm as useHookForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
-import { PlusCircle, Trash2, Edit, X, Search, UserX, UserCheck } from 'lucide-react';
-import { Card, CardContent, CardHeader } from './ui/card';
+import { PlusCircle, Trash2, Edit, X, Search, UserX, UserCheck, Settings as SettingsIcon } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from './ui/badge';
+import { Label } from './ui/label';
 
 interface SettingsDialogProps {
   open: boolean;
@@ -50,14 +51,27 @@ const categorySchema = z.object({
   name: z.string().min(1, 'Category name is required.'),
 });
 
+const policySchema = z.object({
+  maxLoans: z.coerce.number().int().min(1, 'Must be at least 1.'),
+  gracePeriod: z.coerce.number().int().min(0, 'Cannot be negative.'),
+});
+
 export function SettingsDialog({ open, onOpenChange, books, categories, setCategories, onEditBook, onDeleteBook, users, onUserStatusChange }: SettingsDialogProps) {
   const { toast } = useToast();
   const [bookSearchTerm, setBookSearchTerm] = useState('');
   const [userSearchTerm, setUserSearchTerm] = useState('');
   
-  const form = useForm({
+  const categoryForm = useForm({
     resolver: zodResolver(categorySchema),
     defaultValues: { name: '' },
+  });
+
+  const policyForm = useHookForm({
+      resolver: zodResolver(policySchema),
+      defaultValues: {
+          maxLoans: 3,
+          gracePeriod: 7,
+      }
   });
 
   const handleAddCategory = (data: { name: string }) => {
@@ -74,7 +88,7 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
       name: data.name,
     };
     setCategories(prev => [...prev, newCategory]);
-    form.reset();
+    categoryForm.reset();
     toast({
         title: 'Category Added',
         description: `"${data.name}" has been added.`,
@@ -95,6 +109,16 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
         title: 'Category Deleted',
     })
   };
+
+  const handlePolicySubmit = (data: z.infer<typeof policySchema>) => {
+      // In a real app, you'd save this to a backend.
+      // For now, we'll just show a toast.
+      localStorage.setItem('libraryPolicies', JSON.stringify(data));
+      toast({
+          title: 'Políticas actualizadas',
+          description: 'Las reglas de la biblioteca han sido guardadas.',
+      })
+  }
 
   const filteredBooks = books.filter(book =>
     book.title.toLowerCase().includes(bookSearchTerm.toLowerCase()) ||
@@ -120,10 +144,11 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6">
           <Tabs defaultValue="books">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="books">Gestionar Libros</TabsTrigger>
               <TabsTrigger value="categories">Gestionar Categorías</TabsTrigger>
               <TabsTrigger value="users">Gestionar Cuentas</TabsTrigger>
+              <TabsTrigger value="policies">Políticas</TabsTrigger>
             </TabsList>
             <TabsContent value="books" className="mt-4">
                 <Card>
@@ -190,10 +215,10 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
                 <CardContent className="p-4 space-y-4">
                   <div>
                     <h4 className="font-semibold mb-2">Añadir Nueva Categoría</h4>
-                    <Form {...form}>
-                      <form onSubmit={form.handleSubmit(handleAddCategory)} className="flex items-start gap-2">
+                    <Form {...categoryForm}>
+                      <form onSubmit={categoryForm.handleSubmit(handleAddCategory)} className="flex items-start gap-2">
                         <FormField
-                          control={form.control}
+                          control={categoryForm.control}
                           name="name"
                           render={({ field }) => (
                             <FormItem className="flex-1">
@@ -283,6 +308,49 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
                          )}
                     </CardContent>
                 </Card>
+            </TabsContent>
+            <TabsContent value="policies" className="mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-headline flex items-center"><SettingsIcon className="mr-2 h-5 w-5"/>Políticas de la Biblioteca</CardTitle>
+                  <CardDescription>Define las reglas para los préstamos y el manejo de cuentas.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Form {...policyForm}>
+                    <form onSubmit={policyForm.handleSubmit(handlePolicySubmit)} className="space-y-6">
+                      <FormField
+                        control={policyForm.control}
+                        name="maxLoans"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Máximo de Libros por Usuario</FormLabel>
+                            <FormControl>
+                              <Input type="number" placeholder="3" {...field} />
+                            </FormControl>
+                            <FormDescription>El número máximo de libros que un usuario puede tener prestados al mismo tiempo.</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={policyForm.control}
+                        name="gracePeriod"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Período de Gracia (días)</FormLabel>
+                            <FormControl>
+                              <Input type="number" placeholder="7" {...field} />
+                            </FormControl>
+                             <FormDescription>Número de días después de la fecha de vencimiento antes de que la cuenta se desactive automáticamente.</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button type="submit">Guardar Políticas</Button>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </div>

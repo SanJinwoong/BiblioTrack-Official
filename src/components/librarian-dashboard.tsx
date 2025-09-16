@@ -19,12 +19,7 @@ import { AddBookDialog } from './add-book-dialog';
 import { DashboardHeader } from './dashboard-header';
 import { SettingsDialog } from './settings-dialog';
 import { isPast, parseISO, differenceInDays } from 'date-fns';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
+import { UserLoanCard } from './user-loan-card';
 
 export function LibrarianDashboard() {
   const [books, setBooks] = useState<BookType[]>([]);
@@ -32,7 +27,6 @@ export function LibrarianDashboard() {
   const [checkouts, setCheckouts] = useState<Checkout[]>([]);
   const [checkoutRequests, setCheckoutRequests] = useState<Checkout[]>([]);
   const [users, setUsers] = useState<UserType[]>([]);
-  const [activeLoansSubTab, setActiveLoansSubTab] = useState('active');
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -111,6 +105,11 @@ export function LibrarianDashboard() {
   const getBook = (bookId: number): BookType | undefined => {
     return books.find(b => b.id === bookId);
   };
+
+  const getUser = (userId: string): UserType | undefined => {
+      const fullUsername = userId.includes('@') ? userId : `${userId}@alumnos.uat.edu.mx`;
+      return users.find(u => u.username === fullUsername || u.name === userId);
+  }
   
   const handleOpenDialog = (book: BookType, checkout: Checkout | null = null) => {
     setSelectedBook(book);
@@ -231,24 +230,45 @@ export function LibrarianDashboard() {
     return diff >= 0 && diff <= 3;
   });
 
-  const activeUsers = users.filter(u => u.status === 'active');
+  const activeUsers = users.filter(u => u.status === 'active' && u.role === 'client');
   const deactivatedUsers = users.filter(u => u.status === 'deactivated');
-  const deactivatedUsernames = deactivatedUsers.map(u => u.username.split('@')[0]);
 
-  // Loans for deactivated users
-  const deactivatedCheckouts = activeCheckouts.filter(c => deactivatedUsernames.includes(c.userId));
-  
-  // Group checkouts by user for the deactivated view
-  const deactivatedCheckoutsByUser = deactivatedUsers.map(user => {
-    const userIdentifier = user.username.split('@')[0];
-    const checkoutsForUser = activeCheckouts.filter(c => c.userId === userIdentifier);
-    return {
-      user,
-      checkouts: checkoutsForUser.map(c => ({...c, book: getBook(c.bookId)}))
-                                .filter(c => c.book)
-                                .sort((a,b) => differenceInDays(new Date(), parseISO(b.dueDate)) - differenceInDays(new Date(), parseISO(a.dueDate)))
-    };
-  }).filter(group => group.checkouts.length > 0);
+  const loansByUser = checkouts.reduce((acc, checkout) => {
+      const user = getUser(checkout.userId);
+      if (!user) return acc;
+
+      if (!acc[user.username]) {
+          acc[user.username] = {
+              user: user,
+              loans: []
+          };
+      }
+      const book = getBook(checkout.bookId);
+      if (book) {
+          acc[user.username].loans.push({ ...checkout, book });
+      }
+      return acc;
+  }, {} as Record<string, { user: UserType; loans: (Checkout & { book: BookType })[] }>);
+
+  const userLoanGroups = Object.values(loansByUser).map(group => {
+      const isDeactivated = group.user.status === 'deactivated';
+      const hasOverdue = group.loans.some(loan => isPast(parseISO(loan.dueDate)));
+      
+      let status: 'deactivated' | 'overdue' | 'active' = 'active';
+      if (isDeactivated) {
+          status = 'deactivated';
+      } else if (hasOverdue) {
+          status = 'overdue';
+      }
+
+      return { ...group, status };
+  }).sort((a, b) => {
+      if (a.status === 'deactivated' && b.status !== 'deactivated') return -1;
+      if (a.status !== 'deactivated' && b.status === 'deactivated') return 1;
+      if (a.status === 'overdue' && b.status === 'active') return -1;
+      if (a.status === 'active' && b.status === 'overdue') return 1;
+      return 0;
+  });
 
 
   return (
@@ -349,8 +369,8 @@ export function LibrarianDashboard() {
                 <TabsTrigger value="checkouts">
                   <ListChecks className="mr-2 h-4 w-4" />
                   Préstamos
-                  {overdueCheckouts.length > 0 && (
-                      <Badge variant="destructive" className="ml-2 animate-pulse">{overdueCheckouts.length}</Badge>
+                  {userLoanGroups.filter(g => g.status !== 'active').length > 0 && (
+                      <Badge variant="destructive" className="ml-2 animate-pulse">{userLoanGroups.filter(g => g.status !== 'active').length}</Badge>
                   )}
                 </TabsTrigger>
               </TabsList>
@@ -455,101 +475,22 @@ export function LibrarianDashboard() {
               <TabsContent value="checkouts" className="mt-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="font-headline">Todos los Libros Prestados</CardTitle>
-                    <div className="flex items-center border-b border-gray-200">
-                        <button onClick={() => setActiveLoansSubTab('active')} className={`py-2 px-4 text-sm font-medium ${activeLoansSubTab === 'active' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}>Activos</button>
-                        <button onClick={() => setActiveLoansSubTab('at-risk')} className={`py-2 px-4 text-sm font-medium ${activeLoansSubTab === 'at-risk' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}>En Riesgo</button>
-                        <button onClick={() => setActiveLoansSubTab('overdue')} className={`py-2 px-4 text-sm font-medium ${activeLoansSubTab === 'overdue' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}>Vencidos</button>
-                        <button onClick={() => setActiveLoansSubTab('deactivated')} className={`py-2 px-4 text-sm font-medium ${activeLoansSubTab === 'deactivated' ? 'border-b-2 border-destructive text-destructive' : 'text-muted-foreground'}`}>Cuentas Desactivadas</button>
-                    </div>
+                    <CardTitle className="font-headline">Vista General de Préstamos</CardTitle>
+                    <CardDescription>Gestiona todos los préstamos y estados de los usuarios desde un solo lugar.</CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    {activeLoansSubTab === 'deactivated' ? (
-                       <div className="space-y-4">
-                        {deactivatedCheckoutsByUser.length > 0 ? deactivatedCheckoutsByUser.map(({ user, checkouts }) => (
-                            <Card key={user.username} className="bg-destructive/5 border-destructive/30">
-                                <CardHeader className="flex flex-row items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <Avatar>
-                                            <AvatarFallback><User /></AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                            <CardTitle className="text-base">{user.name}</CardTitle>
-                                            <CardDescription>{user.email}</CardDescription>
-                                        </div>
-                                    </div>
-                                    <Button onClick={() => setIsSettingsDialogOpen(true)}>Gestionar Cuenta</Button>
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="text-sm font-semibold mb-2">Libros Vencidos:</p>
-                                    <Accordion type="single" collapsible className="w-full">
-                                      {checkouts.map((checkout, index) => (
-                                        <AccordionItem value={`item-${index}`} key={checkout.bookId}>
-                                          <AccordionTrigger className="text-sm hover:no-underline">
-                                            <div className="flex items-center gap-4">
-                                              <BookCopy className="h-4 w-4 text-muted-foreground" />
-                                              <span>{checkout.book?.title}</span>
-                                              <Badge variant="destructive">Vencido hace {differenceInDays(new Date(), parseISO(checkout.dueDate))} días</Badge>
-                                            </div>
-                                          </AccordionTrigger>
-                                          <AccordionContent className="pl-8 text-xs text-muted-foreground">
-                                              <p>Fecha de entrega: {checkout.dueDate}</p>
-                                          </AccordionContent>
-                                        </AccordionItem>
-                                      ))}
-                                    </Accordion>
-                                </CardContent>
-                            </Card>
-                        )) : <p className="text-muted-foreground text-center py-8">No hay cuentas desactivadas con préstamos vencidos.</p>}
-                       </div>
+                  <CardContent className="space-y-4">
+                    {userLoanGroups.length > 0 ? (
+                        userLoanGroups.map(({ user, loans, status }) => (
+                           <UserLoanCard 
+                                key={user.username}
+                                user={user}
+                                loans={loans}
+                                status={status}
+                                onManageAccount={() => setIsSettingsDialogOpen(true)}
+                           />
+                        ))
                     ) : (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        {(activeLoansSubTab === 'active' ? activeCheckouts.filter(c => !isPast(parseISO(c.dueDate))) :
-                          activeLoansSubTab === 'at-risk' ? atRiskCheckouts :
-                          overdueCheckouts).map((checkout) => {
-                            const book = getBook(checkout.bookId);
-                            if (!book) return null;
-                            const isOverdue = isPast(parseISO(checkout.dueDate));
-                            
-                            return (
-                                <BookCard 
-                                  key={`${checkout.userId}-${checkout.bookId}`} 
-                                  book={book} 
-                                  onClick={() => handleOpenDialog(book, checkout)}
-                                  isLoan={true}
-                                  isOverdue={isOverdue}
-                                >
-                                    <div className="p-3 border-t mt-auto">
-                                        <div className='flex items-center justify-between gap-2 mb-2'>
-                                          <div className="flex items-center gap-2 overflow-hidden">
-                                            <Avatar className="h-6 w-6 shrink-0">
-                                              <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
-                                            </Avatar>
-                                            <p className="text-xs font-medium truncate">{checkout.userId}</p>
-                                          </div>
-                                          
-                                          <UserDetailsTooltip userId={checkout.userId}>
-                                              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={(e) => e.stopPropagation()}>
-                                                <MoreHorizontal className="h-4 w-4" />
-                                              </Button>
-                                          </UserDetailsTooltip>
-
-                                        </div>
-                                        <div className='flex items-center justify-between gap-2'>
-                                          <div className='flex items-center gap-2'>
-                                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                                            <p className="text-xs text-muted-foreground">Vence: {checkout.dueDate}</p>
-                                          </div>
-                                        </div>
-                                    </div>
-                                </BookCard>
-                            )
-                        })}
-                      </div>
-                    )}
-
-                    {activeLoansSubTab !== 'deactivated' && activeCheckouts.length === 0 && (
-                        <p className="text-muted-foreground text-center py-8">No hay libros en esta categoría.</p>
+                        <p className="text-muted-foreground text-center py-8">No hay préstamos activos en este momento.</p>
                     )}
                   </CardContent>
                 </Card>
@@ -560,3 +501,5 @@ export function LibrarianDashboard() {
     </>
   );
 }
+
+    

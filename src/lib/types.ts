@@ -26,9 +26,12 @@ export interface User {
     email?: string;
     address?: string;
     status?: 'active' | 'deactivated';
+    avatarUrl?: string;
 }
 
 export interface Category {
   id: string;
   name: string;
 }
+
+    
