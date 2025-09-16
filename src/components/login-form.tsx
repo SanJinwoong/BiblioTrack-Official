@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { LogIn, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -20,7 +20,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import type { User } from '@/lib/types';
-import { collection, query, where, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { collection, onSnapshot } from 'firebase/firestore';
 
 const formSchema = z.object({
   username: z.string().min(1, {
@@ -34,7 +34,35 @@ const formSchema = z.object({
 export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
+
+  useEffect(() => {
+    // Listen to the user's collection to get real-time data
+    // This will first read from the cache (if available) and then from the server.
+    const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
+      if (!snapshot.empty) {
+        setUsers(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as User)));
+        setIsDataLoading(false); // Data is loaded, enable the form
+      } else {
+        // This case can happen during the re-seeding process
+        setIsDataLoading(true);
+      }
+    }, (error) => {
+      console.error("Error fetching users: ", error);
+      toast({
+        variant: "destructive",
+        title: "Error de Conexión",
+        description: "No se pudieron cargar los datos de los usuarios. Revisa tu conexión.",
+      });
+      setIsDataLoading(false); // Stop loading even if there's an error
+    });
+
+    // Cleanup subscription on component unmount
+    return () => unsubscribe();
+  }, [toast]);
+
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -44,79 +72,43 @@ export function LoginForm() {
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true);
+  function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsAuthLoading(true);
     const { username, password } = values;
 
-    let unsubscribe: Unsubscribe | null = null;
-
-    try {
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('username', '==', username));
-      
-      unsubscribe = onSnapshot(q, (querySnapshot) => {
-        // Unsubscribe immediately after the first read (from cache or server)
-        if (unsubscribe) {
-          unsubscribe(); 
-        }
-
-        if (querySnapshot.empty) {
-          toast({
-              variant: "destructive",
-              title: "Usuario no encontrado",
-              description: "El usuario ingresado no existe. Por favor, verifícalo o regístrate.",
-          });
-          setIsLoading(false);
-          return;
-        }
+    // We now check against the user list in the component's state
+    const user = users.find(u => u.username === username);
+    
+    if (user) {
+      if (user.password === password) {
+        localStorage.setItem('userRole', user.role);
+        localStorage.setItem('userUsername', user.username);
         
-        const userDoc = querySnapshot.docs[0];
-        const user = userDoc.data() as User;
-
-        if (user.password === password) {
-          // Store session data
-          localStorage.setItem('userRole', user.role);
-          localStorage.setItem('userUsername', user.username);
-          
-          router.push('/dashboard');
-          toast({
-            title: `✅ ¡Bienvenido de nuevo, ${user.name || user.username}!`,
-            description: 'Has iniciado sesión correctamente.',
-          });
-          // No need to set isLoading to false, as we are navigating away
-
-        } else {
-          toast({
-              variant: "destructive",
-              title: "Contraseña incorrecta",
-              description: "La contraseña no es correcta. Por favor, inténtalo de nuevo.",
-          });
-          setIsLoading(false);
-        }
-
-      }, (error) => {
-          console.error("Error authenticating user with onSnapshot:", error);
-          toast({
-            variant: "destructive",
-            title: "🔥 Error del sistema",
-            description: "Ocurrió un error inesperado al intentar iniciar sesión. Revisa tu conexión o las reglas de Firestore.",
-          });
-          setIsLoading(false);
-          if (unsubscribe) {
-            unsubscribe();
-          }
-      });
-
-    } catch (error) {
-      console.error("Error setting up auth listener:", error);
-       toast({
-            variant: "destructive",
-            title: "🔥 Error de Configuración",
-            description: "No se pudo iniciar el proceso de autenticación.",
+        router.push('/dashboard');
+        toast({
+          title: `✅ ¡Bienvenido de nuevo, ${user.name || user.username}!`,
+          description: 'Has iniciado sesión correctamente.',
         });
-      setIsLoading(false);
+        // No need to set isLoading to false, as we are navigating away
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Contraseña incorrecta",
+          description: "La contraseña no es correcta. Por favor, inténtalo de nuevo.",
+        });
+        setIsAuthLoading(false);
+      }
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Usuario no encontrado",
+        description: "El usuario ingresado no existe. Por favor, verifícalo o regístrate.",
+      });
+      setIsAuthLoading(false);
     }
   }
+  
+  const isButtonDisabled = isDataLoading || isAuthLoading;
 
   return (
     <Form {...form}>
@@ -128,7 +120,7 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>Usuario</FormLabel>
               <FormControl>
-                <Input placeholder="admin o matrícula" {...field} />
+                <Input placeholder="admin o matrícula" {...field} disabled={isDataLoading} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -141,19 +133,19 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>Contraseña</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="••••••••" {...field} />
+                <Input type="password" placeholder="••••••••" {...field} disabled={isDataLoading} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" size="lg" className="w-full mt-4" disabled={isLoading}>
-          {isLoading ? (
+        <Button type="submit" size="lg" className="w-full mt-4" disabled={isButtonDisabled}>
+          {isAuthLoading || isDataLoading ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
             <LogIn className="mr-2 h-4 w-4" />
           )}
-          {isLoading ? 'Verificando...' : 'Entrar'}
+          {isDataLoading ? 'Cargando datos...' : (isAuthLoading ? 'Verificando...' : 'Entrar')}
         </Button>
       </form>
     </Form>
