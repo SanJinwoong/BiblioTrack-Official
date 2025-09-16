@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { LogIn, Loader2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -49,15 +49,12 @@ export function LoginForm() {
     const { username, password } = values;
 
     try {
-      // 1. Create a direct query to Firestore
       const usersRef = collection(db, 'users');
       const q = query(usersRef, where('username', '==', username));
       
-      // 2. Execute the query
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
-        // No user found with that username
         toast({
             variant: "destructive",
             title: "❌ Credenciales incorrectas",
@@ -67,9 +64,8 @@ export function LoginForm() {
         return;
       }
       
-      // 3. Get the user data and check the password
       const userDoc = querySnapshot.docs[0];
-      const user = { id: userDoc.id, ...userDoc.data() } as User;
+      const user = userDoc.data() as User;
 
       if (user.password === password) {
         localStorage.setItem('userRole', user.role);
@@ -81,7 +77,6 @@ export function LoginForm() {
           description: 'Has iniciado sesión correctamente.',
         });
       } else {
-        // Password does not match
         toast({
             variant: "destructive",
             title: "❌ Credenciales incorrectas",

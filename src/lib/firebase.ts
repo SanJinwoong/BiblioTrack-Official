@@ -1,10 +1,11 @@
+
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
 // TODO: Add your Firebase project configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCV3-t-p9y_a7_xJ2-xH1y_S9y9xX_c7Yc",
+  apiKey: "AIzaSyCV3-t-p9y_a7_xJ2-xH1y_S9y9xX",
   authDomain: "bibliotrack-demo.firebaseapp.com",
   projectId: "bibliotrack-demo",
   storageBucket: "bibliotrack-demo.appspot.com",
