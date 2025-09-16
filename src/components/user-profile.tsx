@@ -9,7 +9,7 @@ import { collection, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove } from 
 import type { User, Book, Checkout as CheckoutType, Review } from '@/lib/types';
 import { Skeleton } from './ui/skeleton';
 import { Button } from './ui/button';
-import { UserPlus, UserCheck, Calendar } from 'lucide-react';
+import { UserPlus, UserCheck, Calendar, Edit } from 'lucide-react';
 import { BookCard } from './book-card';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import Link from 'next/link';
@@ -151,10 +151,8 @@ export function UserProfile({ username }: UserProfileProps) {
             <Skeleton className="h-48 md:h-64 w-full" />
             <div className="container mx-auto px-4 md:px-8">
                 {/* Profile Header Skeleton */}
-                <div className="relative">
-                    <div className="absolute -top-16 md:-top-20">
-                        <Skeleton className="h-32 w-32 md:h-40 md:w-40 rounded-full border-4 border-background" />
-                    </div>
+                <div className="relative -mt-16 md:-mt-20">
+                    <Skeleton className="h-32 w-32 md:h-40 md:w-40 rounded-full border-4 border-background" />
                 </div>
                  <div className="h-16 flex justify-end items-center">
                     <Skeleton className="h-10 w-32" />
@@ -164,7 +162,11 @@ export function UserProfile({ username }: UserProfileProps) {
                     <Skeleton className="h-10 w-48" />
                     <Skeleton className="h-5 w-32" />
                     <Skeleton className="h-5 w-full max-w-lg mt-4" />
-                    <Skeleton className="h-5 w-40 mt-4" />
+                    <div className="flex gap-4 pt-2">
+                      <Skeleton className="h-5 w-24" />
+                      <Skeleton className="h-5 w-24" />
+                      <Skeleton className="h-5 w-40" />
+                    </div>
                 </div>
                 {/* Content Skeleton */}
                 <div className="mt-12">
@@ -241,96 +243,95 @@ export function UserProfile({ username }: UserProfileProps) {
         </div>
       </div>
       
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Column */}
-            <div className="lg:col-span-1 -mt-16 md:-mt-20">
-                 <div className="relative">
-                    <Avatar className="h-28 w-28 md:h-36 md:w-36 border-4 border-background bg-background">
-                    <AvatarImage src={user.avatarUrl} alt={user.name} />
-                    <AvatarFallback className="text-5xl">{user.name?.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                </div>
-                 {/* Profile Info */}
-                <div className="mt-4 space-y-2">
-                    <div>
-                        <h1 className="text-2xl font-bold">{user.name}</h1>
-                        <p className="text-sm text-muted-foreground">@{user.username}</p>
-                    </div>
-                     <div className="pt-2">
-                      <p className="text-foreground">{user.bio || 'Este usuario aún no ha añadido una biografía.'}</p>
-                    </div>
-                    {user.createdAt && (
-                         <div className="flex items-center space-x-2 text-sm text-muted-foreground pt-1">
-                            <Calendar className="h-4 w-4" />
-                            <span>Se unió en {format(new Date(user.createdAt), "MMMM 'de' yyyy", { locale: es })}</span>
-                        </div>
-                    )}
-                    <div className="flex items-center space-x-4 text-sm text-muted-foreground pt-2">
-                        <Link href="#" className="hover:underline">
-                            <span className="font-bold text-foreground">{user.following?.length || 0}</span> Siguiendo
-                        </Link>
-                        <Link href="#" className="hover:underline">
-                            <span className="font-bold text-foreground">{user.followers?.length || 0}</span> Seguidores
-                        </Link>
-                    </div>
-                </div>
-            </div>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Profile Header */}
+        <div className="relative -mt-16 md:-mt-20">
+          <Avatar className="h-32 w-32 md:h-40 md:w-40 border-4 border-background bg-background">
+            <AvatarImage src={user.avatarUrl} alt={user.name} />
+            <AvatarFallback className="text-5xl">{user.name?.charAt(0)}</AvatarFallback>
+          </Avatar>
+        </div>
 
-            {/* Right Column / Main Content */}
-            <div className="lg:col-span-2 mt-4">
-                 <div className="flex justify-end h-10 mb-4">
-                    {isOwnProfile ? (
-                        <Button variant="outline" onClick={() => setIsEditDialogOpen(true)}>
-                            Editar Perfil
-                        </Button>
-                    ) : isFollowing ? (
-                        <Button variant="secondary" onClick={handleFollowToggle}>
-                            <UserCheck className="mr-2 h-4 w-4" />
-                            Siguiendo
-                        </Button>
-                    ) : (
-                        <Button onClick={handleFollowToggle}>
-                            <UserPlus className="mr-2 h-4 w-4" />
-                            Seguir
-                        </Button>
-                    )}
-                </div>
-                <Tabs defaultValue="favorites" className="w-full">
-                    <TabsList>
-                        <TabsTrigger value="favorites">Libros Favoritos</TabsTrigger>
-                        <TabsTrigger value="reviews">Reseñas ({userReviews.length})</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="favorites" className="mt-4">
-                        {favoriteBooks && favoriteBooks.length > 0 ? (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                                {favoriteBooks.map(book => (
-                                <BookCard key={book.id} book={book} onClick={() => handleOpenBookDialog(book)} />
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="text-center py-12 text-muted-foreground bg-card rounded-lg">
-                                <p>Aún no se han añadido libros favoritos.</p>
-                            </div>
-                        )}
-                    </TabsContent>
-                    <TabsContent value="reviews" className="mt-4 space-y-4">
-                         {userReviews.length > 0 ? (
-                           <>
-                             {userReviews.map(review => (
-                                <ReviewCard key={review.id} review={review} />
-                             ))}
-                           </>
-                        ) : (
-                           <div className="text-center py-12 text-muted-foreground bg-card rounded-lg">
-                                <p>Este usuario aún no ha dejado ninguna reseña.</p>
-                           </div>
-                        )}
-                    </TabsContent>
-                </Tabs>
+        {/* Action Button */}
+        <div className="flex justify-end h-14 items-center">
+            {isOwnProfile ? (
+                <Button variant="outline" onClick={() => setIsEditDialogOpen(true)}>
+                    <Edit className="mr-2 h-4 w-4" /> Editar Perfil
+                </Button>
+            ) : isFollowing ? (
+                <Button variant="secondary" onClick={handleFollowToggle}>
+                    <UserCheck className="mr-2 h-4 w-4" />
+                    Siguiendo
+                </Button>
+            ) : (
+                <Button onClick={handleFollowToggle}>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Seguir
+                </Button>
+            )}
+        </div>
+        
+        {/* Profile Info */}
+        <div className="mt-2 space-y-4">
+            <div>
+                <h1 className="text-3xl font-bold">{user.name}</h1>
+                <p className="text-md text-muted-foreground">@{user.username}</p>
+            </div>
+            
+            <p className="text-foreground max-w-2xl">{user.bio || 'Este usuario aún no ha añadido una biografía.'}</p>
+            
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+                {user.createdAt && (
+                     <div className="flex items-center space-x-2">
+                        <Calendar className="h-4 w-4" />
+                        <span>Se unió en {format(new Date(user.createdAt), "MMMM 'de' yyyy", { locale: es })}</span>
+                    </div>
+                )}
+                <Link href="#" className="hover:underline">
+                    <span className="font-bold text-foreground">{user.following?.length || 0}</span> Siguiendo
+                </Link>
+                <Link href="#" className="hover:underline">
+                    <span className="font-bold text-foreground">{user.followers?.length || 0}</span> Seguidores
+                </Link>
             </div>
         </div>
-      </main>
+
+        {/* Main Content */}
+        <div className="mt-10">
+          <Tabs defaultValue="favorites" className="w-full">
+              <TabsList>
+                  <TabsTrigger value="favorites">Libros Favoritos</TabsTrigger>
+                  <TabsTrigger value="reviews">Reseñas ({userReviews.length})</TabsTrigger>
+              </TabsList>
+              <TabsContent value="favorites" className="mt-4">
+                  {favoriteBooks && favoriteBooks.length > 0 ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                          {favoriteBooks.map(book => (
+                          <BookCard key={book.id} book={book} onClick={() => handleOpenBookDialog(book)} />
+                          ))}
+                      </div>
+                  ) : (
+                      <div className="text-center py-16 text-muted-foreground bg-muted/50 rounded-lg">
+                          <p>Aún no se han añadido libros favoritos.</p>
+                      </div>
+                  )}
+              </TabsContent>
+              <TabsContent value="reviews" className="mt-4 space-y-4 max-w-2xl mx-auto">
+                   {userReviews.length > 0 ? (
+                     <>
+                       {userReviews.map(review => (
+                          <ReviewCard key={review.id} review={review} />
+                       ))}
+                     </>
+                  ) : (
+                     <div className="text-center py-16 text-muted-foreground bg-muted/50 rounded-lg">
+                          <p>Este usuario aún no ha dejado ninguna reseña.</p>
+                     </div>
+                  )}
+              </TabsContent>
+          </Tabs>
+        </div>
+      </div>
     </>
   );
 }
