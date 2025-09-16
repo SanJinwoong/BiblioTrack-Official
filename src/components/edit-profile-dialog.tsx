@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -50,8 +49,8 @@ async function getCroppedImg(
   const scaleX = image.naturalWidth / image.width;
   const scaleY = image.naturalHeight / image.height;
   
-  canvas.width = crop.width * scaleX;
-  canvas.height = crop.height * scaleY;
+  canvas.width = crop.width;
+  canvas.height = crop.height;
 
   ctx.imageSmoothingQuality = 'high';
 
@@ -123,7 +122,7 @@ function CroppingView({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col items-center justify-center bg-muted/50 p-4 rounded-md h-min-[450px] h-max-[450px]">
+      <div className="flex flex-col items-center justify-center bg-muted/50 p-4 rounded-md min-h-[450px] max-h-[450px]">
         {imgSrc && (
           <ReactCrop
             crop={crop}
