@@ -20,7 +20,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import type { User } from '@/lib/types';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, Unsubscribe } from 'firebase/firestore';
 
 const formSchema = z.object({
   username: z.string().min(1, {
@@ -48,53 +48,72 @@ export function LoginForm() {
     setIsLoading(true);
     const { username, password } = values;
 
+    let unsubscribe: Unsubscribe | null = null;
+
     try {
       const usersRef = collection(db, 'users');
-      // Create a query against the collection.
       const q = query(usersRef, where('username', '==', username));
       
-      const querySnapshot = await getDocs(q);
+      unsubscribe = onSnapshot(q, (querySnapshot) => {
+        // Unsubscribe immediately after the first read (from cache or server)
+        if (unsubscribe) {
+          unsubscribe(); 
+        }
 
-      if (querySnapshot.empty) {
-        toast({
-            variant: "destructive",
-            title: "Usuario no encontrado",
-            description: "El usuario ingresado no existe. Por favor, verifícalo o regístrate.",
-        });
-        setIsLoading(false);
-        return;
-      }
-      
-      const userDoc = querySnapshot.docs[0];
-      const user = userDoc.data() as User;
-
-      if (user.password === password) {
-        // Store session data
-        localStorage.setItem('userRole', user.role);
-        localStorage.setItem('userUsername', user.username);
+        if (querySnapshot.empty) {
+          toast({
+              variant: "destructive",
+              title: "Usuario no encontrado",
+              description: "El usuario ingresado no existe. Por favor, verifícalo o regístrate.",
+          });
+          setIsLoading(false);
+          return;
+        }
         
-        router.push('/dashboard');
-        toast({
-          title: `✅ ¡Bienvenido de nuevo, ${user.name || user.username}!`,
-          description: 'Has iniciado sesión correctamente.',
-        });
+        const userDoc = querySnapshot.docs[0];
+        const user = userDoc.data() as User;
 
-      } else {
-        toast({
+        if (user.password === password) {
+          // Store session data
+          localStorage.setItem('userRole', user.role);
+          localStorage.setItem('userUsername', user.username);
+          
+          router.push('/dashboard');
+          toast({
+            title: `✅ ¡Bienvenido de nuevo, ${user.name || user.username}!`,
+            description: 'Has iniciado sesión correctamente.',
+          });
+          // No need to set isLoading to false, as we are navigating away
+
+        } else {
+          toast({
+              variant: "destructive",
+              title: "Contraseña incorrecta",
+              description: "La contraseña no es correcta. Por favor, inténtalo de nuevo.",
+          });
+          setIsLoading(false);
+        }
+
+      }, (error) => {
+          console.error("Error authenticating user with onSnapshot:", error);
+          toast({
             variant: "destructive",
-            title: "Contraseña incorrecta",
-            description: "La contraseña no es correcta. Por favor, inténtalo de nuevo.",
-        });
-      }
+            title: "🔥 Error del sistema",
+            description: "Ocurrió un error inesperado al intentar iniciar sesión. Revisa tu conexión o las reglas de Firestore.",
+          });
+          setIsLoading(false);
+          if (unsubscribe) {
+            unsubscribe();
+          }
+      });
 
     } catch (error) {
-      console.error("Error authenticating user:", error);
-      toast({
-        variant: "destructive",
-        title: "🔥 Error del sistema",
-        description: "Ocurrió un error inesperado al intentar iniciar sesión. Revisa tu conexión o las reglas de Firestore.",
-      });
-    } finally {
+      console.error("Error setting up auth listener:", error);
+       toast({
+            variant: "destructive",
+            title: "🔥 Error de Configuración",
+            description: "No se pudo iniciar el proceso de autenticación.",
+        });
       setIsLoading(false);
     }
   }
