@@ -58,13 +58,13 @@ export function LoginForm() {
   function onSubmit(values: z.infer<typeof formSchema>) {
     const { emailOrMatricula, password } = values;
     
-    let potentialUsername = emailOrMatricula;
+    let searchInput = emailOrMatricula;
     if (matriculaRegex.test(emailOrMatricula)) {
-      potentialUsername = `${emailOrMatricula}@alumnos.uat.edu.mx`;
+      searchInput = `${emailOrMatricula}@alumnos.uat.edu.mx`;
     }
 
     const user = users.find(u => 
-        (u.username === potentialUsername || u.email === potentialUsername) && 
+        (u.username === searchInput || u.email === searchInput) && 
         u.password === password
     );
 
