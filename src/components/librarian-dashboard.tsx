@@ -28,6 +28,7 @@ export function LibrarianDashboard() {
   const [users, setUsers] = useState<UserType[]>([]);
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [deactivatedUserSearchTerm, setDeactivatedUserSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [filteredBooks, setFilteredBooks] = useState<BookType[]>([]);
   const [selectedBook, setSelectedBook] = useState<BookType | null>(null);
@@ -294,7 +295,13 @@ export function LibrarianDashboard() {
 
   const usersWithOverdueLoans = new Set(overdueCheckouts.map(c => c.userId));
   
-  const deactivatedUserGroups = userLoanGroups.filter(g => g.status === 'deactivated');
+  const deactivatedUserGroups = userLoanGroups
+    .filter(g => g.status === 'deactivated')
+    .filter(g => 
+        g.user.name?.toLowerCase().includes(deactivatedUserSearchTerm.toLowerCase()) ||
+        g.user.username.toLowerCase().includes(deactivatedUserSearchTerm.toLowerCase())
+    );
+
   const activeAndAtRiskCheckouts = activeCheckouts.filter(checkout => {
       const user = getUser(checkout.userId);
       return user?.status !== 'deactivated';
@@ -550,8 +557,21 @@ export function LibrarianDashboard() {
                         <TabsContent value="deactivated" className="mt-4">
                              <Card>
                                 <CardHeader>
-                                    <CardTitle className="font-headline">Usuarios con Cuentas Desactivadas</CardTitle>
-                                    <CardDescription>Estos usuarios tienen préstamos vencidos y su acceso está restringido.</CardDescription>
+                                    <div className='flex flex-col sm:flex-row justify-between sm:items-center gap-4'>
+                                        <div>
+                                            <CardTitle className="font-headline">Usuarios con Cuentas Desactivadas</CardTitle>
+                                            <CardDescription>Estos usuarios tienen préstamos vencidos y su acceso está restringido.</CardDescription>
+                                        </div>
+                                        <div className="relative w-full sm:max-w-xs">
+                                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                          <Input
+                                            placeholder="Buscar por nombre o matrícula..."
+                                            value={deactivatedUserSearchTerm}
+                                            onChange={(e) => setDeactivatedUserSearchTerm(e.target.value)}
+                                            className="pl-10"
+                                          />
+                                        </div>
+                                    </div>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     {deactivatedUserGroups.length > 0 ? (
@@ -564,7 +584,12 @@ export function LibrarianDashboard() {
                                         />
                                         ))
                                     ) : (
-                                        <p className="text-muted-foreground text-center py-8">No hay cuentas desactivadas en este momento.</p>
+                                        <p className="text-muted-foreground text-center py-8">
+                                            {deactivatedUserSearchTerm 
+                                                ? `No se encontraron usuarios para "${deactivatedUserSearchTerm}".`
+                                                : "No hay cuentas desactivadas en este momento."
+                                            }
+                                        </p>
                                     )}
                                 </CardContent>
                             </Card>
@@ -577,5 +602,3 @@ export function LibrarianDashboard() {
     </>
   );
 }
-
-    
