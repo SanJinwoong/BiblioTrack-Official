@@ -436,7 +436,7 @@ export function LibrarianDashboard() {
                         />
                       </div>
                       <div className="relative pt-4">
-                        <Carousel opts={{ align: "start", dragFree: false }} className="w-full">
+                        <Carousel opts={{ align: 'start', dragFree: true }} className="w-full">
                           <CarouselContent className="-ml-2">
                              <CarouselItem className="basis-auto pl-2">
                                 <Button
@@ -459,8 +459,6 @@ export function LibrarianDashboard() {
                               </CarouselItem>
                             ))}
                           </CarouselContent>
-                          <CarouselPrevious className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 bg-background/80 hover:bg-background" />
-                          <CarouselNext className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 bg-background/80 hover:bg-background" />
                         </Carousel>
                       </div>
                   </CardHeader>
@@ -617,3 +615,5 @@ export function LibrarianDashboard() {
     </>
   );
 }
+
+    
