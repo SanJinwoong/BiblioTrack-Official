@@ -50,7 +50,7 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
   const getLoanStatusBadge = () => {
     if (isOverdue) {
         return (
-            <Badge variant="destructive">
+            <Badge className='bg-yellow-100 text-yellow-800'>
                 Vencido
             </Badge>
         );

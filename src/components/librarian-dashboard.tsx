@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { books as initialBooks, checkouts as initialCheckouts, users as initialUsers, checkoutRequests as initialCheckoutRequests, categories as initialCategories } from '@/lib/data';
 import type { Book as BookType, Checkout, User as UserType, Category } from '@/lib/types';
-import { Book, ListChecks, Search, User, Calendar, MoreHorizontal, Bell, BookCopy, PlusCircle, Users, UserX, AlertTriangle, ChevronDown } from 'lucide-react';
+import { Book, ListChecks, Search, User, Bell, BookCopy, PlusCircle, Users, UserX, AlertTriangle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,6 @@ import { BookDetailsDialog } from './book-details-dialog';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback } from './ui/avatar';
-import { UserDetailsTooltip } from './user-details-tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { AddBookDialog } from './add-book-dialog';
 import { DashboardHeader } from './dashboard-header';
@@ -69,11 +68,15 @@ export function LibrarianDashboard() {
   }, []);
 
 
-  useEffect(() => { if (books.length > 0) localStorage.setItem('books', JSON.stringify(books)); }, [books]);
-  useEffect(() => { if (categories.length > 0) localStorage.setItem('categories', JSON.stringify(categories)); }, [categories]);
-  useEffect(() => { if (checkouts.length > 0) localStorage.setItem('checkouts', JSON.stringify(checkouts)); }, [checkouts]);
-  useEffect(() => { if (checkoutRequests.length > 0) localStorage.setItem('checkoutRequests', JSON.stringify(checkoutRequests)); }, [checkoutRequests]);
-  useEffect(() => { if (users.length > 0) localStorage.setItem('users', JSON.stringify(users)); }, [users]);
+  useEffect(() => { 
+      if (books.length > initialBooks.length || categories.length > initialCategories.length || checkouts.length > initialCheckouts.length || checkoutRequests.length > initialCheckoutRequests.length || users.length > initialUsers.length) {
+        localStorage.setItem('books', JSON.stringify(books));
+        localStorage.setItem('categories', JSON.stringify(categories));
+        localStorage.setItem('checkouts', JSON.stringify(checkouts));
+        localStorage.setItem('checkoutRequests', JSON.stringify(checkoutRequests));
+        localStorage.setItem('users', JSON.stringify(users));
+      }
+  }, [books, categories, checkouts, checkoutRequests, users]);
 
 
   useEffect(() => {
@@ -106,7 +109,9 @@ export function LibrarianDashboard() {
 
   const getUser = (userId: string): UserType | undefined => {
       const fullUsername = userId.includes('@') ? userId : `${userId}@alumnos.uat.edu.mx`;
-      return users.find(u => u.username === fullUsername || u.name === userId);
+      const userByName = users.find(u => u.name === userId)
+      const userByUsername = users.find(u => u.username === fullUsername);
+      return userByUsername || userByName;
   }
   
   const handleOpenDialog = (book: BookType, checkout: Checkout | null = null) => {
@@ -202,14 +207,18 @@ export function LibrarianDashboard() {
 
   const handleUserStatusChange = (userId: string, reactivate: boolean) => {
     const fullUsername = userId.includes('@') ? userId : `${userId}@alumnos.uat.edu.mx`;
+    
+    const userToUpdate = users.find(u => u.username === fullUsername || u.name === userId);
+    if (!userToUpdate) return;
+    
     const updatedUsers = users.map(u => 
-      u.username === fullUsername ? { ...u, status: reactivate ? 'active' : 'deactivated' } : u
+      u.username === userToUpdate.username ? { ...u, status: reactivate ? 'active' : 'deactivated' } : u
     );
     setUsers(updatedUsers);
     
     toast({
         title: reactivate ? '👤 Cuenta Reactivada' : '🚫 Cuenta Desactivada',
-        description: `La cuenta de ${userId} ha sido ${reactivate ? 'reactivada' : 'desactivada'}.`,
+        description: `La cuenta de ${userToUpdate.name || userId} ha sido ${reactivate ? 'reactivada' : 'desactivada'}.`,
     });
   };
 
@@ -225,21 +234,22 @@ export function LibrarianDashboard() {
 
   const clientUsers = users.filter(u => u.role === 'client');
   const activeUsers = clientUsers.filter(u => u.status === 'active');
-  const deactivatedUsers = clientUsers.filter(u => u.status === 'deactivated');
+  const deactivatedUsers = users.filter(u => u.status === 'deactivated');
 
   const loansByUser = checkouts.reduce((acc, checkout) => {
       const user = getUser(checkout.userId);
       if (!user) return acc;
 
-      if (!acc[user.username]) {
-          acc[user.username] = {
+      const userIdentifier = user.username;
+      if (!acc[userIdentifier]) {
+          acc[userIdentifier] = {
               user: user,
               loans: []
           };
       }
       const book = getBook(checkout.bookId);
       if (book) {
-          acc[user.username].loans.push({ ...checkout, book });
+          acc[userIdentifier].loans.push({ ...checkout, book });
       }
       return acc;
   }, {} as Record<string, { user: UserType; loans: (Checkout & { book: BookType })[] }>);
@@ -254,15 +264,15 @@ export function LibrarianDashboard() {
       }
 
       return { ...group, status };
-  }).sort((a, b) => {
-      if (a.status === 'deactivated' && b.status !== 'deactivated') return -1;
-      if (a.status !== 'deactivated' && b.status === 'deactivated') return 1;
-      if (a.status === 'overdue' && b.status === 'active') return -1;
-      if (a.status === 'active' && b.status === 'overdue') return 1;
-      return a.user.name!.localeCompare(b.user.name!);
   });
 
   const usersWithOverdueLoans = new Set(overdueCheckouts.map(c => c.userId));
+  
+  const deactivatedUserGroups = userLoanGroups.filter(g => g.status === 'deactivated');
+  const activeAndAtRiskCheckouts = activeCheckouts.filter(checkout => {
+      const user = getUser(checkout.userId);
+      return user?.status !== 'deactivated';
+  });
 
 
   return (
@@ -363,8 +373,8 @@ export function LibrarianDashboard() {
                 <TabsTrigger value="checkouts">
                   <ListChecks className="mr-2 h-4 w-4" />
                   Préstamos
-                  {userLoanGroups.filter(g => g.status !== 'active').length > 0 && (
-                      <Badge variant="destructive" className="ml-2 animate-pulse">{userLoanGroups.filter(g => g.status !== 'active').length}</Badge>
+                  {deactivatedUserGroups.length > 0 && (
+                      <Badge variant="destructive" className="ml-2 animate-pulse">{deactivatedUserGroups.length}</Badge>
                   )}
                 </TabsTrigger>
               </TabsList>
@@ -468,28 +478,77 @@ export function LibrarianDashboard() {
               </TabsContent>
 
               <TabsContent value="checkouts" className="mt-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="font-headline">Vista General de Préstamos</CardTitle>
-                    <CardDescription>Gestiona todos los préstamos y estados de los usuarios desde un solo lugar.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {userLoanGroups.length > 0 ? (
-                        userLoanGroups.map(({ user, loans, status }) => (
-                           <UserLoanCard 
-                                key={user.username}
-                                user={user}
-                                loans={loans}
-                                status={status}
-                                onManageAccount={() => setIsSettingsDialogOpen(true)}
-                           />
-                        ))
-                    ) : (
-                        <p className="text-muted-foreground text-center py-8">No hay préstamos activos en este momento.</p>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                    <Tabs defaultValue="active">
+                        <TabsList className="grid w-full grid-cols-2 md:w-auto md:inline-flex">
+                            <TabsTrigger value="active">Préstamos Activos</TabsTrigger>
+                            <TabsTrigger value="deactivated">
+                                Cuentas Desactivadas
+                                {deactivatedUserGroups.length > 0 && (
+                                    <Badge variant="destructive" className="ml-2 animate-pulse">{deactivatedUserGroups.length}</Badge>
+                                )}
+                            </TabsTrigger>
+                        </TabsList>
+                        
+                        <TabsContent value="active" className="mt-4">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="font-headline">Préstamos Activos y Vencidos</CardTitle>
+                                    <CardDescription>Libros prestados a usuarios con cuentas activas.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    {activeAndAtRiskCheckouts.length > 0 ? (
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                                            {activeAndAtRiskCheckouts.map((checkout) => {
+                                                const book = getBook(checkout.bookId);
+                                                if (!book) return null;
+                                                const isOverdue = isPast(parseISO(checkout.dueDate));
+                                                
+                                                return (
+                                                    <BookCard key={`${checkout.userId}-${checkout.bookId}`} book={book} onClick={() => handleOpenDialog(book, checkout)} isLoan={true} isOverdue={isOverdue}>
+                                                        <div className="p-3 border-t mt-auto text-center">
+                                                            <p className="text-xs font-semibold text-primary mb-2">Prestado a:</p>
+                                                            <div className='flex items-center justify-center gap-2'>
+                                                                <Avatar className="h-6 w-6 shrink-0">
+                                                                <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
+                                                                </Avatar>
+                                                                <p className="text-sm font-medium truncate">{checkout.userId}</p>
+                                                            </div>
+                                                        </div>
+                                                    </BookCard>
+                                                )
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <p className="text-muted-foreground text-center py-8">No hay préstamos activos.</p>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        <TabsContent value="deactivated" className="mt-4">
+                             <Card>
+                                <CardHeader>
+                                    <CardTitle className="font-headline">Usuarios con Cuentas Desactivadas</CardTitle>
+                                    <CardDescription>Estos usuarios tienen préstamos vencidos y su acceso está restringido.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    {deactivatedUserGroups.length > 0 ? (
+                                        deactivatedUserGroups.map(({ user, loans }) => (
+                                        <UserLoanCard 
+                                            key={user.username}
+                                            user={user}
+                                            loans={loans}
+                                            onReactivateAccount={() => handleUserStatusChange(user.username, true)}
+                                        />
+                                        ))
+                                    ) : (
+                                        <p className="text-muted-foreground text-center py-8">No hay cuentas desactivadas en este momento.</p>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    </Tabs>
+                </TabsContent>
             </Tabs>
           </div>
         </div>
