@@ -343,7 +343,13 @@ export function LibrarianDashboard() {
                             const isOverdue = isPast(parseISO(checkout.dueDate));
                             
                             return (
-                                <BookCard key={`${checkout.userId}-${checkout.bookId}`} book={book} onClick={() => handleOpenDialog(book, checkout)}>
+                                <BookCard 
+                                  key={`${checkout.userId}-${checkout.bookId}`} 
+                                  book={book} 
+                                  onClick={() => handleOpenDialog(book, checkout)}
+                                  isLoan={true}
+                                  isOverdue={isOverdue}
+                                >
                                     <div className="p-3 border-t mt-auto">
                                         <div className='flex items-center justify-between gap-2 mb-2'>
                                           <div className="flex items-center gap-2 overflow-hidden">
@@ -365,7 +371,6 @@ export function LibrarianDashboard() {
                                             <Calendar className="h-4 w-4 text-muted-foreground" />
                                             <p className="text-xs text-muted-foreground">Vence: {checkout.dueDate}</p>
                                           </div>
-                                          {isOverdue && <Badge variant="destructive" className="animate-pulse">Vencido</Badge>}
                                         </div>
                                     </div>
                                 </BookCard>

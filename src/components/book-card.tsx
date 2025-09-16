@@ -19,9 +19,11 @@ interface BookCardProps {
   onClick?: () => void;
   isApproved?: boolean;
   isPending?: boolean;
+  isOverdue?: boolean;
+  isLoan?: boolean;
 }
 
-export function BookCard({ book, children, className, onClick, isApproved = false, isPending = false }: BookCardProps) {
+export function BookCard({ book, children, className, onClick, isApproved = false, isPending = false, isOverdue = false, isLoan = false }: BookCardProps) {
 
   const getStockBadge = () => {
     if (book.stock === 0) {
@@ -31,17 +33,25 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
         </Badge>
       );
     }
-    if (book.stock <= 3) {
-      return (
-        <Badge className={cn("text-xs font-semibold", 'bg-yellow-100 text-yellow-800')}>
-          Disponible
-        </Badge>
-      );
-    }
     return (
       <Badge className={cn("text-xs font-semibold", 'bg-green-100 text-green-800')}>
         Disponible
       </Badge>
+    );
+  };
+  
+  const getLoanStatusBadge = () => {
+    if (isOverdue) {
+        return (
+            <Badge variant="destructive">
+                Vencido
+            </Badge>
+        );
+    }
+    return (
+        <Badge className={cn("text-xs font-semibold", 'bg-green-100 text-green-800')}>
+            Prestado
+        </Badge>
     );
   };
 
@@ -75,7 +85,7 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
             <CardDescription className="text-xs line-clamp-1">{book.author}</CardDescription>
         </div>
         <div className="mt-3 flex justify-between items-center">
-            {!isApproved && !isPending && getStockBadge()}
+            {isLoan ? getLoanStatusBadge() : (!isApproved && !isPending && getStockBadge())}
             {isPending && <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 animate-pulse">Pendiente</Badge>}
         </div>
       </CardContent>
