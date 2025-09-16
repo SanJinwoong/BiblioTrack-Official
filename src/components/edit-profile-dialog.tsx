@@ -25,6 +25,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import ReactCrop, { type Crop as CropType, centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { Slider } from './ui/slider';
+import { ScrollArea } from './ui/scroll-area';
 
 
 const formSchema = z.object({
@@ -53,7 +54,7 @@ async function getCroppedImg(
     canvas.width = Math.floor(crop.width * scaleX * pixelRatio);
     canvas.height = Math.floor(crop.height * scaleY * pixelRatio);
 
-    ctx.scale(pixelRatio, pixelRatio);
+    ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     ctx.imageSmoothingQuality = 'high';
 
     const cropX = crop.x * scaleX;
@@ -64,13 +65,9 @@ async function getCroppedImg(
 
     ctx.save();
     
-    // 5. Move canvas translation to center of canvas
-    ctx.translate(canvas.width / 2 / pixelRatio, canvas.height / 2 / pixelRatio);
-    // 6. Rotate around canvas center
-    // ctx.rotate(rotateRads)
-    // 7. Scale around center
+    ctx.translate(-cropX, -cropY);
+    ctx.translate(centerX, centerY);
     ctx.scale(scale, scale);
-    // 8. Translate canvas back to top-left corner
     ctx.translate(-centerX, -centerY);
 
     ctx.drawImage(
@@ -261,61 +258,65 @@ export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }:
   }
   
   const EditFormView = () => (
-    <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="relative">
-            <div className="relative h-48 w-full rounded-lg bg-muted overflow-hidden group">
-            {bannerPreview && (
-                <Image src={bannerPreview} alt="Banner preview" fill className="object-cover" />
-            )}
-            <label htmlFor="banner-upload" className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                <Camera className="h-8 w-8 text-white" />
-                <Input id="banner-upload" type="file" accept="image/*" className="sr-only" onChange={(e) => onSelectFile(e, 'banner')} />
-            </label>
-            </div>
-            <div className="absolute bottom-0 left-6 transform translate-y-1/2">
-            <div className="relative h-28 w-28 rounded-full border-4 border-background bg-background group overflow-hidden">
-                {avatarPreview && (
-                    <Image src={avatarPreview} alt="Avatar preview" fill className="object-cover" />
+    <ScrollArea className="h-full">
+      <div className="pr-6">
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="relative">
+                <div className="relative h-48 w-full rounded-lg bg-muted overflow-hidden group">
+                {bannerPreview && (
+                    <Image src={bannerPreview} alt="Banner preview" fill className="object-cover" />
                 )}
-                <label htmlFor="avatar-upload" className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                    <Camera className="h-6 w-6 text-white" />
-                    <Input id="avatar-upload" type="file" accept="image/*" className="sr-only" onChange={(e) => onSelectFile(e, 'avatar')} />
+                <label htmlFor="banner-upload" className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                    <Camera className="h-8 w-8 text-white" />
+                    <Input id="banner-upload" type="file" accept="image/*" className="sr-only" onChange={(e) => onSelectFile(e, 'banner')} />
                 </label>
+                </div>
+                <div className="absolute bottom-0 left-6 transform translate-y-1/2">
+                <div className="relative h-28 w-28 rounded-full border-4 border-background bg-background group overflow-hidden">
+                    {avatarPreview && (
+                        <Image src={avatarPreview} alt="Avatar preview" fill className="object-cover" />
+                    )}
+                    <label htmlFor="avatar-upload" className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                        <Camera className="h-6 w-6 text-white" />
+                        <Input id="avatar-upload" type="file" accept="image/*" className="sr-only" onChange={(e) => onSelectFile(e, 'avatar')} />
+                    </label>
+                </div>
+                </div>
             </div>
+            
+            <div className="pt-16 space-y-4">
+                  <div className="space-y-2">
+                    <label htmlFor="name" className="text-sm font-medium">Nombre</label>
+                    <Input id="name" placeholder="Tu nombre" {...form.register('name')} />
+                    {form.formState.errors.name && <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>}
+                  </div>
+                   <div className="space-y-2">
+                    <label htmlFor="bio" className="text-sm font-medium">Biografía</label>
+                    <Textarea id="bio" placeholder="Cuéntanos un poco sobre ti..." {...form.register('bio')} />
+                  </div>
             </div>
-        </div>
-        
-        <div className="pt-16 space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="name" className="text-sm font-medium">Nombre</label>
-                <Input id="name" placeholder="Tu nombre" {...form.register('name')} />
-                {form.formState.errors.name && <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>}
-              </div>
-               <div className="space-y-2">
-                <label htmlFor="bio" className="text-sm font-medium">Biografía</label>
-                <Textarea id="bio" placeholder="Cuéntanos un poco sobre ti..." {...form.register('bio')} />
-              </div>
-        </div>
 
-        <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button type="submit">Guardar Cambios</Button>
-        </DialogFooter>
-        </form>
-    </Form>
+            <DialogFooter>
+                <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
+                <Button type="submit">Guardar Cambios</Button>
+            </DialogFooter>
+            </form>
+        </Form>
+      </div>
+    </ScrollArea>
   );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl h-full max-h-[85vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-2xl h-full max-h-[85vh] flex flex-col p-0">
+        <DialogHeader className="p-6 pb-4 border-b">
           <DialogTitle>{croppingTarget ? 'Ajustar Imagen' : 'Editar Perfil'}</DialogTitle>
           <DialogDescription>
             {croppingTarget ? 'Arrastra y ajusta el recuadro para seleccionar la parte de la imagen que quieres usar.' : 'Personaliza tu perfil. Los cambios serán visibles para otros usuarios.'}
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 p-6 pt-0">
         {croppingTarget ? (
             <CroppingView
                 imgSrc={imageToCrop}
