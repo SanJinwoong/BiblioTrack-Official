@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -66,20 +67,27 @@ export function ClientHeader({ username, searchTerm, setSearchTerm, onSelectCate
 
   const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("Searching for:", searchTerm);
+    // Prevent default but allow live filtering via state change
   }
 
   const handleScrollTo = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        setOpen(false); // Close sheet on navigation
-    } else {
-        // If on a different page like profile, navigate first then scroll
+    setOpen(false);
+    
+    // If we're not on the main dashboard, navigate there first.
+    if (window.location.pathname !== '/dashboard') {
         router.push('/dashboard');
+        // Wait for navigation to complete before scrolling
         setTimeout(() => {
-            document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 100);
+            const element = document.getElementById(id);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 500);
+    } else {
+        const element = document.getElementById(id);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }
   }
 
@@ -97,23 +105,23 @@ export function ClientHeader({ username, searchTerm, setSearchTerm, onSelectCate
         </div>
 
         <nav className="hidden md:flex items-center space-x-1 text-sm font-medium">
-            <Button variant="link" className="text-muted-foreground hover:text-primary p-0" onClick={() => handleScrollTo('my-activity')}>Mi Actividad</Button>
-            <Button variant="link" className="text-muted-foreground hover:text-primary p-0" onClick={() => handleScrollTo('browse-categories')}>Explorar</Button>
+            <Button variant="link" className="text-muted-foreground hover:text-primary" onClick={() => handleScrollTo('my-activity')}>Mi Actividad</Button>
+            <Button variant="link" className="text-muted-foreground hover:text-primary" onClick={() => handleScrollTo('browse-categories')}>Explorar</Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                  <Button variant="link" className="text-muted-foreground hover:text-primary p-0">Categorías</Button>
+                  <Button variant="link" className="text-muted-foreground hover:text-primary">Categorías</Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuItem onClick={() => onSelectCategory(null)}>Todas</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                {categories.map(cat => (
+                {Array.isArray(categories) && categories.map(cat => (
                   <DropdownMenuItem key={cat.id} onClick={() => onSelectCategory(cat.name)}>
                     {cat.name}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button variant="link" className="text-muted-foreground hover:text-primary p-0" onClick={() => handleScrollTo('recommendations')}>Recomendaciones</Button>
+            <Button variant="link" className="text-muted-foreground hover:text-primary" onClick={() => handleScrollTo('recommendations')}>Recomendaciones</Button>
         </nav>
 
         <div className="flex flex-1 items-center justify-end space-x-2 md:space-x-4">
@@ -176,9 +184,9 @@ export function ClientHeader({ username, searchTerm, setSearchTerm, onSelectCate
                       <Library className="h-7 w-7 text-primary" />
                       <span>BiblioTrack</span>
                   </Link>
-                  <a href="#my-activity" className="text-muted-foreground hover:text-foreground" onClick={() => handleScrollTo('my-activity')}>Mi Actividad</a>
-                  <a href="#browse-categories" className="text-muted-foreground hover:text-foreground" onClick={() => handleScrollTo('browse-categories')}>Explorar</a>
-                  <a href="#recommendations" className="text-muted-foreground hover:text-foreground" onClick={() => handleScrollTo('recommendations')}>Recomendaciones</a>
+                  <a className="text-muted-foreground hover:text-foreground cursor-pointer" onClick={() => handleScrollTo('my-activity')}>Mi Actividad</a>
+                  <a className="text-muted-foreground hover:text-foreground cursor-pointer" onClick={() => handleScrollTo('browse-categories')}>Explorar</a>
+                  <a className="text-muted-foreground hover:text-foreground cursor-pointer" onClick={() => handleScrollTo('recommendations')}>Recomendaciones</a>
                 </nav>
               </SheetContent>
             </Sheet>
@@ -188,5 +196,3 @@ export function ClientHeader({ username, searchTerm, setSearchTerm, onSelectCate
     </header>
   );
 }
-
-    
