@@ -29,6 +29,8 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import {
   Sheet,
   SheetContent,
+  SheetHeader,
+  SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
 
@@ -179,6 +181,9 @@ export function ClientHeader({ username, searchTerm, setSearchTerm, onSelectCate
                 </Button>
               </SheetTrigger>
               <SheetContent side="left">
+                <SheetHeader>
+                    <SheetTitle className="sr-only">Navegación Principal</SheetTitle>
+                </SheetHeader>
                 <nav className="grid gap-6 text-lg font-medium mt-8">
                   <Link href="/dashboard" className="flex items-center gap-2 text-lg font-semibold" onClick={() => setOpen(false)}>
                       <Library className="h-7 w-7 text-primary" />
