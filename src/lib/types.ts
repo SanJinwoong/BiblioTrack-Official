@@ -25,6 +25,7 @@ export interface User {
     phone?: string;
     email?: string;
     address?: string;
+    status?: 'active' | 'deactivated';
 }
 
 export interface Category {

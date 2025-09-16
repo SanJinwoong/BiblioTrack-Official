@@ -3,8 +3,8 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { books as initialBooks, checkouts as initialCheckouts, checkoutRequests as initialCheckoutRequests, categories as initialCategories } from '@/lib/data';
-import type { Book as BookType, Checkout, Category } from '@/lib/types';
+import { books as initialBooks, checkouts as initialCheckouts, checkoutRequests as initialCheckoutRequests, categories as initialCategories, users as initialUsers } from '@/lib/data';
+import type { Book as BookType, Checkout, Category, User } from '@/lib/types';
 import { BookCard } from './book-card';
 import { Recommendations } from './recommendations';
 import { Badge } from './ui/badge';
@@ -18,75 +18,99 @@ import { ClientHeader } from './client-header';
 import { BookDetailsDialog } from './book-details-dialog';
 import { Separator } from './ui/separator';
 import { Button } from './ui/button';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, BookX } from 'lucide-react';
+import { RestrictedView } from './restricted-view';
+import { useToast } from '@/hooks/use-toast';
+
 
 export function ClientDashboard() {
   const [username, setUsername] = useState('');
+  const [user, setUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   
   const [books, setBooks] = useState<BookType[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [checkouts, setCheckouts] = useState<Checkout[]>([]);
   const [checkoutRequests, setCheckoutRequests] = useState<Checkout[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
 
   const [filteredBooks, setFilteredBooks] = useState<BookType[]>([]);
   const [selectedBook, setSelectedBook] = useState<BookType | null>(null);
   const [selectedBookCheckout, setSelectedBookCheckout] = useState<Checkout | null>(null);
-
+  const { toast } = useToast();
 
   useEffect(() => {
     // This effect runs once on component mount to safely initialize state from localStorage.
-    const storedBooks = localStorage.getItem('books');
-    const storedCategories = localStorage.getItem('categories');
-    const storedCheckouts = localStorage.getItem('checkouts');
-    const storedCheckoutRequests = localStorage.getItem('checkoutRequests');
+    let storedBooks = localStorage.getItem('books');
+    let storedCategories = localStorage.getItem('categories');
+    let storedCheckouts = localStorage.getItem('checkouts');
+    let storedCheckoutRequests = localStorage.getItem('checkoutRequests');
+    let storedUsers = localStorage.getItem('users');
     
-    // If the number of books in the initial data is different from what's in storage,
-    // it implies the source data has been updated, so we should re-initialize storage.
-    if (storedBooks && JSON.parse(storedBooks).length !== initialBooks.length) {
-      setBooks(initialBooks);
-      localStorage.setItem('books', JSON.stringify(initialBooks));
-      setCategories(initialCategories);
-      localStorage.setItem('categories', JSON.stringify(initialCategories));
-      setCheckouts(initialCheckouts);
-      localStorage.setItem('checkouts', JSON.stringify(initialCheckouts));
-      setCheckoutRequests(initialCheckoutRequests);
-      localStorage.setItem('checkoutRequests', JSON.stringify(initialCheckoutRequests));
-    } else {
-      setBooks(storedBooks ? JSON.parse(storedBooks) : initialBooks);
-      setCategories(storedCategories ? JSON.parse(storedCategories) : initialCategories);
-      setCheckouts(storedCheckouts ? JSON.parse(storedCheckouts) : initialCheckouts);
-      setCheckoutRequests(storedCheckoutRequests ? JSON.parse(storedCheckoutRequests) : initialCheckoutRequests);
+    // Check if the source data book count has changed.
+    const isDataMismatched = storedBooks && JSON.parse(storedBooks).length !== initialBooks.length;
+    
+    if (!storedBooks || isDataMismatched) {
+      storedBooks = JSON.stringify(initialBooks);
+      localStorage.setItem('books', storedBooks);
+    }
+    if (!storedCategories || isDataMismatched) {
+      storedCategories = JSON.stringify(initialCategories);
+      localStorage.setItem('categories', storedCategories);
+    }
+    if (!storedCheckouts || isDataMismatched) {
+      storedCheckouts = JSON.stringify(initialCheckouts);
+      localStorage.setItem('checkouts', storedCheckouts);
+    }
+    if (!storedCheckoutRequests || isDataMismatched) {
+      storedCheckoutRequests = JSON.stringify(initialCheckoutRequests);
+      localStorage.setItem('checkoutRequests', storedCheckoutRequests);
+    }
+    if (!storedUsers || isDataMismatched) {
+      storedUsers = JSON.stringify(initialUsers);
+      localStorage.setItem('users', storedUsers);
     }
 
+    setBooks(JSON.parse(storedBooks));
+    setCategories(JSON.parse(storedCategories));
+    setCheckouts(JSON.parse(storedCheckouts));
+    setCheckoutRequests(JSON.parse(storedCheckoutRequests));
+    setUsers(JSON.parse(storedUsers));
+    
     const storedUsername = localStorage.getItem('userUsername') || '';
     setUsername(storedUsername);
+
+    const fullUsername = storedUsername.includes('@') ? storedUsername : `${storedUsername}@alumnos.uat.edu.mx`;
+    const currentUser = JSON.parse(storedUsers).find((u: User) => u.username === fullUsername);
+    setUser(currentUser || null);
+
   }, []);
 
   // Persist state to localStorage whenever it changes
-  useEffect(() => { localStorage.setItem('books', JSON.stringify(books)); }, [books]);
-  useEffect(() => { localStorage.setItem('categories', JSON.stringify(categories)); }, [categories]);
+  useEffect(() => { if (books.length > 0) localStorage.setItem('books', JSON.stringify(books)); }, [books]);
+  useEffect(() => { if (categories.length > 0) localStorage.setItem('categories', JSON.stringify(categories)); }, [categories]);
   useEffect(() => { localStorage.setItem('checkouts', JSON.stringify(checkouts)); }, [checkouts]);
   useEffect(() => { localStorage.setItem('checkoutRequests', JSON.stringify(checkoutRequests)); }, [checkoutRequests]);
+  useEffect(() => { if (users.length > 0) localStorage.setItem('users', JSON.stringify(users)); }, [users]);
 
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'books' && e.newValue) {
-        setBooks(JSON.parse(e.newValue));
-      }
-      if (e.key === 'categories' && e.newValue) {
-        setCategories(JSON.parse(e.newValue));
-      }
-      if (e.key === 'checkouts' && e.newValue) {
-        setCheckouts(JSON.parse(e.newValue));
-      }
-      if (e.key === 'checkoutRequests' && e.newValue) {
-        setCheckoutRequests(JSON.parse(e.newValue));
+      if (e.key === 'books' && e.newValue) setBooks(JSON.parse(e.newValue));
+      if (e.key === 'categories' && e.newValue) setCategories(JSON.parse(e.newValue));
+      if (e.key === 'checkouts' && e.newValue) setCheckouts(JSON.parse(e.newValue));
+      if (e.key === 'checkoutRequests' && e.newValue) setCheckoutRequests(JSON.parse(e.newValue));
+      if (e.key === 'users' && e.newValue) {
+        const updatedUsers = JSON.parse(e.newValue);
+        setUsers(updatedUsers);
+        // Also update the current user state
+        const fullUsername = username.includes('@') ? username : `${username}@alumnos.uat.edu.mx`;
+        const currentUser = updatedUsers.find((u: User) => u.username === fullUsername);
+        setUser(currentUser || null);
       }
     };
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  }, [username]);
 
 
   useEffect(() => {
@@ -109,6 +133,10 @@ export function ClientDashboard() {
     const updatedRequests = [...checkoutRequests, newRequest];
     setCheckoutRequests(updatedRequests);
   };
+
+  // Dummy functions for props that are not used in client view
+  const handleReturnBook = () => {};
+  const handleDeactivateUser = () => {};
   
   const handleOpenDialog = (book: BookType) => {
     setSelectedBook(book);
@@ -147,6 +175,10 @@ export function ClientDashboard() {
   })).filter(category => category.books.length > 0);
 
 
+  if (user && user.status === 'deactivated') {
+    return <RestrictedView user={user} checkouts={userCheckouts.filter(c => c.id !== undefined)} />;
+  }
+
   return (
     <>
       <BookDetailsDialog 
@@ -155,6 +187,8 @@ export function ClientDashboard() {
         open={!!selectedBook} 
         onOpenChange={(isOpen) => !isOpen && handleCloseDialog()}
         onSuccessfulCheckout={handleSuccessfulCheckoutRequest}
+        onReturnBook={handleReturnBook} // Dummy prop
+        onDeactivateUser={handleDeactivateUser} // Dummy prop
         username={username}
         role="client"
       />

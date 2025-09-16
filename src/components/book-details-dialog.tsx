@@ -2,7 +2,7 @@
 import Image from 'next/image';
 import { differenceInDays, parseISO, isPast, formatDistanceToNowStrict } from 'date-fns';
 import { es } from 'date-fns/locale';
-import type { Book, Checkout } from '@/lib/types';
+import type { Book, Checkout, User as UserType } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,7 @@ import {
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
-import { User, Calendar, AlertCircle, MoreHorizontal, Bell, Check, FolderKanban } from 'lucide-react';
+import { User, Calendar, AlertCircle, MoreHorizontal, Bell, Check, FolderKanban, BookCheck, UserX } from 'lucide-react';
 import { CheckoutForm } from './checkout-form';
 import { useState } from 'react';
 import { UserDetailsTooltip } from './user-details-tooltip';
@@ -26,11 +26,13 @@ interface BookDetailsDialogProps {
   onOpenChange: (open: boolean) => void;
   onSuccessfulCheckout: (bookId: number, checkoutData: {userId: string; dueDate: string}) => void;
   onApproveRequest?: (checkout: Checkout) => void;
+  onReturnBook: (checkout: Checkout) => void;
+  onDeactivateUser: (userId: string) => void;
   username: string;
   role: 'client' | 'librarian';
 }
 
-export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSuccessfulCheckout, onApproveRequest, username, role }: BookDetailsDialogProps) {
+export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSuccessfulCheckout, onApproveRequest, onReturnBook, onDeactivateUser, username, role }: BookDetailsDialogProps) {
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
 
   if (!book) {
@@ -57,6 +59,20 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
     }
   }
 
+  const handleReturn = () => {
+    if (checkout) {
+      onReturnBook(checkout);
+      handleOpenChange(false);
+    }
+  }
+
+  const handleDeactivateUser = () => {
+    if (checkout) {
+      onDeactivateUser(checkout.userId);
+      handleOpenChange(false);
+    }
+  }
+
   const getStockStatus = () => {
     let text;
     let color;
@@ -66,7 +82,7 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
         color = 'bg-gray-100 text-gray-600';
     } else {
         text = 'Disponible';
-        color = book.stock <= 3 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-500 text-green-50';
+        color = 'bg-green-100 text-green-800';
     }
 
     if (role === 'librarian') {
@@ -84,8 +100,8 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
     today.setHours(0,0,0,0);
 
     if (isPast(dueDate)) {
-      const distance = formatDistanceToNowStrict(dueDate, { addSuffix: true, locale: es });
-      return { text: `Vencido (${distance})`, color: 'text-red-600 font-bold' };
+       const distance = formatDistanceToNowStrict(dueDate, { addSuffix: true, locale: es });
+      return { text: `Vencido ${distance}`, color: 'text-red-600 font-bold' };
     }
     
     const daysDiff = differenceInDays(dueDate, today);
@@ -100,6 +116,7 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
   const dueDateStatus = getDueDateStatus();
   const isRequestByThisUser = checkout?.status === 'pending' && checkout?.userId === username;
   const isPendingRequestForLibrarian = checkout?.status === 'pending';
+  const isLoanForLibrarian = checkout?.status === 'approved';
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -201,29 +218,42 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
             )}
           </div>
           
-          {!showCheckoutForm && (
+          
             <DialogFooter className="p-6 border-t bg-background">
-                {role === 'librarian' && isPendingRequestForLibrarian && (
+                {role === 'librarian' && isPendingRequestForLibrarian && !showCheckoutForm && (
                      <Button type="button" disabled={book.stock === 0} onClick={handleApprove}>
                         <Check className="mr-2 h-4 w-4" />
                         Aprobar Préstamo
                     </Button>
                 )}
-                {role === 'librarian' && !isPendingRequestForLibrarian && (
+                {role === 'librarian' && isLoanForLibrarian && !showCheckoutForm && (
+                    <div className='flex justify-between w-full'>
+                      <Button type="button" variant="destructive" onClick={handleDeactivateUser}>
+                          <UserX className="mr-2 h-4 w-4" />
+                          Desactivar Cuenta
+                      </Button>
+                      <Button type="button" onClick={handleReturn}>
+                          <BookCheck className="mr-2 h-4 w-4" />
+                          Marcar como Devuelto
+                      </Button>
+                    </div>
+                )}
+                {role === 'librarian' && !isPendingRequestForLibrarian && !isLoanForLibrarian && !showCheckoutForm &&(
                     <Button type="button" disabled={book.stock === 0} onClick={() => setShowCheckoutForm(true)}>
                         Realizar Préstamo Directo
                     </Button>
                 )}
-                {role === 'client' && !isRequestByThisUser && (
+                {role === 'client' && !isRequestByThisUser && !showCheckoutForm && (
                     <Button type="button" disabled={book.stock === 0} onClick={() => setShowCheckoutForm(true)}>
                         Solicitar Préstamo
                     </Button>
                 )}
-                <Button type="button" variant="ghost" onClick={() => handleOpenChange(false)}>
-                    Cerrar
-                </Button>
+                {!showCheckoutForm && (
+                  <Button type="button" variant="ghost" onClick={() => handleOpenChange(false)}>
+                      Cerrar
+                  </Button>
+                )}
             </DialogFooter>
-          )}
         </div>
       </DialogContent>
     </Dialog>

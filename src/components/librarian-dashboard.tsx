@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { books as initialBooks, checkouts as initialCheckouts, users, checkoutRequests as initialCheckoutRequests, categories as initialCategories } from '@/lib/data';
+import { books as initialBooks, checkouts as initialCheckouts, users as initialUsers, checkoutRequests as initialCheckoutRequests, categories as initialCategories } from '@/lib/data';
 import type { Book as BookType, Checkout, User as UserType, Category } from '@/lib/types';
 import { Book, ListChecks, Search, User, Calendar, MoreHorizontal, Bell, BookCopy, PlusCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -25,6 +25,8 @@ export function LibrarianDashboard() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [checkouts, setCheckouts] = useState<Checkout[]>([]);
   const [checkoutRequests, setCheckoutRequests] = useState<Checkout[]>([]);
+  const [users, setUsers] = useState<UserType[]>([]);
+
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -39,53 +41,60 @@ export function LibrarianDashboard() {
   
   useEffect(() => {
     // This effect runs once on component mount to safely initialize state from localStorage.
-    const storedBooks = localStorage.getItem('books');
-    const storedCategories = localStorage.getItem('categories');
-    const storedCheckouts = localStorage.getItem('checkouts');
-    const storedCheckoutRequests = localStorage.getItem('checkoutRequests');
+    let storedBooks = localStorage.getItem('books');
+    let storedCategories = localStorage.getItem('categories');
+    let storedCheckouts = localStorage.getItem('checkouts');
+    let storedCheckoutRequests = localStorage.getItem('checkoutRequests');
+    let storedUsers = localStorage.getItem('users');
     
-    // If the number of books in the initial data is different from what's in storage,
-    // it implies the source data has been updated, so we should re-initialize storage.
-    if (storedBooks && JSON.parse(storedBooks).length !== initialBooks.length) {
-      localStorage.setItem('books', JSON.stringify(initialBooks));
-      localStorage.setItem('categories', JSON.stringify(initialCategories));
-      localStorage.setItem('checkouts', JSON.stringify(initialCheckouts));
-      localStorage.setItem('checkoutRequests', JSON.stringify(initialCheckoutRequests));
-      setBooks(initialBooks);
-      setCategories(initialCategories);
-      setCheckouts(initialCheckouts);
-      setCheckoutRequests(initialCheckoutRequests);
-    } else {
-      setBooks(storedBooks ? JSON.parse(storedBooks) : initialBooks);
-      setCategories(storedCategories ? JSON.parse(storedCategories) : initialCategories);
-      setCheckouts(storedCheckouts ? JSON.parse(storedCheckouts) : initialCheckouts);
-      setCheckoutRequests(storedCheckoutRequests ? JSON.parse(storedCheckoutRequests) : initialCheckoutRequests);
+    const isDataMismatched = storedBooks && JSON.parse(storedBooks).length !== initialBooks.length;
+    
+    if (!storedBooks || isDataMismatched) {
+      storedBooks = JSON.stringify(initialBooks);
+      localStorage.setItem('books', storedBooks);
     }
+    if (!storedCategories || isDataMismatched) {
+      storedCategories = JSON.stringify(initialCategories);
+      localStorage.setItem('categories', storedCategories);
+    }
+    if (!storedCheckouts || isDataMismatched) {
+      storedCheckouts = JSON.stringify(initialCheckouts);
+      localStorage.setItem('checkouts', storedCheckouts);
+    }
+    if (!storedCheckoutRequests || isDataMismatched) {
+      storedCheckoutRequests = JSON.stringify(initialCheckoutRequests);
+      localStorage.setItem('checkoutRequests', storedCheckoutRequests);
+    }
+    if (!storedUsers || isDataMismatched) {
+      storedUsers = JSON.stringify(initialUsers);
+      localStorage.setItem('users', storedUsers);
+    }
+
+    setBooks(JSON.parse(storedBooks));
+    setCategories(JSON.parse(storedCategories));
+    setCheckouts(JSON.parse(storedCheckouts));
+    setCheckoutRequests(JSON.parse(storedCheckoutRequests));
+    setUsers(JSON.parse(storedUsers));
 
     const storedUsername = localStorage.getItem('userUsername') || '';
     setUsername(storedUsername);
   }, []);
 
 
-  useEffect(() => { localStorage.setItem('books', JSON.stringify(books)); }, [books]);
-  useEffect(() => { localStorage.setItem('categories', JSON.stringify(categories)); }, [categories]);
+  useEffect(() => { if (books.length > 0) localStorage.setItem('books', JSON.stringify(books)); }, [books]);
+  useEffect(() => { if (categories.length > 0) localStorage.setItem('categories', JSON.stringify(categories)); }, [categories]);
   useEffect(() => { localStorage.setItem('checkouts', JSON.stringify(checkouts)); }, [checkouts]);
   useEffect(() => { localStorage.setItem('checkoutRequests', JSON.stringify(checkoutRequests)); }, [checkoutRequests]);
+  useEffect(() => { if (users.length > 0) localStorage.setItem('users', JSON.stringify(users)); }, [users]);
+
 
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'books' && e.newValue) {
-        setBooks(JSON.parse(e.newValue));
-      }
-      if (e.key === 'categories' && e.newValue) {
-        setCategories(JSON.parse(e.newValue));
-      }
-      if (e.key === 'checkouts' && e.newValue) {
-        setCheckouts(JSON.parse(e.newValue));
-      }
-      if (e.key === 'checkoutRequests' && e.newValue) {
-        setCheckoutRequests(JSON.parse(e.newValue));
-      }
+      if (e.key === 'books' && e.newValue) setBooks(JSON.parse(e.newValue));
+      if (e.key === 'categories' && e.newValue) setCategories(JSON.parse(e.newValue));
+      if (e.key === 'checkouts' && e.newValue) setCheckouts(JSON.parse(e.newValue));
+      if (e.key === 'checkoutRequests' && e.newValue) setCheckoutRequests(JSON.parse(e.newValue));
+      if (e.key === 'users' && e.newValue) setUsers(JSON.parse(e.newValue));
     };
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
@@ -176,13 +185,50 @@ export function LibrarianDashboard() {
     toast({ title: '🗑️ Libro Eliminado', description: 'El libro ha sido eliminado del catálogo.' });
   };
 
+  const handleReturnBook = (checkoutToReturn: Checkout) => {
+    // 1. Increment book stock
+    const updatedBooks = books.map(b => 
+      b.id === checkoutToReturn.bookId ? { ...b, stock: b.stock + 1 } : b
+    );
+    setBooks(updatedBooks);
+
+    // 2. Remove from checkouts
+    const updatedCheckouts = checkouts.filter(c => 
+      !(c.bookId === checkoutToReturn.bookId && c.userId === checkoutToReturn.userId)
+    );
+    setCheckouts(updatedCheckouts);
+
+    // 3. Reactivate user if they have no other overdue books
+    const otherCheckouts = updatedCheckouts.filter(c => c.userId === checkoutToReturn.userId);
+    const hasOtherOverdueBooks = otherCheckouts.some(c => isPast(parseISO(c.dueDate)));
+    
+    if (!hasOtherOverdueBooks) {
+        handleDeactivateUser(checkoutToReturn.userId, true); // true to reactivate
+    }
+    
+    toast({ title: '✅ Libro Devuelto', description: `El libro ha sido marcado como devuelto.` });
+  };
+
+  const handleDeactivateUser = (userId: string, reactivate = false) => {
+    const fullUsername = userId.includes('@') ? userId : `${userId}@alumnos.uat.edu.mx`;
+    const updatedUsers = users.map(u => 
+      u.username === fullUsername ? { ...u, status: reactivate ? 'active' : 'deactivated' } : u
+    );
+    setUsers(updatedUsers);
+    
+    toast({
+        title: reactivate ? '👤 Cuenta Reactivada' : '🚫 Cuenta Desactivada',
+        description: `La cuenta de ${userId} ha sido ${reactivate ? 'reactivada' : 'desactivada'}.`,
+    });
+  };
+
   const activeCheckouts = checkouts.filter(c => c.status === 'approved');
   const overdueCheckoutsCount = activeCheckouts.filter(c => isPast(parseISO(c.dueDate))).length;
 
 
   return (
     <>
-      <DashboardHeader onAddNewBook={handleOpenAddBookDialog} onSettingsClick={() => setIsSettingsDialogOpen(true)} />
+      <DashboardHeader onAddNewBook={handleOpenAddBookDialog} onSettingsClick={()={() => setIsSettingsDialogOpen(true)}} />
       <div className="container mx-auto p-4 md:p-8">
         <AddBookDialog
           open={isAddBookDialogOpen}
@@ -208,6 +254,8 @@ export function LibrarianDashboard() {
             onOpenChange={(isOpen) => !isOpen && handleCloseDialog()}
             onSuccessfulCheckout={handleSuccessfulCheckout}
             onApproveRequest={handleApproveRequest}
+            onReturnBook={handleReturnBook}
+            onDeactivateUser={handleDeactivateUser}
             username={username}
             role="librarian"
           />
