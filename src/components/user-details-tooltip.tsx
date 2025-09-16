@@ -12,7 +12,10 @@ interface UserDetailsTooltipProps {
 }
 
 export function UserDetailsTooltip({ userId, children }: UserDetailsTooltipProps) {
-    const user = users.find(u => u.username === `${userId}@alumnos.uat.edu.mx` || u.username === userId || u.name === userId);
+    const user = users.find(u => {
+        const usernameMatch = u.username.split('@')[0];
+        return usernameMatch === userId || u.name === userId || u.username === userId;
+    });
 
     const content = user ? (
         <div className="p-2 max-w-sm">
