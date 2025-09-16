@@ -12,6 +12,7 @@ import { BookCard } from './book-card';
 import { ScrollArea, ScrollBar } from './ui/scroll-area';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
+import Image from 'next/image';
 
 interface RecommendationsProps {
   onBookSelect: (book: Book) => void;

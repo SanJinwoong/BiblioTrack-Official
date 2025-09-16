@@ -21,6 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ReviewCard } from './review-card';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Card } from './ui/card';
 
 interface UserProfileProps {
   username: string;
@@ -224,113 +225,135 @@ export function UserProfile({ username }: UserProfileProps) {
         username={currentUser?.username || ''}
         role={currentUser?.role || 'client'}
        />
-
-      <div className="w-full">
-        {/* Banner */}
-        <div className="h-48 md:h-56 w-full bg-muted">
-          {user.bannerUrl ? (
-            <Image
-              src={user.bannerUrl}
-              alt={`${user.name}'s banner`}
-              width={1500}
-              height={500}
-              className="object-cover w-full h-full"
-              data-ai-hint="abstract background"
-            />
-          ) : (
-            <div className="h-full w-full bg-gradient-to-r from-gray-200 to-gray-300"></div>
-          )}
-        </div>
-      </div>
-      
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Profile Header */}
-        <div className="relative -mt-16 md:-mt-20">
-          <Avatar className="h-32 w-32 md:h-40 md:w-40 border-4 border-background bg-background">
-            <AvatarImage src={user.avatarUrl} alt={user.name} />
-            <AvatarFallback className="text-5xl">{user.name?.charAt(0)}</AvatarFallback>
-          </Avatar>
-        </div>
-
-        {/* Action Button */}
-        <div className="flex justify-end h-14 items-center">
-            {isOwnProfile ? (
-                <Button variant="outline" onClick={() => setIsEditDialogOpen(true)}>
-                    <Edit className="mr-2 h-4 w-4" /> Editar Perfil
-                </Button>
-            ) : isFollowing ? (
-                <Button variant="secondary" onClick={handleFollowToggle}>
-                    <UserCheck className="mr-2 h-4 w-4" />
-                    Siguiendo
-                </Button>
-            ) : (
-                <Button onClick={handleFollowToggle}>
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Seguir
-                </Button>
-            )}
-        </div>
-        
-        {/* Profile Info */}
-        <div className="mt-2 space-y-4">
-            <div>
-                <h1 className="text-3xl font-bold">{user.name}</h1>
-                <p className="text-md text-muted-foreground">@{user.username}</p>
-            </div>
-            
-            <p className="text-foreground max-w-2xl">{user.bio || 'Este usuario aún no ha añadido una biografía.'}</p>
-            
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
-                {user.createdAt && (
-                     <div className="flex items-center space-x-2">
-                        <Calendar className="h-4 w-4" />
-                        <span>Se unió en {format(new Date(user.createdAt), "MMMM 'de' yyyy", { locale: es })}</span>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+                {/* Profile Header */}
+                 <div className="w-full">
+                    {/* Banner */}
+                    <div className="h-48 md:h-56 w-full bg-muted rounded-lg overflow-hidden">
+                      {user.bannerUrl ? (
+                        <Image
+                          src={user.bannerUrl}
+                          alt={`${user.name}'s banner`}
+                          width={1000}
+                          height={300}
+                          className="object-cover w-full h-full"
+                          data-ai-hint="abstract background"
+                        />
+                      ) : (
+                        <div className="h-full w-full bg-gradient-to-r from-gray-200 to-gray-300"></div>
+                      )}
                     </div>
-                )}
-                <Link href="#" className="hover:underline">
-                    <span className="font-bold text-foreground">{user.following?.length || 0}</span> Siguiendo
-                </Link>
-                <Link href="#" className="hover:underline">
-                    <span className="font-bold text-foreground">{user.followers?.length || 0}</span> Seguidores
-                </Link>
-            </div>
-        </div>
+                </div>
+                 <div className="px-4 sm:px-6 lg:px-8">
+                    <div className="relative -mt-16 md:-mt-20">
+                      <Avatar className="h-32 w-32 md:h-40 md:w-40 border-4 border-background bg-background">
+                        <AvatarImage src={user.avatarUrl} alt={user.name} />
+                        <AvatarFallback className="text-5xl">{user.name?.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                    </div>
 
-        {/* Main Content */}
-        <div className="mt-10">
-          <Tabs defaultValue="favorites" className="w-full">
-              <TabsList>
-                  <TabsTrigger value="favorites">Libros Favoritos</TabsTrigger>
-                  <TabsTrigger value="reviews">Reseñas ({userReviews.length})</TabsTrigger>
-              </TabsList>
-              <TabsContent value="favorites" className="mt-4">
-                  {favoriteBooks && favoriteBooks.length > 0 ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                          {favoriteBooks.map(book => (
-                          <BookCard key={book.id} book={book} onClick={() => handleOpenBookDialog(book)} />
-                          ))}
-                      </div>
-                  ) : (
-                      <div className="text-center py-16 text-muted-foreground bg-muted/50 rounded-lg">
-                          <p>Aún no se han añadido libros favoritos.</p>
-                      </div>
-                  )}
-              </TabsContent>
-              <TabsContent value="reviews" className="mt-4 space-y-4 max-w-2xl mx-auto">
-                   {userReviews.length > 0 ? (
-                     <>
-                       {userReviews.map(review => (
-                          <ReviewCard key={review.id} review={review} />
-                       ))}
-                     </>
-                  ) : (
-                     <div className="text-center py-16 text-muted-foreground bg-muted/50 rounded-lg">
-                          <p>Este usuario aún no ha dejado ninguna reseña.</p>
-                     </div>
-                  )}
-              </TabsContent>
-          </Tabs>
-        </div>
+                    <div className="flex justify-end h-14 items-center">
+                        {isOwnProfile ? (
+                            <Button variant="outline" onClick={() => setIsEditDialogOpen(true)}>
+                                <Edit className="mr-2 h-4 w-4" /> Editar Perfil
+                            </Button>
+                        ) : isFollowing ? (
+                            <Button variant="secondary" onClick={handleFollowToggle}>
+                                <UserCheck className="mr-2 h-4 w-4" />
+                                Siguiendo
+                            </Button>
+                        ) : (
+                            <Button onClick={handleFollowToggle}>
+                                <UserPlus className="mr-2 h-4 w-4" />
+                                Seguir
+                            </Button>
+                        )}
+                    </div>
+                    
+                    <div className="mt-2 space-y-4">
+                        <div>
+                            <h1 className="text-3xl font-bold">{user.name}</h1>
+                            <p className="text-md text-muted-foreground">@{user.username}</p>
+                        </div>
+                        
+                        <p className="text-foreground max-w-2xl">{user.bio || 'Este usuario aún no ha añadido una biografía.'}</p>
+                        
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+                            {user.createdAt && (
+                                <div className="flex items-center space-x-2">
+                                    <Calendar className="h-4 w-4" />
+                                    <span>Se unió en {format(new Date(user.createdAt), "MMMM 'de' yyyy", { locale: es })}</span>
+                                </div>
+                            )}
+                            <Link href="#" className="hover:underline">
+                                <span className="font-bold text-foreground">{user.following?.length || 0}</span> Siguiendo
+                            </Link>
+                            <Link href="#" className="hover:underline">
+                                <span className="font-bold text-foreground">{user.followers?.length || 0}</span> Seguidores
+                            </Link>
+                        </div>
+                    </div>
+
+                    <div className="mt-10">
+                        <Tabs defaultValue="favorites" className="w-full">
+                            <TabsList>
+                                <TabsTrigger value="favorites">Libros Favoritos</TabsTrigger>
+                                <TabsTrigger value="reviews">Reseñas ({userReviews.length})</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="favorites" className="mt-4">
+                                {favoriteBooks && favoriteBooks.length > 0 ? (
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                        {favoriteBooks.map(book => (
+                                        <BookCard key={book.id} book={book} onClick={() => handleOpenBookDialog(book)} />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-16 text-muted-foreground bg-muted/50 rounded-lg">
+                                        <p>Aún no se han añadido libros favoritos.</p>
+                                    </div>
+                                )}
+                            </TabsContent>
+                            <TabsContent value="reviews" className="mt-4 space-y-4">
+                                {userReviews.length > 0 ? (
+                                    <>
+                                    {userReviews.map(review => (
+                                        <ReviewCard key={review.id} review={review} />
+                                    ))}
+                                    </>
+                                ) : (
+                                    <div className="text-center py-16 text-muted-foreground bg-muted/50 rounded-lg">
+                                        <p>Este usuario aún no ha dejado ninguna reseña.</p>
+                                    </div>
+                                )}
+                            </TabsContent>
+                        </Tabs>
+                    </div>
+                </div>
+
+            </div>
+            <div className="lg:col-span-1 space-y-8">
+                <Recommendations onBookSelect={handleOpenBookDialog} displayStyle="compact" />
+
+                <Card>
+                    <Card.Header>
+                        <Card.Title>Actividad Reciente</Card.Title>
+                    </Card.Header>
+                    <Card.Content className="space-y-4">
+                        {userReviews.length > 0 ? (
+                           <>
+                             {userReviews.slice(0, 3).map(review => (
+                                <ReviewCard key={`activity-${review.id}`} review={review} />
+                             ))}
+                           </>
+                        ) : (
+                           <div className="text-center text-sm text-muted-foreground py-8">
+                                <p>Este usuario aún no ha dejado ninguna reseña.</p>
+                           </div>
+                        )}
+                    </Card.Content>
+                </Card>
+            </div>
       </div>
     </>
   );
