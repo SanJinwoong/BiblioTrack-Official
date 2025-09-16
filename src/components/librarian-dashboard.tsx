@@ -83,59 +83,58 @@ export function LibrarianDashboard() {
                 batch.set(catRef, category);
             });
             
-            const bookTitleToIdMap: {[key: string]: string} = {};
             initialBooks.forEach(book => {
                 const bookRef = doc(collection(db, 'books'));
                 batch.set(bookRef, book );
-                bookTitleToIdMap[book.title] = bookRef.id;
             });
 
-            await batch.commit(); // Commit users and books to get their IDs
+            // For checkouts and requests, we need to map book titles to IDs after they are created.
+            // This seeding is simplified and assumes a manual mapping or a more complex seeding script.
+            // For this demo, we'll commit what we have.
+            
+            await batch.commit();
 
-            // Now, we need to fetch the created books to map titles to real IDs for checkouts.
-            const newBatch = writeBatch(db);
-            const booksQuery = await getDocs(collection(db, 'books'));
+            // A second batch to create checkouts/requests with newly created book IDs
+            const newBooksSnapshot = await getDocs(collection(db, 'books'));
             const bookIdMap: { [title: string]: string } = {};
-            booksQuery.forEach(doc => {
-                const book = doc.data() as BookType;
-                bookIdMap[book.title] = doc.id;
+            newBooksSnapshot.forEach(doc => {
+                bookIdMap[doc.data().title] = doc.id;
             });
+            
+            const checkoutBatch = writeBatch(db);
 
             initialCheckouts.forEach(checkout => {
-                const checkoutRef = doc(collection(db, 'checkouts'));
                 const bookId = bookIdMap[checkout.bookTitle];
-                if(bookId) {
-                    newBatch.set(checkoutRef, {
-                        userId: checkout.userId,
-                        bookId: bookId,
-                        dueDate: checkout.dueDate,
-                        status: checkout.status
-                    });
+                if (bookId) {
+                    const checkoutRef = doc(collection(db, 'checkouts'));
+                    const { bookTitle, ...checkoutData } = checkout;
+                    checkoutBatch.set(checkoutRef, { ...checkoutData, bookId });
                 }
             });
 
             initialCheckoutRequests.forEach(request => {
-                const requestRef = doc(collection(db, 'checkoutRequests'));
                 const bookId = bookIdMap[request.bookTitle];
                 if (bookId) {
-                    newBatch.set(requestRef, {
-                        userId: request.userId,
-                        bookId: bookId,
-                        dueDate: request.dueDate,
-                        status: request.status
-                    });
+                    const requestRef = doc(collection(db, 'checkoutRequests'));
+                    const { bookTitle, ...requestData } = request;
+                    checkoutBatch.set(requestRef, { ...requestData, bookId });
                 }
             });
             
-            await newBatch.commit();
+            await checkoutBatch.commit();
+
+
             toast({ title: "✅ Base de Datos Poblada", description: "Los datos de ejemplo han sido cargados."});
         } else {
             console.log('Database already contains data. Skipping seed.');
         }
     };
 
-    seedDatabase().catch(console.error);
-  }, []); 
+    seedDatabase().catch(error => {
+      console.error("Error seeding database:", error);
+      toast({ variant: 'destructive', title: "Error al poblar la base de datos", description: "Revisa las reglas de seguridad de Firestore." });
+    });
+  }, [toast]); 
 
 
   useEffect(() => {
@@ -615,3 +614,5 @@ export function LibrarianDashboard() {
     </>
   );
 }
+
+    
