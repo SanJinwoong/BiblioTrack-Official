@@ -20,7 +20,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import type { User } from '@/lib/types';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, doc, setDoc } from 'firebase/firestore';
 
 const formSchema = z.object({
   username: z.string().min(1, {
@@ -50,10 +50,36 @@ export function LoginForm() {
 
     try {
       const usersRef = collection(db, 'users');
-      // Create a query against the collection.
       const q = query(usersRef, where('username', '==', username));
       
-      const querySnapshot = await getDocs(q);
+      let querySnapshot = await getDocs(q);
+
+      // Si el usuario no se encuentra y es 'admin', créalo.
+      if (querySnapshot.empty && username === 'admin') {
+        toast({
+          title: 'Configurando administrador...',
+          description: 'El usuario "admin" no existía y se está creando. Un momento por favor.',
+        });
+        
+        const adminUser: Omit<User, 'id'> = {
+          username: 'admin',
+          password: 'admin',
+          role: 'librarian',
+          name: 'Librarian Admin',
+          email: 'admin@library.com',
+          curp: 'ADMINCURP123456',
+          phone: '834-000-0000',
+          address: 'UAT, Centro Universitario Victoria',
+          status: 'active',
+          avatarUrl: 'https://i.pravatar.cc/150?u=admin'
+        };
+
+        // Usamos addDoc para que Firestore genere un ID único
+        await addDoc(usersRef, adminUser);
+        
+        // Volvemos a ejecutar la consulta para obtener el usuario recién creado
+        querySnapshot = await getDocs(q);
+      }
 
       if (querySnapshot.empty) {
         toast({
@@ -69,7 +95,7 @@ export function LoginForm() {
       const user = userDoc.data() as User;
 
       if (user.password === password) {
-        // Store user info in localStorage for session persistence
+        // Almacenar datos de sesión
         localStorage.setItem('userRole', user.role);
         localStorage.setItem('userUsername', user.username);
         
@@ -78,6 +104,7 @@ export function LoginForm() {
           title: `✅ ¡Bienvenido de nuevo, ${user.name || user.username}!`,
           description: 'Has iniciado sesión correctamente.',
         });
+
       } else {
         toast({
             variant: "destructive",
