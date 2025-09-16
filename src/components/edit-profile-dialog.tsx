@@ -104,25 +104,27 @@ function CroppingView({
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium">Recortar Imagen</h3>
-      {imgSrc && (
-        <ReactCrop
-          crop={crop}
-          onChange={(_, percentCrop) => setCrop(percentCrop)}
-          onComplete={(c) => setCompletedCrop(c)}
-          aspect={aspect}
-          circularCrop={isCircular}
-        >
-          <Image
-            ref={imgRef}
-            alt="Crop preview"
-            src={imgSrc}
-            width={500}
-            height={500}
-            onLoad={onImageLoad}
-            className="max-h-[60vh] w-auto"
-          />
-        </ReactCrop>
-      )}
+        <div className="flex justify-center max-h-[60vh]">
+          {imgSrc && (
+            <ReactCrop
+              crop={crop}
+              onChange={(_, percentCrop) => setCrop(percentCrop)}
+              onComplete={(c) => setCompletedCrop(c)}
+              aspect={aspect}
+              circularCrop={isCircular}
+            >
+              <Image
+                ref={imgRef}
+                alt="Crop preview"
+                src={imgSrc}
+                width={500}
+                height={500}
+                onLoad={onImageLoad}
+                className="h-full w-auto object-contain"
+              />
+            </ReactCrop>
+          )}
+        </div>
       <div className="flex justify-end gap-2">
         <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
         <Button onClick={handleConfirmCrop}>Confirmar Recorte</Button>
