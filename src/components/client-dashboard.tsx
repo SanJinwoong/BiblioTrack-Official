@@ -13,6 +13,9 @@ import {
   CarouselContent,
   CarouselItem,
 } from '@/components/ui/carousel';
+import Autoplay from "embla-carousel-autoplay"
+import Fade from "embla-carousel-fade"
+
 import { ClientHeader } from './client-header';
 import { BookDetailsDialog } from './book-details-dialog';
 import { Separator } from './ui/separator';
@@ -126,7 +129,7 @@ export function ClientDashboard() {
         return book ? { ...book, ...r } as BookType & Checkout : null;
     }).filter((b): b is BookType & Checkout => b !== null);
 
-  const latestBooks = [...books].sort((a, b) => (b.id > a.id ? 1 : -1)).slice(0, 5);
+  const heroBooks = books.slice(0, 5);
   
   const booksByCategory = categories.map(category => ({
     ...category,
@@ -171,28 +174,34 @@ export function ClientDashboard() {
               </section>
           ) : (
               <>
-                <section id="hero" className="flex flex-col lg:flex-row items-center gap-12">
-                  <div className="lg:w-1/2 text-center lg:text-left">
-                    <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tighter mb-4">
-                      Explora un Universo de Historias
-                    </h1>
-                    <p className="text-lg md:text-xl text-muted-foreground mb-8">
-                      Encuentra tu próxima aventura literaria. Desde clásicos atemporales hasta las últimas novedades, todo está a tu alcance.
-                    </p>
-                    <Button size="lg" className="rounded-full">
-                      Explorar el Catálogo
-                      <ArrowRight className="ml-2 h-5 w-5" />
-                    </Button>
-                  </div>
-                  <div className="lg:w-1/2 relative h-80 lg:h-[450px] w-full">
-                     <Image
-                        src="https://picsum.photos/seed/hero-main/1200/800"
-                        alt="Explora la biblioteca"
-                        fill
-                        className="object-cover rounded-2xl shadow-2xl"
-                        data-ai-hint="library books"
-                      />
-                  </div>
+                <section id="hero" className="w-full">
+                     <Carousel 
+                        opts={{ loop: true }} 
+                        plugins={[Autoplay({ delay: 5000 }), Fade()]}
+                        className="w-full"
+                    >
+                        <CarouselContent className="-ml-4 h-[400px]">
+                            {heroBooks.map((book, index) => (
+                                <CarouselItem key={index} className="pl-4">
+                                     <div className="relative h-full w-full rounded-2xl overflow-hidden shadow-2xl">
+                                        <Image
+                                            src={`https://picsum.photos/seed/hero-${index + 1}/1200/400`}
+                                            alt={book.title}
+                                            fill
+                                            className="object-cover"
+                                            data-ai-hint="fantasy landscape"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
+                                        <div className="absolute bottom-0 left-0 p-8 text-white">
+                                            <Badge variant="secondary" className="mb-2 bg-white/20 text-white backdrop-blur-sm border-0">{book.category}</Badge>
+                                            <h2 className="text-4xl font-bold mb-2">{book.title}</h2>
+                                            <p className="text-lg text-white/90">{book.author}</p>
+                                        </div>
+                                    </div>
+                                </CarouselItem>
+                            ))}
+                        </CarouselContent>
+                    </Carousel>
                 </section>
                 
                 {(userCheckouts.length > 0 || userRequests.length > 0) && (
@@ -203,8 +212,8 @@ export function ClientDashboard() {
                           {userCheckouts.map((loan) =>
                               <div key={`checkout-${loan.id}`} className="w-44 min-w-44">
                                   <BookCard book={loan as BookType} onClick={() => handleOpenDialog(loan as BookType)} isApproved={true}>
-                                  <div className="p-3 pt-0 text-xs">
-                                      <p className="text-muted-foreground mt-1">Vence: {loan.dueDate}</p>
+                                  <div className="absolute top-2 left-2">
+                                      <Badge className='bg-green-100 text-green-800'>Prestado</Badge>
                                   </div>
                                   </BookCard>
                               </div>
@@ -212,9 +221,9 @@ export function ClientDashboard() {
                            {userRequests.map((request) =>
                               <div key={`request-${request.id}`} className="w-44 min-w-44">
                                   <BookCard book={request as BookType} onClick={() => handleOpenDialog(request as BookType)} isPending={true}>
-                                  <div className="p-3 pt-0 text-xs">
+                                    <div className="absolute top-2 left-2">
                                       <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 animate-pulse">Pendiente</Badge>
-                                  </div>
+                                   </div>
                                   </BookCard>
                               </div>
                           )}
@@ -224,16 +233,7 @@ export function ClientDashboard() {
                     </section>
                 )}
 
-                <section id="latest-additions" className="space-y-6">
-                  <h2 className="text-3xl font-bold">Últimos Libros Añadidos</h2>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-8">
-                    {latestBooks.map((book) => (
-                      <BookCard key={book.id} book={book} onClick={() => handleOpenDialog(book)} />
-                    ))}
-                  </div>
-                </section>
-
-                <Separator className="my-12"/>
+                <Separator className="my-8"/>
 
                 <section id="browse-categories" className="space-y-12">
                   <h2 className="text-3xl font-bold text-center">Explora por Categorías</h2>
@@ -253,7 +253,7 @@ export function ClientDashboard() {
                   ))}
                 </section>
 
-                <Separator className="my-12"/>
+                <Separator className="my-8"/>
 
                 <section id="recommendations">
                     <Recommendations onBookSelect={handleOpenDialog} />
@@ -265,5 +265,3 @@ export function ClientDashboard() {
     </>
   );
 }
-
-    

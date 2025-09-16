@@ -3,9 +3,6 @@ import Image from 'next/image';
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import type { Book } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -64,11 +61,10 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
 
   return (
     <Card 
-        className={cn("group flex flex-col overflow-hidden transition-shadow hover:shadow-xl h-full cursor-pointer border-0 shadow-md", className)}
+        className={cn("group relative flex flex-col overflow-hidden transition-shadow hover:shadow-xl h-full cursor-pointer border-0 shadow-md", className)}
         onClick={onClick}
     >
-      <CardHeader className="p-0">
-        <div className="relative aspect-[3/4.5] w-full overflow-hidden rounded-t-lg">
+        <div className="relative aspect-[3/4.5] w-full overflow-hidden rounded-lg">
           <Image
             src={book.coverUrl}
             alt={`Portada de ${book.title}`}
@@ -82,20 +78,12 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
                 <Check className="h-4 w-4 text-white" strokeWidth={3} />
             </div>
           )}
+          <div className="absolute bottom-0 left-0 right-0 h-2/3 bg-gradient-to-t from-black/80 via-black/50 to-transparent"></div>
+           <CardContent className="absolute bottom-0 left-0 right-0 p-3 text-white">
+                <h3 className="font-semibold text-sm line-clamp-2">{book.title}</h3>
+                <p className="text-xs text-white/80 line-clamp-1">{book.author}</p>
+           </CardContent>
         </div>
-      </CardHeader>
-      <CardContent className="flex flex-col flex-grow p-3">
-        <div className="flex-grow">
-            <CardTitle className="font-semibold text-sm mb-1 line-clamp-2">
-              {book.title}
-            </CardTitle>
-            <CardDescription className="text-xs line-clamp-1">{book.author}</CardDescription>
-        </div>
-        <div className="mt-3 flex justify-between items-center">
-            {isLoan ? getLoanStatusBadge() : (!isApproved && !isPending && getStockBadge())}
-            {isPending && <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 animate-pulse">Pendiente</Badge>}
-        </div>
-      </CardContent>
       {children}
     </Card>
   );

@@ -33,15 +33,13 @@ export function ClientHeader({ username, searchTerm, setSearchTerm }: ClientHead
 
   const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // The search is already happening live, but we can keep this for future enhancements
-    // e.g. navigating to a dedicated search page
     console.log("Searching for:", searchTerm);
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/90 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-sm">
       <div className="container flex h-16 items-center">
-        <div className="mr-6 md:flex">
+        <div className="mr-auto flex items-center">
           <Link href="/dashboard" className="flex items-center space-x-2">
             <Library className="h-7 w-7 text-primary" />
             <span className="hidden font-bold sm:inline-block text-xl text-foreground">
@@ -49,36 +47,18 @@ export function ClientHeader({ username, searchTerm, setSearchTerm }: ClientHead
             </span>
           </Link>
         </div>
-        <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
-          <Link
-            href="#my-activity"
-            className="text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Mi Actividad
-          </Link>
-          <Link
-            href="#browse-categories"
-            className="text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Catálogo
-          </Link>
-          <Link
-            href="#recommendations"
-            className="text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Recomendaciones
-          </Link>
-        </nav>
-        <div className="flex flex-1 items-center justify-end space-x-2 md:space-x-4">
-            <form onSubmit={handleSearchSubmit} className="relative w-full max-w-sm">
+        <div className="flex flex-1 items-center justify-center space-x-2 md:space-x-4 max-w-lg w-full">
+            <form onSubmit={handleSearchSubmit} className="relative w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                     placeholder="Buscar libros por título o autor..."
-                    className="pl-9 h-9"
+                    className="pl-9 h-10 rounded-full bg-muted border-0 focus-visible:ring-primary"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </form>
+        </div>
+         <div className="flex flex-1 items-center justify-end">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full">
