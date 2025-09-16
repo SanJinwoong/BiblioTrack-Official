@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { books as initialBooks, checkouts as initialCheckouts, users as initialUsers, checkoutRequests as initialCheckoutRequests, categories as initialCategories } from '@/lib/data';
 import type { Book as BookType, Checkout, User as UserType, Category } from '@/lib/types';
-import { Book, ListChecks, Search, User, Calendar, MoreHorizontal, Bell, BookCopy, PlusCircle } from 'lucide-react';
+import { Book, ListChecks, Search, User, Calendar, MoreHorizontal, Bell, BookCopy, PlusCircle, Users, UserX, AlertTriangle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AddBookDialog } from './add-book-dialog';
 import { DashboardHeader } from './dashboard-header';
 import { SettingsDialog } from './settings-dialog';
-import { isPast, parseISO } from 'date-fns';
+import { isPast, parseISO, differenceInDays } from 'date-fns';
 
 export function LibrarianDashboard() {
   const [books, setBooks] = useState<BookType[]>([]);
@@ -192,15 +192,17 @@ export function LibrarianDashboard() {
     const otherCheckouts = updatedCheckouts.filter(c => c.userId === checkoutToReturn.userId);
     const hasOtherOverdueBooks = otherCheckouts.some(c => isPast(parseISO(c.dueDate)));
     
-    if (!hasOtherOverdueBooks) {
-        handleDeactivateUser(checkoutToReturn.userId, true); // true to reactivate
+    const userToUpdate = users.find(u => u.username === `${checkoutToReturn.userId}@alumnos.uat.edu.mx` || u.username === checkoutToReturn.userId);
+
+    if (userToUpdate && userToUpdate.status === 'deactivated' && !hasOtherOverdueBooks) {
+        handleUserStatusChange(checkoutToReturn.userId, true);
         localStorage.setItem('justReactivated', 'true');
     }
     
     toast({ title: '✅ Libro Devuelto', description: `El libro ha sido marcado como devuelto.` });
   };
 
-  const handleDeactivateUser = (userId: string, reactivate = false) => {
+  const handleUserStatusChange = (userId: string, reactivate: boolean) => {
     const fullUsername = userId.includes('@') ? userId : `${userId}@alumnos.uat.edu.mx`;
     const updatedUsers = users.map(u => 
       u.username === fullUsername ? { ...u, status: reactivate ? 'active' : 'deactivated' } : u
@@ -214,13 +216,23 @@ export function LibrarianDashboard() {
   };
 
   const activeCheckouts = checkouts.filter(c => c.status === 'approved');
-  const overdueCheckoutsCount = activeCheckouts.filter(c => isPast(parseISO(c.dueDate))).length;
+  const overdueCheckouts = activeCheckouts.filter(c => isPast(parseISO(c.dueDate)));
+  const atRiskCheckouts = activeCheckouts.filter(c => {
+    const dueDate = parseISO(c.dueDate);
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const diff = differenceInDays(dueDate, today);
+    return diff >= 0 && diff <= 3;
+  });
+
+  const activeUsers = users.filter(u => u.status === 'active');
+  const deactivatedUsers = users.filter(u => u.status === 'deactivated');
 
 
   return (
     <>
       <DashboardHeader onAddNewBook={handleOpenAddBookDialog} onSettingsClick={() => setIsSettingsDialogOpen(true)} />
-      <div className="container mx-auto p-4 md:p-8">
+      <div className="container mx-auto p-4 md:p-8 space-y-8">
         <AddBookDialog
           open={isAddBookDialogOpen}
           onOpenChange={setIsAddBookDialogOpen}
@@ -237,6 +249,8 @@ export function LibrarianDashboard() {
           setCategories={setCategories}
           onEditBook={handleOpenEditBookDialog}
           onDeleteBook={handleDeleteBook}
+          users={users}
+          onUserStatusChange={handleUserStatusChange}
         />
         <BookDetailsDialog 
             book={selectedBook} 
@@ -246,12 +260,60 @@ export function LibrarianDashboard() {
             onSuccessfulCheckout={handleSuccessfulCheckout}
             onApproveRequest={handleApproveRequest}
             onReturnBook={handleReturnBook}
-            onDeactivateUser={handleDeactivateUser}
+            onDeactivateUser={(userId) => handleUserStatusChange(userId, false)}
             username={username}
             role="librarian"
           />
           <div className="space-y-6">
-            <h1 className="text-3xl font-bold font-headline">Librarian Dashboard</h1>
+            <header>
+                <h1 className="text-3xl font-bold font-headline">Panel del Bibliotecario</h1>
+                <p className="text-muted-foreground">Gestiona el catálogo, las solicitudes y los usuarios.</p>
+            </header>
+
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Usuarios Activos</CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{activeUsers.length}</div>
+                        <p className="text-xs text-muted-foreground">de {users.filter(u=> u.role === 'client').length} usuarios totales</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Préstamos en Riesgo</CardTitle>
+                        <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{atRiskCheckouts.length}</div>
+                        <p className="text-xs text-muted-foreground">Préstamos a punto de vencer</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Préstamos Vencidos</CardTitle>
+                        <AlertTriangle className="h-4 w-4 text-destructive" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{overdueCheckouts.length}</div>
+                        <p className="text-xs text-muted-foreground">Requieren acción inmediata</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Cuentas Desactivadas</CardTitle>
+                        <UserX className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{deactivatedUsers.length}</div>
+                        <p className="text-xs text-muted-foreground">Usuarios con acceso restringido</p>
+                    </CardContent>
+                </Card>
+            </div>
+
+
             <Tabs defaultValue="search">
               <TabsList className="grid w-full grid-cols-3 md:w-auto">
                 <TabsTrigger value="search"><Search className="mr-2 h-4 w-4" />Buscar</TabsTrigger>
@@ -265,8 +327,8 @@ export function LibrarianDashboard() {
                 <TabsTrigger value="checkouts">
                   <ListChecks className="mr-2 h-4 w-4" />
                   Préstamos Activos
-                  {overdueCheckoutsCount > 0 && (
-                      <Badge variant="destructive" className="ml-2 animate-pulse">{overdueCheckoutsCount}</Badge>
+                  {overdueCheckouts.length > 0 && (
+                      <Badge variant="destructive" className="ml-2 animate-pulse">{overdueCheckouts.length}</Badge>
                   )}
                 </TabsTrigger>
               </TabsList>
@@ -423,15 +485,50 @@ export function LibrarianDashboard() {
                 </Card>
               </TabsContent>
             </Tabs>
+
+             {deactivatedUsers.length > 0 && (
+                <div className="mt-8">
+                    <Card className="border-destructive/30 bg-destructive/5">
+                        <CardHeader>
+                            <CardTitle className="font-headline text-destructive flex items-center">
+                                <UserX className="mr-3 h-6 w-6" />
+                                Cuentas Desactivadas
+                            </CardTitle>
+                            <CardDescription className="text-destructive/80">
+                                Estos usuarios tienen el acceso restringido por préstamos vencidos. Gestiona sus cuentas para reactivarlas.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {deactivatedUsers.map(user => {
+                                const userCheckouts = checkouts.filter(c => (c.userId === user.username.split('@')[0] || c.userId === user.username) && c.status === 'approved');
+                                return (
+                                <div key={user.username} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-md border bg-background shadow-sm">
+                                    <div className="mb-4 sm:mb-0">
+                                        <p className="font-bold">{user.name}</p>
+                                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                                        <div className="mt-2 flex flex-wrap gap-2">
+                                            {userCheckouts.map(c => {
+                                                const book = getBook(c.bookId);
+                                                return book ? (
+                                                    <Badge key={book.id} variant="destructive">{book.title}</Badge>
+                                                ) : null
+                                            })}
+                                        </div>
+                                    </div>
+                                    <Button onClick={() => setIsSettingsDialogOpen(true)}>
+                                        Gestionar Cuenta
+                                    </Button>
+                                </div>
+                                )
+                            })}
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
           </div>
         </div>
     </>
   );
 }
-
-    
-    
-
-    
 
     

@@ -22,16 +22,17 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { Book, Category } from '@/lib/types';
+import type { Book, Category, User } from '@/lib/types';
 import { Input } from './ui/input';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
-import { PlusCircle, Trash2, Edit, X, Search } from 'lucide-react';
-import { Card, CardContent } from './ui/card';
+import { PlusCircle, Trash2, Edit, X, Search, UserX, UserCheck } from 'lucide-react';
+import { Card, CardContent, CardHeader } from './ui/card';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from './ui/badge';
 
 interface SettingsDialogProps {
   open: boolean;
@@ -41,15 +42,18 @@ interface SettingsDialogProps {
   setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
   onEditBook: (book: Book) => void;
   onDeleteBook: (bookId: number) => void;
+  users: User[];
+  onUserStatusChange: (userId: string, reactivate: boolean) => void;
 }
 
 const categorySchema = z.object({
   name: z.string().min(1, 'Category name is required.'),
 });
 
-export function SettingsDialog({ open, onOpenChange, books, categories, setCategories, onEditBook, onDeleteBook }: SettingsDialogProps) {
+export function SettingsDialog({ open, onOpenChange, books, categories, setCategories, onEditBook, onDeleteBook, users, onUserStatusChange }: SettingsDialogProps) {
   const { toast } = useToast();
-  const [searchTerm, setSearchTerm] = useState('');
+  const [bookSearchTerm, setBookSearchTerm] = useState('');
+  const [userSearchTerm, setUserSearchTerm] = useState('');
   
   const form = useForm({
     resolver: zodResolver(categorySchema),
@@ -93,37 +97,48 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
   };
 
   const filteredBooks = books.filter(book =>
-    book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    book.author.toLowerCase().includes(searchTerm.toLowerCase())
+    book.title.toLowerCase().includes(bookSearchTerm.toLowerCase()) ||
+    book.author.toLowerCase().includes(bookSearchTerm.toLowerCase())
   );
+
+  const filteredUsers = users.filter(user =>
+    user.role === 'client' && 
+    (user.name?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+     user.email?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+     user.username.toLowerCase().includes(userSearchTerm.toLowerCase()))
+  );
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-4xl max-h-[80vh] flex flex-col p-0">
         <DialogHeader className="p-6 pb-4 border-b">
-          <DialogTitle className="font-headline text-2xl">Settings</DialogTitle>
+          <DialogTitle className="font-headline text-2xl">Gestión del Sistema</DialogTitle>
           <DialogDescription>
-            Manage the library catalog and configuration. This is the developer mode.
+            Administra el catálogo de libros, las categorías y las cuentas de usuario.
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6">
           <Tabs defaultValue="books">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="books">Manage Books</TabsTrigger>
-              <TabsTrigger value="categories">Manage Categories</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="books">Gestionar Libros</TabsTrigger>
+              <TabsTrigger value="categories">Gestionar Categorías</TabsTrigger>
+              <TabsTrigger value="users">Gestionar Cuentas</TabsTrigger>
             </TabsList>
             <TabsContent value="books" className="mt-4">
                 <Card>
-                    <CardContent className="p-4 space-y-4">
+                    <CardHeader className="p-4">
                         <div className="relative">
                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                           <Input
-                            placeholder="Search book by title or author..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Buscar libro por título o autor..."
+                            value={bookSearchTerm}
+                            onChange={(e) => setBookSearchTerm(e.target.value)}
                             className="pl-10"
                           />
                         </div>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0 space-y-2 max-h-[50vh] overflow-y-auto">
                         <div className="space-y-2">
                           {filteredBooks.map(book => (
                               <div key={book.id} className="flex items-center gap-4 p-2 rounded-md hover:bg-muted/50">
@@ -164,7 +179,7 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
                         </div>
                          {filteredBooks.length === 0 && (
                           <div className="text-center text-muted-foreground py-8">
-                            <p>No books found for "{searchTerm}".</p>
+                            <p>No books found for "{bookSearchTerm}".</p>
                           </div>
                         )}
                     </CardContent>
@@ -174,7 +189,7 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
               <Card>
                 <CardContent className="p-4 space-y-4">
                   <div>
-                    <h4 className="font-semibold mb-2">Add New Category</h4>
+                    <h4 className="font-semibold mb-2">Añadir Nueva Categoría</h4>
                     <Form {...form}>
                       <form onSubmit={form.handleSubmit(handleAddCategory)} className="flex items-start gap-2">
                         <FormField
@@ -196,7 +211,7 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
                     </Form>
                   </div>
                   <div>
-                    <h4 className="font-semibold mb-2">Existing Categories</h4>
+                    <h4 className="font-semibold mb-2">Categorías Existentes</h4>
                     <div className="space-y-2">
                         {categories.map(cat => (
                             <div key={cat.id} className="flex items-center justify-between p-2 rounded-md bg-secondary">
@@ -211,9 +226,69 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
                 </CardContent>
               </Card>
             </TabsContent>
+            <TabsContent value="users" className="mt-4">
+                <Card>
+                     <CardHeader className="p-4">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Buscar usuario por nombre o correo..."
+                            value={userSearchTerm}
+                            onChange={(e) => setUserSearchTerm(e.target.value)}
+                            className="pl-10"
+                          />
+                        </div>
+                    </CardHeader>
+                     <CardContent className="p-4 pt-0 space-y-2 max-h-[50vh] overflow-y-auto">
+                        {filteredUsers.map(user => (
+                            <div key={user.username} className="flex items-center justify-between gap-4 p-2 rounded-md hover:bg-muted/50">
+                                <div>
+                                    <p className="font-semibold">{user.name}</p>
+                                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {user.status === 'deactivated' ? (
+                                        <Badge variant="destructive">Desactivada</Badge>
+                                    ) : (
+                                        <Badge variant="secondary" className="bg-green-100 text-green-800">Activa</Badge>
+                                    )}
+
+                                    {user.status === 'deactivated' ? (
+                                        <Button
+                                            variant="default"
+                                            size="sm"
+                                            className="bg-green-600 hover:bg-green-700"
+                                            onClick={() => onUserStatusChange(user.username, true)}
+                                        >
+                                            <UserCheck className="mr-2 h-4 w-4" />
+                                            Reactivar
+                                        </Button>
+                                    ) : (
+                                        <Button 
+                                            variant="destructive" 
+                                            size="sm"
+                                            onClick={() => onUserStatusChange(user.username, false)}
+                                        >
+                                            <UserX className="mr-2 h-4 w-4" />
+                                            Desactivar
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                         {filteredUsers.length === 0 && (
+                            <div className="text-center text-muted-foreground py-8">
+                                <p>No se encontraron usuarios.</p>
+                            </div>
+                         )}
+                    </CardContent>
+                </Card>
+            </TabsContent>
           </Tabs>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
+
+    

@@ -80,13 +80,12 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
     if (book.stock === 0) {
         text = 'Agotado';
         color = 'bg-gray-100 text-gray-600';
+    } else if (book.stock <= 3) {
+        text = `Disponible (${book.stock})`;
+        color = 'bg-yellow-100 text-yellow-800';
     } else {
-        text = 'Disponible';
+        text = `Disponible (${book.stock})`;
         color = 'bg-green-100 text-green-800';
-    }
-
-    if (role === 'librarian') {
-        text = `${text} ${book.stock}`;
     }
     
     return { text, color };
@@ -101,13 +100,13 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
 
     if (isPast(dueDate)) {
        const distance = formatDistanceToNowStrict(dueDate, { addSuffix: true, locale: es });
-      return { text: `Vencido ${distance}`, color: 'text-red-600 font-bold' };
+      return { text: `Vencido ${distance}`, color: 'text-red-600 font-bold', isOverdue: true };
     }
     
     const daysDiff = differenceInDays(dueDate, today);
 
     if (daysDiff <= 3) {
-        return { text: `Vence en ${daysDiff + 1} día(s)`, color: 'text-yellow-600 font-bold' };
+        return { text: `Vence en ${daysDiff + 1} día(s)`, color: 'text-yellow-600 font-bold', isAtRisk: true };
     }
     return { text: `Vence el ${checkout.dueDate}`, color: 'text-muted-foreground' };
   };
@@ -156,6 +155,26 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
                         <div>
                             <h4 className="font-bold">Solicitud Pendiente</h4>
                             <p className="text-sm">El usuario <strong>{checkout.userId}</strong> ha solicitado este libro. Fecha de entrega propuesta: {checkout.dueDate}.</p>
+                        </div>
+                   </div>
+                )}
+
+                {dueDateStatus?.isOverdue && role === 'client' && (
+                     <div className="mb-4 flex items-center p-3 rounded-md bg-red-50 text-red-800 border border-red-200">
+                        <AlertCircle className="h-5 w-5 mr-3 shrink-0" />
+                        <div>
+                            <h4 className="font-bold">Préstamo Vencido</h4>
+                            <p className="text-sm">Este préstamo ha vencido. Por favor, devuelve el libro lo antes posible para evitar la desactivación de tu cuenta.</p>
+                        </div>
+                   </div>
+                )}
+                
+                {dueDateStatus?.isAtRisk && role === 'client' && (
+                     <div className="mb-4 flex items-center p-3 rounded-md bg-yellow-50 text-yellow-800 border border-yellow-200">
+                        <AlertCircle className="h-5 w-5 mr-3 shrink-0" />
+                        <div>
+                            <h4 className="font-bold">Préstamo por Vencer</h4>
+                            <p className="text-sm">Recuerda devolver este libro pronto. Tu cuenta podría ser desactivada si no lo haces a tiempo.</p>
                         </div>
                    </div>
                 )}
@@ -259,3 +278,5 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
     </Dialog>
   );
 }
+
+    
