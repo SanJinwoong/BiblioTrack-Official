@@ -1,7 +1,6 @@
-
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore, persistentLocalCache } from "firebase/firestore";
 
 // TODO: Add your Firebase project configuration
 const firebaseConfig = {
@@ -15,6 +14,11 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const db = getFirestore(app);
+
+// Initialize Firestore with persistent cache
+const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({}),
+});
+
 
 export { app, db };
