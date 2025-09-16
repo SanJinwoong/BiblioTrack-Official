@@ -37,7 +37,6 @@ const formSchema = z.object({
 async function getCroppedImg(
     image: HTMLImageElement,
     crop: CropType,
-    scale: number,
 ): Promise<string> {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -49,19 +48,15 @@ async function getCroppedImg(
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
     
-    // The crop coordinates are relative to the scaled image, so we need to adjust
     const cropX = crop.x * scaleX;
     const cropY = crop.y * scaleY;
 
-    // The crop size is also relative to the scaled image
     const cropWidth = crop.width * scaleX;
     const cropHeight = crop.height * scaleY;
     
-    // The final canvas should have the size of the crop area
     canvas.width = cropWidth;
     canvas.height = cropHeight;
 
-    // Draw the part of the original image that corresponds to the crop area onto the canvas
     ctx.drawImage(
         image,
         cropX,
@@ -115,7 +110,7 @@ function CroppingView({
   const handleConfirmCrop = async () => {
     if (completedCrop && completedCrop.width > 0 && completedCrop.height > 0 && imgRef.current) {
         try {
-            const croppedDataUrl = await getCroppedImg(imgRef.current, completedCrop, scale);
+            const croppedDataUrl = await getCroppedImg(imgRef.current, completedCrop);
             onConfirm(croppedDataUrl);
         } catch (e) {
             console.error("Error cropping image:", e);
