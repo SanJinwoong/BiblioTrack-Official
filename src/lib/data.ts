@@ -21,7 +21,7 @@ export const initialUsers: Omit<User, 'id'>[] = [
         username: 'a1234567890', 
         password: 'password',
         role: 'client',
-        name: 'Juan Pérez',
+        name: 'Juan Pérez (Vencido +2 semanas)',
         curp: 'PERJ900101HDFXXX',
         phone: '834-111-2233',
         email: 'a1234567890@alumnos.uat.edu.mx',
@@ -33,7 +33,7 @@ export const initialUsers: Omit<User, 'id'>[] = [
         username: 'a0987654321', 
         password: 'password', 
         role: 'client',
-        name: 'Maria Rodríguez',
+        name: 'Maria Rodríguez (Activa)',
         curp: 'RODM920202MDFXXX',
         phone: '834-444-5566',
         email: 'a0987654321@alumnos.uat.edu.mx',
@@ -45,7 +45,7 @@ export const initialUsers: Omit<User, 'id'>[] = [
         username: 'a2222222222', 
         password: 'password',
         role: 'client',
-        name: 'Carlos Sánchez',
+        name: 'Carlos Sánchez (Vencido +2 semanas)',
         curp: 'SACC880303MDFABC',
         phone: '834-555-7788',
         email: 'a2222222222@alumnos.uat.edu.mx',
@@ -57,13 +57,25 @@ export const initialUsers: Omit<User, 'id'>[] = [
         username: 'a3333333333', 
         password: 'password', 
         role: 'client',
-        name: 'Ana García',
+        name: 'Ana García (Activa)',
         curp: 'GANA950404HDFXYZ',
         phone: '834-666-9900',
         email: 'a3333333333@alumnos.uat.edu.mx',
         address: 'Calle Luna 8, Mante',
         status: 'active',
         avatarUrl: 'https://i.pravatar.cc/150?u=a3333333333'
+    },
+    { 
+        username: 'a4444444444', 
+        password: 'password', 
+        role: 'client',
+        name: 'Laura Gómez (Vencido Reciente)',
+        curp: 'GOML980505MDFZYX',
+        phone: '834-777-1122',
+        email: 'a4444444444@alumnos.uat.edu.mx',
+        address: 'Calle del Río 101, Reynosa',
+        status: 'active',
+        avatarUrl: 'https://i.pravatar.cc/150?u=a4444444444'
     }
 ];
 
@@ -163,18 +175,29 @@ export const initialBooks: Omit<Book, 'id'>[] = [
     },
 ];
 
+const today = new Date();
+const getPastDate = (days: number) => {
+    const date = new Date(today);
+    date.setDate(date.getDate() - days);
+    return date.toISOString().split('T')[0];
+};
+
 // We use the matricula/username as the userId now
 export const initialCheckouts: Omit<Checkout, 'id' | 'bookId'> & { bookTitle: string }[] = [
-  // Préstamo Vencido para Juan Pérez (causa de desactivación)
-  { userId: 'a1234567890', bookTitle: '1984', dueDate: '2024-05-10', status: 'approved' },
-  // Otro Préstamo Vencido para Juan Pérez
-  { userId: 'a1234567890', bookTitle: 'Don Quijote de la Mancha', dueDate: '2024-06-15', status: 'approved' },
-  // Préstamo Vencido para Carlos Sánchez
-  { userId: 'a2222222222', bookTitle: 'Dune', dueDate: '2024-07-01', status: 'approved' },
+  // Préstamo vencido por más de 2 semanas -> Cuenta Desactivada
+  { userId: 'a1234567890', bookTitle: '1984', dueDate: getPastDate(20), status: 'approved' },
+  // Otro Préstamo Vencido para el mismo usuario
+  { userId: 'a1234567890', bookTitle: 'Don Quijote de la Mancha', dueDate: getPastDate(30), status: 'approved' },
+  
+  // Préstamo vencido por más de 2 semanas -> Cuenta Desactivada
+  { userId: 'a2222222222', bookTitle: 'Dune', dueDate: getPastDate(15), status: 'approved' },
 
-  // Préstamo Activo para Maria Rodríguez
+  // Préstamo vencido recientemente (menos de 7 días) -> Usuario Activo pero con alerta
+  { userId: 'a4444444444', bookTitle: 'Cien años de soledad', dueDate: getPastDate(4), status: 'approved' },
+
+  // Préstamo Activo para Maria Rodríguez (aún no vence)
   { userId: 'a0987654321', bookTitle: 'El Alquimista', dueDate: '2024-09-25', status: 'approved' },
-  // Préstamo Activo para Ana García
+  // Préstamo Activo para Ana García (aún no vence)
   { userId: 'a3333333333', bookTitle: 'Orgullo y Prejuicio', dueDate: '2024-09-30', status: 'approved' },
 ];
 
@@ -189,5 +212,3 @@ export const readingHistory: { [key: string]: string[] } = {
     'a1234567890': ["book4_id", "book6_id"], // Placeholder IDs, to be mapped to real book IDs
     'a0987654321': ["book1_id"],
 };
-
-    
