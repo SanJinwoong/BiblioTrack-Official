@@ -23,8 +23,6 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
 } from "@/components/ui/carousel"
 
 export function LibrarianDashboard() {
@@ -337,8 +335,6 @@ export function LibrarianDashboard() {
           setCategories={() => {}}
           onEditBook={handleOpenEditBookDialog}
           onDeleteBook={handleDeleteBook}
-          users={users}
-          onUserStatusChange={handleUserStatusChange}
         />
         <BookDetailsDialog 
             book={selectedBook} 
@@ -436,7 +432,7 @@ export function LibrarianDashboard() {
                         />
                       </div>
                       <div className="relative pt-4">
-                        <Carousel opts={{ align: 'start', dragFree: true }} className="w-full">
+                        <Carousel opts={{ align: 'start', dragFree: false }} className="w-full">
                           <CarouselContent className="-ml-2">
                              <CarouselItem className="basis-auto pl-2">
                                 <Button
@@ -615,5 +611,3 @@ export function LibrarianDashboard() {
     </>
   );
 }
-
-    
