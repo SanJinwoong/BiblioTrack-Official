@@ -2,8 +2,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import type { Book as BookType, Checkout, User as UserType, Category } from '@/lib/types';
-import { Book, ListChecks, Search, User, Bell, BookCopy, PlusCircle, Users, UserX, AlertTriangle } from 'lucide-react';
+import { Book, ListChecks, Search, User, Bell, BookCopy, PlusCircle, Users, UserX, AlertTriangle, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -23,6 +24,8 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
 } from "@/components/ui/carousel"
 
 export function LibrarianDashboard() {
@@ -432,9 +435,9 @@ export function LibrarianDashboard() {
                         />
                       </div>
                       <div className="relative pt-4">
-                        <Carousel opts={{ align: 'start', dragFree: false }} className="w-full">
-                          <CarouselContent className="-ml-2">
-                             <CarouselItem className="basis-auto pl-2">
+                        <Carousel opts={{ align: 'start', dragFree: false }} className="w-full max-w-full">
+                          <CarouselContent className="-ml-1">
+                             <CarouselItem className="basis-auto pl-1">
                                 <Button
                                   variant={!selectedCategory ? 'default' : 'secondary'}
                                   size="sm"
@@ -504,10 +507,10 @@ export function LibrarianDashboard() {
                                         <BookCard key={`${request.id}`} book={book} onClick={() => handleOpenDialog(book, request)}>
                                             <div className="p-3 border-t mt-auto text-center">
                                                 <p className="text-xs font-semibold text-primary mb-2">Solicitado por:</p>
-                                                <div className='flex items-center justify-center gap-2'>
+                                                <Link href={`/profile/${user?.username}`} className='flex items-center justify-center gap-2 hover:underline'>
                                                     <User className="h-4 w-4" />
                                                     <p className="text-sm font-medium truncate">{user?.name || request.userId}</p>
-                                                </div>
+                                                </Link>
                                             </div>
                                         </BookCard>
                                     )
@@ -545,15 +548,16 @@ export function LibrarianDashboard() {
                                                 const book = getBook(checkout.bookId);
                                                 if (!book) return null;
                                                 const isOverdue = isPast(parseISO(checkout.dueDate));
+                                                const user = getUser(checkout.userId);
                                                 
                                                 return (
                                                     <BookCard key={`${checkout.id}`} book={book} onClick={() => handleOpenDialog(book, checkout)} isLoan={true} isOverdue={isOverdue}>
                                                         <div className="p-3 border-t mt-auto text-center">
                                                             <p className="text-xs font-semibold text-primary mb-2">Prestado a:</p>
-                                                            <div className='flex items-center justify-center gap-2'>
+                                                            <Link href={`/profile/${user?.username}`} className='flex items-center justify-center gap-2 hover:underline'>
                                                                 <User className="h-4 w-4" />
-                                                                <p className="text-sm font-medium truncate">{getUser(checkout.userId)?.name || checkout.userId}</p>
-                                                            </div>
+                                                                <p className="text-sm font-medium truncate">{user?.name || checkout.userId}</p>
+                                                            </Link>
                                                         </div>
                                                     </BookCard>
                                                 )

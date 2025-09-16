@@ -15,7 +15,11 @@ export const initialUsers: Omit<User, 'id'>[] = [
         phone: '834-000-0000',
         address: 'UAT, Centro Universitario Victoria',
         status: 'active',
-        avatarUrl: 'https://i.pravatar.cc/150?u=admin'
+        avatarUrl: 'https://i.pravatar.cc/150?u=admin',
+        bannerUrl: 'https://picsum.photos/seed/banner-admin/1200/300',
+        bio: 'Managing the library and ensuring everything is in order. Passionate about classic literature and historical archives.',
+        favoriteBooks: ['Don Quijote de la Mancha', '1984'],
+        friends: ['a0987654321'],
     },
     // Este usuario estará DESACTIVADO porque su préstamo tiene más de 2 semanas de vencido.
     { 
@@ -28,7 +32,11 @@ export const initialUsers: Omit<User, 'id'>[] = [
         email: 'a1234567890@alumnos.uat.edu.mx',
         address: 'Calle Falsa 123, Ciudad Victoria',
         status: 'active', // Inicia como activo, la lógica lo desactivará
-        avatarUrl: 'https://i.pravatar.cc/150?u=a1234567890'
+        avatarUrl: 'https://i.pravatar.cc/150?u=a1234567890',
+        bannerUrl: 'https://picsum.photos/seed/banner-1/1200/300',
+        bio: 'Estudiante de ingeniería. En mis tiempos libres, me sumerjo en mundos de ciencia ficción y distopías.',
+        favoriteBooks: ['1984', 'Dune'],
+        friends: ['a0987654321', 'a3333333333'],
     },
     // Este usuario está ACTIVO y tiene préstamos y solicitudes.
     { 
@@ -41,7 +49,11 @@ export const initialUsers: Omit<User, 'id'>[] = [
         email: 'a0987654321@alumnos.uat.edu.mx',
         address: 'Avenida Siempre Viva 742, Ciudad Victoria',
         status: 'active',
-        avatarUrl: 'https://i.pravatar.cc/150?u=a0987654321'
+        avatarUrl: 'https://i.pravatar.cc/150?u=a0987654321',
+        bannerUrl: 'https://picsum.photos/seed/banner-2/1200/300',
+        bio: 'Amante del realismo mágico y las historias que te hacen pensar. Siempre en busca de una nueva aventura literaria.',
+        favoriteBooks: ['Cien años de soledad', 'El Alquimista', 'La Sombra del Viento'],
+        friends: ['a1234567890', 'admin'],
     },
     // Este usuario estará DESACTIVADO porque su préstamo tiene más de 2 semanas de vencido.
      { 
@@ -54,7 +66,11 @@ export const initialUsers: Omit<User, 'id'>[] = [
         email: 'a2222222222@alumnos.uat.edu.mx',
         address: 'Boulevard del Sol 456, Tampico',
         status: 'active', // Inicia como activo, la lógica lo desactivará
-        avatarUrl: 'https://i.pravatar.cc/150?u=a2222222222'
+        avatarUrl: 'https://i.pravatar.cc/150?u=a2222222222',
+        bannerUrl: 'https://picsum.photos/seed/banner-3/1200/300',
+        bio: 'Futuro historiador. Me interesan los libros que exploran el pasado de la humanidad y las grandes civilizaciones.',
+        favoriteBooks: ['Sapiens: De animales a dioses'],
+        friends: [],
     },
     // Este usuario está ACTIVO y tiene una solicitud pendiente.
     { 
@@ -67,7 +83,11 @@ export const initialUsers: Omit<User, 'id'>[] = [
         email: 'a3333333333@alumnos.uat.edu.mx',
         address: 'Calle Luna 8, Mante',
         status: 'active',
-        avatarUrl: 'https://i.pravatar.cc/150?u=a3333333333'
+        avatarUrl: 'https://i.pravatar.cc/150?u=a3333333333',
+        bannerUrl: 'https://picsum.photos/seed/banner-4/1200/300',
+        bio: 'Devoradora de novelas de fantasía. Si tiene dragones, magia o mundos épicos, ¡lo leo!',
+        favoriteBooks: ['El Señor de los Anillos: La Comunidad del Anillo', 'El nombre del viento'],
+        friends: ['a1234567890'],
     },
     // Este usuario tiene un préstamo VENCIDO RECIENTEMENTE (menos de 1 semana), por lo que su cuenta AÚN ESTÁ ACTIVA.
     { 
@@ -80,7 +100,11 @@ export const initialUsers: Omit<User, 'id'>[] = [
         email: 'a4444444444@alumnos.uat.edu.mx',
         address: 'Calle del Río 101, Reynosa',
         status: 'active',
-        avatarUrl: 'https://i.pravatar.cc/150?u=a4444444444'
+        avatarUrl: 'https://i.pravatar.cc/150?u=a4444444444',
+        bannerUrl: 'https://picsum.photos/seed/banner-5/1200/300',
+        bio: 'Disfruto de un buen misterio y novelas románticas clásicas. Jane Austen es mi autora preferida.',
+        favoriteBooks: ['Orgullo y Prejuicio'],
+        friends: [],
     }
 ];
 

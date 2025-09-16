@@ -29,6 +29,10 @@ export interface User {
     address?: string;
     status?: 'active' | 'deactivated';
     avatarUrl?: string;
+    bannerUrl?: string;
+    bio?: string;
+    favoriteBooks?: string[];
+    friends?: string[];
 }
 
 export interface Category {

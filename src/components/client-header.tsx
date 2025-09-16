@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { LogOut, Search, User } from 'lucide-react';
+import { LogOut, Search, User, UserCog } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -90,6 +90,13 @@ export function ClientHeader({ username, searchTerm, setSearchTerm }: ClientHead
                   </p>
                 </div>
               </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+               <DropdownMenuItem asChild>
+                  <Link href={`/profile/${username}`}>
+                    <UserCog className="mr-2 h-4 w-4" />
+                    <span>Mi Perfil</span>
+                  </Link>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
