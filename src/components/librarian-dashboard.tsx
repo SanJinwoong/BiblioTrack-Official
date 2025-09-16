@@ -19,7 +19,6 @@ import { isPast, parseISO, differenceInDays } from 'date-fns';
 import { UserLoanCard } from './user-loan-card';
 import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, writeBatch, onSnapshot, addDoc, updateDoc, deleteDoc, query, where, getDoc } from 'firebase/firestore';
-import { initialBooks, initialCategories, initialUsers, initialCheckouts, initialCheckoutRequests } from '@/lib/data';
 
 export function LibrarianDashboard() {
   const [books, setBooks] = useState<BookType[]>([]);
@@ -63,79 +62,6 @@ export function LibrarianDashboard() {
     
     return () => unsubscribes.forEach(unsub => unsub());
   }, []);
-
-  // Seeding logic
-  useEffect(() => {
-    const seedDatabase = async () => {
-        const booksSnapshot = await getDocs(collection(db, 'books'));
-        if (booksSnapshot.empty) {
-            console.log('Database is empty. Seeding...');
-            toast({ title: "Poblando Base de Datos", description: "Por favor espere..."});
-            const batch = writeBatch(db);
-
-            initialUsers.forEach(user => {
-                const userRef = doc(collection(db, 'users'));
-                batch.set(userRef, user);
-            });
-
-            initialCategories.forEach(category => {
-                const catRef = doc(collection(db, 'categories'));
-                batch.set(catRef, category);
-            });
-            
-            initialBooks.forEach(book => {
-                const bookRef = doc(collection(db, 'books'));
-                batch.set(bookRef, book );
-            });
-
-            // For checkouts and requests, we need to map book titles to IDs after they are created.
-            // This seeding is simplified and assumes a manual mapping or a more complex seeding script.
-            // For this demo, we'll commit what we have.
-            
-            await batch.commit();
-
-            // A second batch to create checkouts/requests with newly created book IDs
-            const newBooksSnapshot = await getDocs(collection(db, 'books'));
-            const bookIdMap: { [title: string]: string } = {};
-            newBooksSnapshot.forEach(doc => {
-                bookIdMap[doc.data().title] = doc.id;
-            });
-            
-            const checkoutBatch = writeBatch(db);
-
-            initialCheckouts.forEach(checkout => {
-                const bookId = bookIdMap[checkout.bookTitle];
-                if (bookId) {
-                    const checkoutRef = doc(collection(db, 'checkouts'));
-                    const { bookTitle, ...checkoutData } = checkout;
-                    checkoutBatch.set(checkoutRef, { ...checkoutData, bookId });
-                }
-            });
-
-            initialCheckoutRequests.forEach(request => {
-                const bookId = bookIdMap[request.bookTitle];
-                if (bookId) {
-                    const requestRef = doc(collection(db, 'checkoutRequests'));
-                    const { bookTitle, ...requestData } = request;
-                    checkoutBatch.set(requestRef, { ...requestData, bookId });
-                }
-            });
-            
-            await checkoutBatch.commit();
-
-
-            toast({ title: "✅ Base de Datos Poblada", description: "Los datos de ejemplo han sido cargados."});
-        } else {
-            console.log('Database already contains data. Skipping seed.');
-        }
-    };
-
-    seedDatabase().catch(error => {
-      console.error("Error seeding database:", error);
-      toast({ variant: 'destructive', title: "Error al poblar la base de datos", description: "Revisa las reglas de seguridad de Firestore." });
-    });
-  }, [toast]); 
-
 
   useEffect(() => {
     const results = books.filter(book => {
@@ -614,5 +540,3 @@ export function LibrarianDashboard() {
     </>
   );
 }
-
-    
