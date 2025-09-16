@@ -47,7 +47,7 @@ export function LoginForm() {
       password: '',
     },
   });
-
+  
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'users'), snapshot => {
       setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
