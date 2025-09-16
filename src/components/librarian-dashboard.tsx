@@ -19,6 +19,13 @@ import { isPast, parseISO, differenceInDays } from 'date-fns';
 import { UserLoanCard } from './user-loan-card';
 import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, writeBatch, onSnapshot, addDoc, updateDoc, deleteDoc, query, where, getDoc } from 'firebase/firestore';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
 
 export function LibrarianDashboard() {
   const [books, setBooks] = useState<BookType[]>([]);
@@ -426,24 +433,33 @@ export function LibrarianDashboard() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                       </div>
-                      <div className="flex flex-wrap gap-2 pt-4">
-                        <Button
-                          variant={!selectedCategory ? 'default' : 'secondary'}
-                          size="sm"
-                          onClick={() => setSelectedCategory(null)}
-                        >
-                          Todos
-                        </Button>
-                        {categories.map((category) => (
-                          <Button
-                            key={category.id}
-                            variant={selectedCategory === category.name ? 'default' : 'secondary'}
-                            size="sm"
-                            onClick={() => setSelectedCategory(category.name)}
-                          >
-                            {category.name}
-                          </Button>
-                        ))}
+                      <div className="relative pt-4">
+                        <Carousel opts={{ align: "start", dragFree: true }} className="w-full">
+                          <CarouselContent>
+                             <CarouselItem className="basis-auto pl-1">
+                                <Button
+                                  variant={!selectedCategory ? 'default' : 'secondary'}
+                                  size="sm"
+                                  onClick={() => setSelectedCategory(null)}
+                                >
+                                  Todos
+                                </Button>
+                              </CarouselItem>
+                            {categories.map((category) => (
+                              <CarouselItem key={category.id} className="basis-auto">
+                                <Button
+                                  variant={selectedCategory === category.name ? 'default' : 'secondary'}
+                                  size="sm"
+                                  onClick={() => setSelectedCategory(category.name)}
+                                >
+                                  {category.name}
+                                </Button>
+                              </CarouselItem>
+                            ))}
+                          </CarouselContent>
+                          <CarouselPrevious className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-12" />
+                          <CarouselNext className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-12" />
+                        </Carousel>
                       </div>
                   </CardHeader>
                   <CardContent>
@@ -573,29 +589,26 @@ export function LibrarianDashboard() {
                                         </div>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="space-y-4">
+                                <CardContent>
                                     {deactivatedUserGroups.length > 0 ? (
-                                        deactivatedUserGroups.map(({ user, loans }) => (
-                                        <UserLoanCard 
-                                            key={user.id}
-                                            user={user}
-                                            loans={loans}
-                                            onReactivateAccount={() => handleUserStatusChange(user.id, true)}
-                                        />
-                                        ))
+                                        <div className="space-y-4">
+                                            {deactivatedUserGroups.map(group => (
+                                                <UserLoanCard 
+                                                    key={group.user.id}
+                                                    user={group.user}
+                                                    loans={group.loans}
+                                                    onReactivateAccount={() => handleUserStatusChange(group.user.id, true)}
+                                                />
+                                            ))}
+                                        </div>
                                     ) : (
-                                        <p className="text-muted-foreground text-center py-8">
-                                            {deactivatedUserSearchTerm 
-                                                ? `No se encontraron usuarios para "${deactivatedUserSearchTerm}".`
-                                                : "No hay cuentas desactivadas en este momento."
-                                            }
-                                        </p>
+                                        <p className="text-muted-foreground text-center py-8">No hay cuentas desactivadas actualmente.</p>
                                     )}
                                 </CardContent>
                             </Card>
                         </TabsContent>
                     </Tabs>
-                </TabsContent>
+              </TabsContent>
             </Tabs>
           </div>
         </div>
