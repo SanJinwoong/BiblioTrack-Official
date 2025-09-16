@@ -21,11 +21,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { User } from '@/lib/types';
 import Image from 'next/image';
-import { Camera, ZoomIn, ZoomOut } from 'lucide-react';
+import { Camera } from 'lucide-react';
 import React, { useEffect, useState, useRef } from 'react';
 import ReactCrop, { type Crop as CropType, centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
-import { Slider } from './ui/slider';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
@@ -45,63 +44,45 @@ async function getCroppedImg(
     throw new Error('Could not get canvas context');
   }
 
-  // Get the rendered size of the image and its aspect ratio
-  const imageWidth = image.width;
-  const imageHeight = image.height;
+  const scaleX = image.naturalWidth / image.width;
+  const scaleY = image.naturalHeight / image.height;
+  
   const imageAspectRatio = image.naturalWidth / image.naturalHeight;
-
-  // Get the container size and aspect ratio
   const containerWidth = image.parentElement?.clientWidth || image.width;
   const containerHeight = image.parentElement?.clientHeight || image.height;
   const containerAspectRatio = containerWidth / containerHeight;
 
-  let renderWidth, renderHeight, offsetX, offsetY;
+  let renderWidth, renderHeight, offsetX = 0, offsetY = 0;
 
-  // Calculate the rendered dimensions of the image inside the container (object-contain logic)
   if (imageAspectRatio > containerAspectRatio) {
     renderWidth = containerWidth;
     renderHeight = containerWidth / imageAspectRatio;
-    offsetX = 0;
     offsetY = (containerHeight - renderHeight) / 2;
   } else {
     renderHeight = containerHeight;
     renderWidth = containerHeight * imageAspectRatio;
-    offsetY = 0;
     offsetX = (containerWidth - renderWidth) / 2;
   }
   
-  const scaleX = image.naturalWidth / renderWidth;
-  const scaleY = image.naturalHeight / renderHeight;
+  const cropX = (crop.x - offsetX) * (image.naturalWidth / renderWidth);
+  const cropY = (crop.y - offsetY) * (image.naturalHeight / renderHeight);
 
-  // Adjust the crop coordinates to be relative to the actual image, not the container
-  // This removes the offset of the blank spaces
-  const relativeCropX = crop.x - offsetX;
-  const relativeCropY = crop.y - offsetY;
+  canvas.width = crop.width * (image.naturalWidth / renderWidth);
+  canvas.height = crop.height * (image.naturalHeight / renderHeight);
 
-  // The source coordinates on the original, unscaled image
-  const sourceX = relativeCropX * scaleX;
-  const sourceY = relativeCropY * scaleY;
-  const sourceWidth = crop.width * scaleX;
-  const sourceHeight = crop.height * scaleY;
-
-  // The canvas size is the size of the crop on the screen
-  canvas.width = crop.width;
-  canvas.height = crop.height;
-
-  // Draw the cropped section of the original image onto the canvas
   ctx.drawImage(
     image,
-    sourceX,
-    sourceY,
-    sourceWidth,
-    sourceHeight,
+    cropX,
+    cropY,
+    crop.width * (image.naturalWidth / renderWidth),
+    crop.height * (image.naturalHeight / renderHeight),
     0,
     0,
-    crop.width,
-    crop.height
+    canvas.width,
+    canvas.height
   );
 
-  return canvas.toDataURL('image/jpeg');
+  return canvas.toDataURL('image/jpeg', 0.95);
 }
 
 
@@ -122,8 +103,6 @@ function CroppingView({
   const [crop, setCrop] = useState<CropType>();
   const [completedCrop, setCompletedCrop] = useState<CropType>();
   const imgRef = useRef<HTMLImageElement>(null);
-
-  const [rotate, setRotate] = useState(0);
 
   function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
     const { width, height } = e.currentTarget;
@@ -150,7 +129,7 @@ function CroppingView({
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium">Ajustar Imagen</h3>
-      <div className="flex justify-center bg-muted/50 p-4 rounded-md">
+       <div className="flex flex-col items-center justify-center bg-muted/50 p-4 rounded-md h-[450px]">
         {imgSrc && (
           <ReactCrop
             crop={crop}
@@ -159,6 +138,7 @@ function CroppingView({
             aspect={aspect}
             circularCrop={isCircular}
             keepSelection
+            className="flex-1"
           >
             <Image
               ref={imgRef}
@@ -167,8 +147,7 @@ function CroppingView({
               width={800}
               height={600}
               style={{ 
-                  transform: `rotate(${rotate}deg)`,
-                  maxHeight: '60vh', 
+                  maxHeight: '100%', 
                   objectFit: 'contain'
               }}
               onLoad={onImageLoad}
