@@ -9,7 +9,7 @@ import { collection, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove } from 
 import type { User, Book, Checkout as CheckoutType, Review } from '@/lib/types';
 import { Skeleton } from './ui/skeleton';
 import { Button } from './ui/button';
-import { UserPlus, UserCheck, Edit, Check } from 'lucide-react';
+import { UserPlus, UserCheck, Calendar } from 'lucide-react';
 import { BookCard } from './book-card';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import Link from 'next/link';
@@ -19,6 +19,8 @@ import { BookDetailsDialog } from './book-details-dialog';
 import { Recommendations } from './recommendations';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ReviewCard } from './review-card';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface UserProfileProps {
   username: string;
@@ -221,115 +223,114 @@ export function UserProfile({ username }: UserProfileProps) {
         role={currentUser?.role || 'client'}
        />
 
-        <div className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Content Column */}
-                <main className="lg:col-span-2">
-                    {/* Banner */}
-                    <div className="relative h-48 md:h-56 w-full bg-muted rounded-lg overflow-hidden">
-                        {user.bannerUrl ? (
-                        <Image
-                            src={user.bannerUrl}
-                            alt={`${user.name}'s banner`}
-                            fill
-                            className="object-cover"
-                            data-ai-hint="abstract background"
-                        />
+      <div className="w-full">
+        {/* Banner */}
+        <div className="h-48 md:h-56 w-full bg-muted">
+          {user.bannerUrl ? (
+            <Image
+              src={user.bannerUrl}
+              alt={`${user.name}'s banner`}
+              width={1500}
+              height={500}
+              className="object-cover w-full h-full"
+              data-ai-hint="abstract background"
+            />
+          ) : (
+            <div className="h-full w-full bg-gradient-to-r from-gray-200 to-gray-300"></div>
+          )}
+        </div>
+      </div>
+      
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Column */}
+            <div className="lg:col-span-1 -mt-16 md:-mt-20">
+                 <div className="relative">
+                    <Avatar className="h-28 w-28 md:h-36 md:w-36 border-4 border-background bg-background">
+                    <AvatarImage src={user.avatarUrl} alt={user.name} />
+                    <AvatarFallback className="text-5xl">{user.name?.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                </div>
+                 {/* Profile Info */}
+                <div className="mt-4 space-y-2">
+                    <div>
+                        <h1 className="text-2xl font-bold">{user.name}</h1>
+                        <p className="text-sm text-muted-foreground">@{user.username}</p>
+                    </div>
+                     <div className="pt-2">
+                      <p className="text-foreground">{user.bio || 'Este usuario aún no ha añadido una biografía.'}</p>
+                    </div>
+                    {user.createdAt && (
+                         <div className="flex items-center space-x-2 text-sm text-muted-foreground pt-1">
+                            <Calendar className="h-4 w-4" />
+                            <span>Se unió en {format(new Date(user.createdAt), "MMMM 'de' yyyy", { locale: es })}</span>
+                        </div>
+                    )}
+                    <div className="flex items-center space-x-4 text-sm text-muted-foreground pt-2">
+                        <Link href="#" className="hover:underline">
+                            <span className="font-bold text-foreground">{user.following?.length || 0}</span> Siguiendo
+                        </Link>
+                        <Link href="#" className="hover:underline">
+                            <span className="font-bold text-foreground">{user.followers?.length || 0}</span> Seguidores
+                        </Link>
+                    </div>
+                </div>
+            </div>
+
+            {/* Right Column / Main Content */}
+            <div className="lg:col-span-2 mt-4">
+                 <div className="flex justify-end h-10 mb-4">
+                    {isOwnProfile ? (
+                        <Button variant="outline" onClick={() => setIsEditDialogOpen(true)}>
+                            Editar Perfil
+                        </Button>
+                    ) : isFollowing ? (
+                        <Button variant="secondary" onClick={handleFollowToggle}>
+                            <UserCheck className="mr-2 h-4 w-4" />
+                            Siguiendo
+                        </Button>
+                    ) : (
+                        <Button onClick={handleFollowToggle}>
+                            <UserPlus className="mr-2 h-4 w-4" />
+                            Seguir
+                        </Button>
+                    )}
+                </div>
+                <Tabs defaultValue="favorites" className="w-full">
+                    <TabsList>
+                        <TabsTrigger value="favorites">Libros Favoritos</TabsTrigger>
+                        <TabsTrigger value="reviews">Reseñas ({userReviews.length})</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="favorites" className="mt-4">
+                        {favoriteBooks && favoriteBooks.length > 0 ? (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                {favoriteBooks.map(book => (
+                                <BookCard key={book.id} book={book} onClick={() => handleOpenBookDialog(book)} />
+                                ))}
+                            </div>
                         ) : (
-                            <div className="h-full w-full bg-gradient-to-r from-gray-200 to-gray-300"></div>
+                            <div className="text-center py-12 text-muted-foreground bg-card rounded-lg">
+                                <p>Aún no se han añadido libros favoritos.</p>
+                            </div>
                         )}
-                    </div>
-
-                    {/* Profile Header */}
-                    <div className="relative px-4 sm:px-6 pb-6 bg-card -mt-1">
-                        <div className="flex justify-between items-start">
-                            <div className="absolute -top-12 md:-top-16">
-                                <Avatar className="h-24 w-24 md:h-32 md:w-32 border-4 border-card bg-card shrink-0">
-                                <AvatarImage src={user.avatarUrl} alt={user.name} />
-                                <AvatarFallback className="text-4xl">{user.name?.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                            </div>
-                            <div className="pt-14 md:pt-16 flex-1"></div>
-                            <div className="pt-4">
-                                {isOwnProfile ? (
-                                    <Button variant="outline" onClick={() => setIsEditDialogOpen(true)}>
-                                        Editar Perfil
-                                    </Button>
-                                ) : isFollowing ? (
-                                    <Button variant="secondary" onClick={handleFollowToggle}>
-                                        <UserCheck className="mr-2 h-4 w-4" />
-                                        Siguiendo
-                                    </Button>
-                                ) : (
-                                    <Button onClick={handleFollowToggle}>
-                                        <UserPlus className="mr-2 h-4 w-4" />
-                                        Seguir
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
-                        
-                        {/* Profile Info */}
-                        <div className="mt-4 space-y-4">
-                            <div>
-                                <h1 className="text-2xl font-bold">{user.name}</h1>
-                                <p className="text-sm text-muted-foreground">@{user.username}</p>
-                            </div>
-                            <p className="text-foreground max-w-2xl">{user.bio || 'Este usuario aún no ha añadido una biografía.'}</p>
-                            <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                                <Link href="#" className="hover:underline">
-                                    <span className="font-bold text-foreground">{user.following?.length || 0}</span> Siguiendo
-                                </Link>
-                                <Link href="#" className="hover:underline">
-                                    <span className="font-bold text-foreground">{user.followers?.length || 0}</span> Seguidores
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="mt-6">
-                        <Tabs defaultValue="favorites" className="w-full">
-                            <TabsList>
-                                <TabsTrigger value="favorites">Libros Favoritos</TabsTrigger>
-                            </TabsList>
-                            <TabsContent value="favorites" className="mt-4">
-                                {favoriteBooks && favoriteBooks.length > 0 ? (
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                                        {favoriteBooks.map(book => (
-                                        <BookCard key={book.id} book={book} onClick={() => handleOpenBookDialog(book)} />
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-12 text-muted-foreground bg-card rounded-lg">
-                                        <p>Aún no se han añadido libros favoritos.</p>
-                                    </div>
-                                )}
-                            </TabsContent>
-                        </Tabs>
-                    </div>
-                </main>
-
-                {/* Right Sidebar */}
-                <aside className="lg:col-span-1 space-y-6 pt-0 lg:pt-6">
-                    <Recommendations onBookSelect={handleOpenBookDialog} displayStyle="compact" />
-
-                    <div className="space-y-4">
-                        <h3 className="font-bold text-xl">Actividad Reciente</h3>
-                        {userReviews.length > 0 ? (
-                           <div className="space-y-4">
-                             {userReviews.slice(0, 5).map(review => (
+                    </TabsContent>
+                    <TabsContent value="reviews" className="mt-4 space-y-4">
+                         {userReviews.length > 0 ? (
+                           <>
+                             {userReviews.map(review => (
                                 <ReviewCard key={review.id} review={review} />
                              ))}
-                           </div>
+                           </>
                         ) : (
-                           <div className="text-center py-8 px-4 text-muted-foreground bg-card rounded-lg">
+                           <div className="text-center py-12 text-muted-foreground bg-card rounded-lg">
                                 <p>Este usuario aún no ha dejado ninguna reseña.</p>
                            </div>
                         )}
-                    </div>
-                </aside>
+                    </TabsContent>
+                </Tabs>
             </div>
         </div>
+      </main>
     </>
   );
 }

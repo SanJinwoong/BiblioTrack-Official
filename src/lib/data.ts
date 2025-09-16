@@ -22,6 +22,7 @@ export const initialUsers: Omit<User, 'id'>[] = [
         favoriteBooks: ['Don Quijote de la Mancha', '1984'],
         following: ['a0987654321'],
         followers: [],
+        createdAt: '2023-01-15T10:00:00.000Z',
     },
     // Este usuario estará DESACTIVADO porque su préstamo tiene más de 2 semanas de vencido.
     { 
@@ -40,6 +41,7 @@ export const initialUsers: Omit<User, 'id'>[] = [
         favoriteBooks: ['1984', 'Dune'],
         following: ['a0987654321', 'a3333333333'],
         followers: ['a0987654321'],
+        createdAt: '2023-02-20T11:30:00.000Z',
     },
     // Este usuario está ACTIVO y tiene préstamos y solicitudes.
     { 
@@ -58,6 +60,7 @@ export const initialUsers: Omit<User, 'id'>[] = [
         favoriteBooks: ['Cien años de soledad', 'El Alquimista', 'La Sombra del Viento'],
         following: ['a1234567890', 'admin'],
         followers: ['a1234567890'],
+        createdAt: '2023-03-10T18:00:00.000Z',
     },
     // Este usuario estará DESACTIVADO porque su préstamo tiene más de 2 semanas de vencido.
      { 
@@ -76,6 +79,7 @@ export const initialUsers: Omit<User, 'id'>[] = [
         favoriteBooks: ['Sapiens: De animales a dioses'],
         following: [],
         followers: [],
+        createdAt: '2023-04-05T09:00:00.000Z',
     },
     // Este usuario está ACTIVO y tiene una solicitud pendiente.
     { 
@@ -94,6 +98,7 @@ export const initialUsers: Omit<User, 'id'>[] = [
         favoriteBooks: ['El Señor de los Anillos: La Comunidad del Anillo', 'El nombre del viento'],
         following: [],
         followers: ['a1234567890'],
+        createdAt: '2023-05-12T14:20:00.000Z',
     },
     // Este usuario tiene un préstamo VENCIDO RECIENTEMENTE (menos de 1 semana), por lo que su cuenta AÚN ESTÁ ACTIVA.
     { 
@@ -112,6 +117,7 @@ export const initialUsers: Omit<User, 'id'>[] = [
         favoriteBooks: ['Orgullo y Prejuicio'],
         following: [],
         followers: [],
+        createdAt: '2023-06-01T16:00:00.000Z',
     }
 ];
 

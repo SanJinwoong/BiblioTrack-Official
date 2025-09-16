@@ -35,6 +35,7 @@ export interface User {
     favoriteBooks?: string[];
     following?: string[];
     followers?: string[];
+    createdAt?: string;
 }
 
 export interface Category {
