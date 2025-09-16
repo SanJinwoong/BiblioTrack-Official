@@ -98,7 +98,8 @@ export function SignUpForm() {
     
     if (role === 'client') {
         const clientValues = values as z.infer<typeof clientSchema>;
-        usernameToRegister = clientValues.email.split('@')[0]; // Use matricula as username
+        // The username for login will be the matricula (e.g., a1234567890)
+        usernameToRegister = clientValues.email.split('@')[0];
         newUser = {
             username: usernameToRegister,
             password: clientValues.password,

@@ -15,7 +15,7 @@ export const initialUsers: Omit<User, 'id'>[] = [
         phone: '123-456-7890',
         address: 'Library Address, 123',
         status: 'active',
-        avatarUrl: 'https://i.pravatar.cc/150?u=librarian'
+        avatarUrl: 'https://i.pravatar.cc/150?u=admin'
     },
     { 
         username: 'a1234567890', 
@@ -175,7 +175,7 @@ export const initialCheckouts: Omit<Checkout, 'id' | 'bookId'> & { bookTitle: st
   // Préstamo Activo para Maria Rodríguez
   { userId: 'a0987654321', bookTitle: 'El Alquimista', dueDate: '2024-09-25', status: 'approved' },
   // Préstamo Activo para Ana García
-  { userId: 'a333333333', bookTitle: 'Orgullo y Prejuicio', dueDate: '2024-09-30', status: 'approved' },
+  { userId: 'a3333333333', bookTitle: 'Orgullo y Prejuicio', dueDate: '2024-09-30', status: 'approved' },
 ];
 
 export const initialCheckoutRequests: Omit<Checkout, 'id' | 'bookId'> & { bookTitle: string }[] = [

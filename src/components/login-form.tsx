@@ -55,7 +55,7 @@ export function LoginForm() {
   function onSubmit(values: z.infer<typeof formSchema>) {
     const { username, password } = values;
 
-    // Direct search for a user matching username and password.
+    // Simple, direct search: Find a user where the username and password match exactly.
     const user = users.find(u => u.username === username && u.password === password);
 
     if (user) {
