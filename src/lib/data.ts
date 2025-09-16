@@ -10,7 +10,7 @@ export const initialUsers: Omit<User, 'id'>[] = [
         password: 'password', 
         role: 'librarian',
         name: 'Librarian Admin',
-        email: 'librarian@library.com',
+        email: 'librarian',
         curp: 'ADMINCURP12345',
         phone: '123-456-7890',
         address: 'Library Address, 123',
@@ -70,7 +70,7 @@ export const initialUsers: Omit<User, 'id'>[] = [
         password: 'admin', 
         role: 'librarian',
         name: 'Super Admin',
-        email: 'admin@library.com',
+        email: 'admin',
         curp: 'ADMINCURP67890',
         phone: '098-765-4321',
         address: 'Admin Address, 456',
@@ -203,3 +203,5 @@ export const readingHistory: { [key: string]: string[] } = {
     'a1234567890@alumnos.uat.edu.mx': ["book4_id", "book6_id"], // Placeholder IDs, to be mapped to real book IDs
     'a0987654321@alumnos.uat.edu.mx': ["book1_id"],
 };
+
+    
