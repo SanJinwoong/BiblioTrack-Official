@@ -4,12 +4,12 @@ import { getFirestore } from "firebase/firestore";
 
 // TODO: Add your Firebase project configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-  authDomain: "your-project-id.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project-id.appspot.com",
-  messagingSenderId: "123456789012",
-  appId: "1:123456789012:web:xxxxxxxxxxxxxxxxxxxxxx"
+  apiKey: "AIzaSyCV3-t-p9y_a7_xJ2-xH1y_S9y9xX_c7Yc",
+  authDomain: "bibliotrack-demo.firebaseapp.com",
+  projectId: "bibliotrack-demo",
+  storageBucket: "bibliotrack-demo.appspot.com",
+  messagingSenderId: "100832961826",
+  appId: "1:100832961826:web:a61f2390f8a9a8b1c4d4c3"
 };
 
 // Initialize Firebase
