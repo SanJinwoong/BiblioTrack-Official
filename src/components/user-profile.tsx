@@ -226,78 +226,78 @@ export function UserProfile({ username }: UserProfileProps) {
         role={currentUser?.role || 'client'}
        />
        
-        <div className="w-full">
-            {/* Banner */}
-            <div className="h-48 md:h-56 w-full bg-muted">
-                {user.bannerUrl ? (
-                <Image
-                    src={user.bannerUrl}
-                    alt={`${user.name}'s banner`}
-                    width={1200}
-                    height={300}
-                    className="object-cover w-full h-full"
-                    data-ai-hint="abstract background"
-                />
-                ) : (
-                <div className="h-full w-full bg-gradient-to-r from-gray-200 to-gray-300"></div>
-                )}
-            </div>
-        </div>
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
-                  {/* Profile Header */}
-                 <div className="relative flex justify-between items-start -mt-16 md:-mt-20">
-                    <div className="p-1 bg-background rounded-full">
-                         <Avatar className="h-32 w-32 md:h-40 md:w-40 border-4 border-background">
-                            <AvatarImage src={user.avatarUrl} alt={user.name} />
-                            <AvatarFallback className="text-5xl">{user.name?.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                    </div>
-                    <div className="pt-20">
-                        {isOwnProfile ? (
-                            <Button variant="outline" onClick={() => setIsEditDialogOpen(true)}>
-                                <Edit className="mr-2 h-4 w-4" /> Editar Perfil
-                            </Button>
-                        ) : isFollowing ? (
-                            <Button variant="secondary" onClick={handleFollowToggle}>
-                                <UserCheck className="mr-2 h-4 w-4" />
-                                Siguiendo
-                            </Button>
-                        ) : (
-                            <Button onClick={handleFollowToggle}>
-                                <UserPlus className="mr-2 h-4 w-4" />
-                                Seguir
-                            </Button>
-                        )}
-                    </div>
+                {/* Banner */}
+                <div className="h-48 md:h-56 w-full bg-muted rounded-t-lg overflow-hidden">
+                    {user.bannerUrl ? (
+                    <Image
+                        src={user.bannerUrl}
+                        alt={`${user.name}'s banner`}
+                        width={1200}
+                        height={300}
+                        className="object-cover w-full h-full"
+                        data-ai-hint="abstract background"
+                    />
+                    ) : (
+                    <div className="h-full w-full bg-gradient-to-r from-gray-200 to-gray-300"></div>
+                    )}
                 </div>
-                
-                <div className="mt-4 space-y-4">
-                    <div>
-                        <h1 className="text-3xl font-bold">{user.name}</h1>
-                        <p className="text-md text-muted-foreground">@{user.username}</p>
+
+                {/* Profile Header */}
+                 <div className="p-4 bg-card rounded-b-lg">
+                    <div className="relative flex justify-between items-start -mt-20 md:-mt-24">
+                        <div className="p-1 bg-card rounded-full">
+                            <Avatar className="h-32 w-32 md:h-36 md:w-36 border-4 border-card">
+                                <AvatarImage src={user.avatarUrl} alt={user.name} />
+                                <AvatarFallback className="text-5xl">{user.name?.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                        </div>
+                        <div className="pt-24">
+                            {isOwnProfile ? (
+                                <Button variant="outline" onClick={() => setIsEditDialogOpen(true)}>
+                                    <Edit className="mr-2 h-4 w-4" /> Editar Perfil
+                                </Button>
+                            ) : isFollowing ? (
+                                <Button variant="secondary" onClick={handleFollowToggle}>
+                                    <UserCheck className="mr-2 h-4 w-4" />
+                                    Siguiendo
+                                </Button>
+                            ) : (
+                                <Button onClick={handleFollowToggle}>
+                                    <UserPlus className="mr-2 h-4 w-4" />
+                                    Seguir
+                                </Button>
+                            )}
+                        </div>
                     </div>
                     
-                    <p className="text-foreground max-w-2xl">{user.bio || 'Este usuario aún no ha añadido una biografía.'}</p>
-                    
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
-                        {user.createdAt && (
-                            <div className="flex items-center space-x-1">
-                                <Calendar className="h-4 w-4" />
-                                <span>Se unió en {format(new Date(user.createdAt), "MMMM 'de' yyyy", { locale: es })}</span>
-                            </div>
-                        )}
-                        <Link href="#" className="hover:underline">
-                            <span className="font-bold text-foreground">{user.following?.length || 0}</span> Siguiendo
-                        </Link>
-                        <Link href="#" className="hover:underline">
-                            <span className="font-bold text-foreground">{user.followers?.length || 0}</span> Seguidores
-                        </Link>
+                    <div className="mt-4 space-y-4">
+                        <div>
+                            <h1 className="text-3xl font-bold">{user.name}</h1>
+                            <p className="text-md text-muted-foreground">@{user.username}</p>
+                        </div>
+                        
+                        <p className="text-foreground max-w-2xl">{user.bio || 'Este usuario aún no ha añadido una biografía.'}</p>
+                        
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+                            {user.createdAt && (
+                                <div className="flex items-center space-x-1">
+                                    <Calendar className="h-4 w-4" />
+                                    <span>Se unió en {format(new Date(user.createdAt), "MMMM 'de' yyyy", { locale: es })}</span>
+                                </div>
+                            )}
+                            <Link href="#" className="hover:underline">
+                                <span className="font-bold text-foreground">{user.following?.length || 0}</span> Siguiendo
+                            </Link>
+                            <Link href="#" className="hover:underline">
+                                <span className="font-bold text-foreground">{user.followers?.length || 0}</span> Seguidores
+                            </Link>
+                        </div>
                     </div>
                 </div>
 
-                <div className="mt-10">
+                <div className="mt-6">
                     <Tabs defaultValue="favorites" className="w-full">
                         <TabsList>
                             <TabsTrigger value="favorites">Libros Favoritos</TabsTrigger>
@@ -305,7 +305,7 @@ export function UserProfile({ username }: UserProfileProps) {
                         </TabsList>
                         <TabsContent value="favorites" className="mt-4">
                             {favoriteBooks && favoriteBooks.length > 0 ? (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
                                     {favoriteBooks.map(book => (
                                     <BookCard key={book.id} book={book} onClick={() => handleOpenBookDialog(book)} />
                                     ))}
@@ -355,12 +355,6 @@ export function UserProfile({ username }: UserProfileProps) {
                 </Card>
             </div>
         </div>
-      </main>
     </>
   );
 }
-
-
-
-
-    
