@@ -104,7 +104,7 @@ function CroppingView({
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium">Recortar Imagen</h3>
-        <div className="flex flex-col h-[450px]">
+        <div className="flex justify-center max-h-[60vh] overflow-hidden">
           {imgSrc && (
             <ReactCrop
               crop={crop}
@@ -112,16 +112,15 @@ function CroppingView({
               onComplete={(c) => setCompletedCrop(c)}
               aspect={aspect}
               circularCrop={isCircular}
-              className="flex-1"
             >
               <Image
                 ref={imgRef}
                 alt="Crop preview"
                 src={imgSrc}
-                width={500}
-                height={500}
+                width={800}
+                height={600}
                 onLoad={onImageLoad}
-                className="h-full w-auto object-contain"
+                style={{ objectFit: 'contain', maxHeight: '60vh' }}
               />
             </ReactCrop>
           )}
