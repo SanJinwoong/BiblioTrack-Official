@@ -207,8 +207,6 @@ export const initialCheckouts: Omit<Checkout, 'id' | 'bookId'> & { bookTitle: st
 
   // Préstamo ACTIVO para Maria Rodríguez (vence en el futuro)
   { userId: 'a0987654321', bookTitle: 'El Alquimista', dueDate: getFutureDate(10), status: 'approved' },
-  // Préstamo ACTIVO para Ana García (vence en el futuro)
-  { userId: 'a3333333333', bookTitle: 'Orgullo y Prejuicio', dueDate: getFutureDate(15), status: 'approved' },
 ];
 
 export const initialCheckoutRequests: Omit<Checkout, 'id' | 'bookId'> & { bookTitle: string }[] = [
@@ -222,3 +220,5 @@ export const readingHistory: { [key: string]: string[] } = {
     'a1234567890': ["book4_id", "book6_id"], // Placeholder IDs, to be mapped to real book IDs
     'a0987654321': ["book1_id"],
 };
+
+    

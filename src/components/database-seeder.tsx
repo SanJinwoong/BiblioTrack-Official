@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -6,90 +7,112 @@ import { collection, getDocs, writeBatch, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { initialUsers, initialCategories, initialBooks, initialCheckouts, initialCheckoutRequests } from '@/lib/data';
 
-// This component is invisible to the user. Its only purpose is to seed the database.
+// DEV_NOTE: This component is configured to force-reset the database on every load.
+// This is useful for development to ensure a consistent data state.
+// For production, change FORCE_RESEED to false.
+const FORCE_RESEED = true; 
+
+async function clearCollection(collectionName: string) {
+    const batch = writeBatch(db);
+    const querySnapshot = await getDocs(collection(db, collectionName));
+    querySnapshot.forEach(doc => {
+        batch.delete(doc.ref);
+    });
+    await batch.commit();
+}
+
 export function DatabaseSeeder() {
   const { toast } = useToast();
   const [isSeeding, setIsSeeding] = useState(false);
   const [hasSeeded, setHasSeeded] = useState(false);
 
   useEffect(() => {
-    // Prevent seeding more than once
-    if (hasSeeded || isSeeding || localStorage.getItem('db_seeded') === 'true') {
+    const hasSeededInSession = sessionStorage.getItem('db_seeded_session') === 'true';
+
+    if (isSeeding || hasSeeded || (hasSeededInSession && !FORCE_RESEED)) {
         return;
     }
 
     const seedDatabase = async () => {
       setIsSeeding(true);
-      const booksCollection = collection(db, 'books');
-      const booksSnapshot = await getDocs(booksCollection);
+      
+      const shouldSeed = FORCE_RESEED || localStorage.getItem('db_seeded') !== 'true';
 
-      if (booksSnapshot.empty) {
-        console.log('Database is empty. Seeding...');
-        toast({ title: "Poblando Base de Datos", description: "Por favor espere, esto puede tardar un momento..." });
+      if (!shouldSeed) {
+        console.log('Database already seeded and force-reseeding is off. Skipping.');
+        setIsSeeding(false);
+        setHasSeeded(true);
+        return;
+      }
         
-        try {
-          const batch = writeBatch(db);
+      console.log('Database is being (re)seeded...');
+      toast({ title: "Poblando Base de Datos", description: "Por favor espere, esto puede tardar un momento..." });
+      
+      try {
+        // Clear existing data for a clean slate
+        await Promise.all([
+            clearCollection('users'),
+            clearCollection('categories'),
+            clearCollection('books'),
+            clearCollection('checkouts'),
+            clearCollection('checkoutRequests'),
+        ]);
 
-          // Add users
-          initialUsers.forEach(user => {
-            const userRef = doc(collection(db, 'users'));
-            batch.set(userRef, user);
-          });
+        const batch = writeBatch(db);
 
-          // Add categories
-          initialCategories.forEach(category => {
-            const catRef = doc(collection(db, 'categories'));
-            batch.set(catRef, { name: category.name });
-          });
+        // Add users
+        initialUsers.forEach(user => {
+          const userRef = doc(collection(db, 'users'));
+          batch.set(userRef, user);
+        });
 
-          // Add books
-          const bookTitleToIdMap: { [title: string]: string } = {};
-          initialBooks.forEach(bookData => {
+        // Add categories
+        initialCategories.forEach(category => {
+          const catRef = doc(collection(db, 'categories'));
+          batch.set(catRef, { name: category.name });
+        });
+
+        // Add books and get their new IDs
+        const bookTitleToIdMap: { [title: string]: string } = {};
+        const bookPromises = initialBooks.map(async (bookData) => {
             const bookRef = doc(collection(db, 'books'));
             batch.set(bookRef, bookData);
             bookTitleToIdMap[bookData.title] = bookRef.id;
-          });
-
-          // Commit initial batch
-          await batch.commit();
-
-          // A second batch for checkouts and requests that depend on book IDs
-          const checkoutBatch = writeBatch(db);
-
-          initialCheckouts.forEach(checkout => {
+        });
+        
+        await Promise.all(bookPromises);
+        
+        // Add checkouts and requests using the new book IDs
+        initialCheckouts.forEach(checkout => {
             const bookId = bookTitleToIdMap[checkout.bookTitle];
             if (bookId) {
-              const checkoutRef = doc(collection(db, 'checkouts'));
-              const { bookTitle, ...checkoutData } = checkout;
-              checkoutBatch.set(checkoutRef, { ...checkoutData, bookId });
+                const checkoutRef = doc(collection(db, 'checkouts'));
+                const { bookTitle, ...checkoutData } = checkout;
+                batch.set(checkoutRef, { ...checkoutData, bookId });
             }
-          });
+        });
 
-          initialCheckoutRequests.forEach(request => {
+        initialCheckoutRequests.forEach(request => {
             const bookId = bookTitleToIdMap[request.bookTitle];
             if (bookId) {
-              const requestRef = doc(collection(db, 'checkoutRequests'));
-              const { bookTitle, ...requestData } = request;
-              checkoutBatch.set(requestRef, { ...requestData, bookId });
+                const requestRef = doc(collection(db, 'checkoutRequests'));
+                const { bookTitle, ...requestData } = request;
+                batch.set(requestRef, { ...requestData, bookId });
             }
-          });
-          
-          await checkoutBatch.commit();
+        });
 
-          toast({ title: "✅ Base de Datos Poblada", description: "Los datos de ejemplo han sido cargados. ¡Ya puedes iniciar sesión!" });
-          localStorage.setItem('db_seeded', 'true'); // Mark as seeded
-          setHasSeeded(true);
+        await batch.commit();
 
-        } catch (error) {
-          console.error("Error seeding database:", error);
-          toast({ variant: 'destructive', title: "Error al poblar la base de datos", description: "Revisa las reglas de seguridad de Firestore y la configuración del proyecto." });
-        } finally {
-          setIsSeeding(false);
-        }
-      } else {
-        console.log('Database already contains data. Skipping seed.');
-        localStorage.setItem('db_seeded', 'true'); // Mark as seeded if not already
+        toast({ title: "✅ Base de Datos Poblada", description: "Los datos de ejemplo han sido cargados. ¡Ya puedes iniciar sesión!" });
+        localStorage.setItem('db_seeded', 'true'); // Mark for persistence across sessions
+        sessionStorage.setItem('db_seeded_session', 'true'); // Mark for this session
         setHasSeeded(true);
+
+      } catch (error) {
+        console.error("Error seeding database:", error);
+        toast({ variant: 'destructive', title: "Error al poblar la base de datos", description: "Revisa las reglas de seguridad de Firestore y la configuración del proyecto." });
+      } finally {
+        setIsSeeding(false);
       }
     };
 
@@ -99,3 +122,5 @@ export function DatabaseSeeder() {
   // This component renders nothing
   return null;
 }
+
+    
