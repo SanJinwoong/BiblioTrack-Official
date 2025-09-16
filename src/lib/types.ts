@@ -1,6 +1,6 @@
 
 export interface Book {
-  id: number;
+  id: string;
   title: string;
   author: string;
   description: string;
@@ -10,15 +10,17 @@ export interface Book {
 }
 
 export interface Checkout {
+  id: string;
   userId: string;
-  bookId: number;
+  bookId: string;
   dueDate: string;
   status: 'pending' | 'approved' | 'returned';
 }
 
 export interface User {
+    id: string;
     username: string;
-    password: string; // In a real app, this should be a hashed password
+    password?: string; // In a real app, this should be a hashed password
     role: 'client' | 'librarian';
     name?: string;
     curp?: string;
@@ -33,5 +35,7 @@ export interface Category {
   id: string;
   name: string;
 }
+
+    
 
     

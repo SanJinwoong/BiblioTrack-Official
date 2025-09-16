@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { books as initialBooks, checkouts as initialCheckouts, users as initialUsers, checkoutRequests as initialCheckoutRequests, categories as initialCategories } from '@/lib/data';
 import type { Book as BookType, Checkout, User as UserType, Category } from '@/lib/types';
 import { Book, ListChecks, Search, User, Bell, BookCopy, PlusCircle, Users, UserX, AlertTriangle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,13 +11,14 @@ import { BookCard } from './book-card';
 import { BookDetailsDialog } from './book-details-dialog';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { Avatar, AvatarFallback } from './ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { AddBookDialog } from './add-book-dialog';
 import { DashboardHeader } from './dashboard-header';
 import { SettingsDialog } from './settings-dialog';
 import { isPast, parseISO, differenceInDays } from 'date-fns';
 import { UserLoanCard } from './user-loan-card';
+import { db } from '@/lib/firebase';
+import { collection, doc, getDocs, writeBatch, onSnapshot, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 export function LibrarianDashboard() {
   const [books, setBooks] = useState<BookType[]>([]);
@@ -39,59 +39,27 @@ export function LibrarianDashboard() {
   const { toast } = useToast();
   
   useEffect(() => {
-    const loadState = (key: string, setter: Function, initialState: any) => {
-        try {
-            const storedValue = localStorage.getItem(key);
-            if (storedValue) {
-                const parsedValue = JSON.parse(storedValue);
-                 if (Array.isArray(parsedValue) && parsedValue.length > 0) {
-                    setter(parsedValue);
-                    return; 
-                }
-            }
-            setter(initialState);
-            localStorage.setItem(key, JSON.stringify(initialState));
-        } catch (error) {
-            console.error(`Failed to load state for ${key}:`, error);
-            setter(initialState);
-        }
-    };
-
-    loadState('books', setBooks, initialBooks);
-    loadState('categories', setCategories, initialCategories);
-    loadState('checkouts', setCheckouts, initialCheckouts);
-    loadState('checkoutRequests', setCheckoutRequests, initialCheckoutRequests);
-    loadState('users', setUsers, initialUsers);
+    const unsubscribes = [
+      onSnapshot(collection(db, 'books'), snapshot => 
+        setBooks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)))
+      ),
+      onSnapshot(collection(db, 'categories'), snapshot => 
+        setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)))
+      ),
+      onSnapshot(collection(db, 'checkouts'), snapshot => 
+        setCheckouts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)))
+      ),
+      onSnapshot(collection(db, 'checkoutRequests'), snapshot =>
+        setCheckoutRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)))
+      ),
+      onSnapshot(collection(db, 'users'), snapshot =>
+        setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)))
+      ),
+    ];
     
-    const storedUsername = localStorage.getItem('userUsername') || '';
-    setUsername(storedUsername);
+    return () => unsubscribes.forEach(unsub => unsub());
   }, []);
 
-
-  useEffect(() => { 
-      // This effect runs only when there's a meaningful change to persist.
-      const hasInitialData = books.length > 0 || categories.length > 0 || checkouts.length > 0 || checkoutRequests.length > 0 || users.length > 0;
-      if (hasInitialData) {
-        localStorage.setItem('books', JSON.stringify(books));
-        localStorage.setItem('categories', JSON.stringify(categories));
-        localStorage.setItem('checkouts', JSON.stringify(checkouts));
-        localStorage.setItem('checkoutRequests', JSON.stringify(checkoutRequests));
-        localStorage.setItem('users', JSON.stringify(users));
-      }
-  }, [books, categories, checkouts, checkoutRequests, users]);
-
-
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'books' && e.newValue) setBooks(JSON.parse(e.newValue));
-      if (e.key === 'categories' && e.newValue) setCategories(JSON.parse(e.newValue));
-      if (e.key === 'checkouts' && e.newValue) setCheckouts(JSON.parse(e.newValue));
-      if (e.key === 'checkoutRequests' && e.newValue) setCheckoutRequests(JSON.parse(e.newValue));
-      if (e.key === 'users' && e.newValue) setUsers(JSON.parse(e.newValue));
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
 
   useEffect(() => {
     const results = books.filter(book => {
@@ -105,14 +73,13 @@ export function LibrarianDashboard() {
   }, [searchTerm, selectedCategory, books]);
 
 
-  const getBook = (bookId: number): BookType | undefined => {
+  const getBook = (bookId: string): BookType | undefined => {
     return books.find(b => b.id === bookId);
   };
 
   const getUser = (userId: string): UserType | undefined => {
-      const fullUsername = userId.includes('@') ? userId : `${userId}@alumnos.uat.edu.mx`;
       const userByName = users.find(u => u.name === userId)
-      const userByUsername = users.find(u => u.username === fullUsername);
+      const userByUsername = users.find(u => u.username === userId);
       return userByUsername || userByName;
   }
   
@@ -126,44 +93,59 @@ export function LibrarianDashboard() {
     setSelectedCheckout(null);
   };
 
-  const handleApproveRequest = (requestToApprove: Checkout) => {
+  const handleApproveRequest = async (requestToApprove: any) => {
     const bookToCheckout = getBook(requestToApprove.bookId);
     if (!bookToCheckout || bookToCheckout.stock === 0) {
       toast({ variant: 'destructive', title: 'Error de aprobación', description: `El libro "${bookToCheckout?.title}" no está disponible.` });
-      setCheckoutRequests(prev => prev.filter(r => r.bookId !== requestToApprove.bookId || r.userId !== requestToApprove.userId));
+      await deleteDoc(doc(db, 'checkoutRequests', requestToApprove.id));
       return;
     }
-
-    const updatedBooks = books.map(b => b.id === requestToApprove.bookId ? { ...b, stock: b.stock - 1 } : b);
-    setBooks(updatedBooks);
-    const approvedCheckout: Checkout = { ...requestToApprove, status: 'approved' };
-    setCheckouts(prev => [...prev, approvedCheckout]);
-    setCheckoutRequests(prev => prev.filter(r => r.bookId !== requestToApprove.bookId || r.userId !== requestToApprove.userId));
     
+    const batch = writeBatch(db);
+
+    const bookRef = doc(db, 'books', requestToApprove.bookId);
+    batch.update(bookRef, { stock: bookToCheckout.stock - 1 });
+    
+    const checkoutRef = doc(collection(db, 'checkouts'));
+    batch.set(checkoutRef, { ...requestToApprove, status: 'approved' });
+
+    const requestRef = doc(db, 'checkoutRequests', requestToApprove.id);
+    batch.delete(requestRef);
+    
+    await batch.commit();
+
     handleCloseDialog();
     toast({ title: '✅ Préstamo Aprobado', description: `El préstamo de "${bookToCheckout.title}" a ${requestToApprove.userId} ha sido confirmado.` });
   };
 
-  const handleSuccessfulCheckout = (bookId: number, checkoutData: {userId: string; dueDate: string}) => {
+  const handleSuccessfulCheckout = async (bookId: string, checkoutData: {userId: string; dueDate: string}) => {
     const bookToCheckout = getBook(bookId);
      if (!bookToCheckout || bookToCheckout.stock === 0) {
       toast({ variant: 'destructive', title: 'Error de aprobación', description: `El libro "${bookToCheckout?.title}" no está disponible.` });
       return;
     }
-    const updatedBooks = books.map(b => b.id === bookId ? { ...b, stock: b.stock - 1 } : b);
-    setBooks(updatedBooks);
-    const newCheckout: Checkout = { ...checkoutData, bookId: bookId, status: 'approved' };
-    setCheckouts(prev => [...prev, newCheckout]);
+
+    const batch = writeBatch(db);
+    const bookRef = doc(db, 'books', bookId);
+    batch.update(bookRef, { stock: bookToCheckout.stock - 1 });
+
+    const newCheckout: Omit<Checkout, 'id'> = { ...checkoutData, bookId: bookId, status: 'approved' };
+    const checkoutRef = doc(collection(db, 'checkouts'));
+    batch.set(checkoutRef, newCheckout);
+    
+    await batch.commit();
   };
   
-  const handleAddNewBook = (newBookData: Omit<BookType, 'id'>) => {
-    const newBook: BookType = { ...newBookData, id: Math.max(...books.map(b => b.id), 0) + 1 };
-    setBooks(prev => [...prev, newBook]);
-    toast({ title: '📖 ¡Libro Añadido!', description: `"${newBook.title}" ha sido añadido al catálogo.` });
+  const handleAddNewBook = async (newBookData: Omit<BookType, 'id'>) => {
+    const docRef = await addDoc(collection(db, 'books'), newBookData);
+    setBooks(prev => [...prev, { ...newBookData, id: docRef.id }]);
+    toast({ title: '📖 ¡Libro Añadido!', description: `"${newBookData.title}" ha sido añadido al catálogo.` });
   };
 
-  const handleUpdateBook = (updatedBook: BookType) => {
-    setBooks(prev => prev.map(b => b.id === updatedBook.id ? updatedBook : b));
+  const handleUpdateBook = async (updatedBook: BookType) => {
+    const { id, ...bookData } = updatedBook;
+    const bookRef = doc(db, 'books', id);
+    await updateDoc(bookRef, bookData);
     toast({ title: '📘 ¡Libro Actualizado!', description: `"${updatedBook.title}" ha sido actualizado.` });
   };
   
@@ -177,50 +159,45 @@ export function LibrarianDashboard() {
     setIsAddBookDialogOpen(true);
   };
 
-  const handleDeleteBook = (bookId: number) => {
-    setBooks(prev => prev.filter(b => b.id !== bookId));
-    setCheckouts(prev => prev.filter(c => c.bookId !== bookId));
-    setCheckoutRequests(prev => prev.filter(r => r.bookId !== bookId));
+  const handleDeleteBook = async (bookId: string) => {
+    await deleteDoc(doc(db, 'books', bookId));
     toast({ title: '🗑️ Libro Eliminado', description: 'El libro ha sido eliminado del catálogo.' });
   };
 
-  const handleReturnBook = (checkoutToReturn: Checkout) => {
-    const updatedBooks = books.map(b => 
-      b.id === checkoutToReturn.bookId ? { ...b, stock: b.stock + 1 } : b
-    );
-    setBooks(updatedBooks);
+  const handleReturnBook = async (checkoutToReturn: any) => {
+    const batch = writeBatch(db);
 
-    const updatedCheckouts = checkouts.filter(c => 
-      !(c.bookId === checkoutToReturn.bookId && c.userId === checkoutToReturn.userId)
-    );
-    setCheckouts(updatedCheckouts);
-
-    const userToUpdate = getUser(checkoutToReturn.userId);
-    const otherCheckouts = updatedCheckouts.filter(c => c.userId === checkoutToReturn.userId);
-    const hasOtherOverdueBooks = otherCheckouts.some(c => isPast(parseISO(c.dueDate)));
-    
-    if (userToUpdate && userToUpdate.status === 'deactivated' && !hasOtherOverdueBooks) {
-        handleUserStatusChange(checkoutToReturn.userId, true);
-        localStorage.setItem('justReactivated', 'true');
+    const book = getBook(checkoutToReturn.bookId);
+    if(book) {
+        const bookRef = doc(db, 'books', checkoutToReturn.bookId);
+        batch.update(bookRef, { stock: book.stock + 1 });
     }
+
+    const checkoutRef = doc(db, 'checkouts', checkoutToReturn.id);
+    batch.delete(checkoutRef);
     
+    // Logic for user reactivation if they have no other overdue books
+    const user = getUser(checkoutToReturn.userId);
+    if (user && user.status === 'deactivated') {
+        const otherCheckouts = checkouts.filter(c => c.userId === checkoutToReturn.userId && c.id !== checkoutToReturn.id);
+        const hasOtherOverdueBooks = otherCheckouts.some(c => isPast(parseISO(c.dueDate)));
+        if (!hasOtherOverdueBooks) {
+            handleUserStatusChange(user.id, true);
+        }
+    }
+
+    await batch.commit();
     toast({ title: '✅ Libro Devuelto', description: `El libro ha sido marcado como devuelto.` });
   };
 
-  const handleUserStatusChange = (userId: string, reactivate: boolean) => {
-    const fullUsername = userId.includes('@') ? userId : `${userId}@alumnos.uat.edu.mx`;
+  const handleUserStatusChange = async (userId: string, reactivate: boolean) => {
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, { status: reactivate ? 'active' : 'deactivated' });
     
-    const userToUpdate = users.find(u => u.username === fullUsername || u.name === userId);
-    if (!userToUpdate) return;
-    
-    const updatedUsers = users.map(u => 
-      u.username === userToUpdate.username ? { ...u, status: reactivate ? 'active' : 'deactivated' } : u
-    );
-    setUsers(updatedUsers);
-    
+    const user = users.find(u => u.id === userId);
     toast({
         title: reactivate ? '👤 Cuenta Reactivada' : '🚫 Cuenta Desactivada',
-        description: `La cuenta de ${userToUpdate.name || userId} ha sido ${reactivate ? 'reactivada' : 'desactivada'}.`,
+        description: `La cuenta de ${user?.name || userId} ha sido ${reactivate ? 'reactivada' : 'desactivada'}.`,
     });
   };
 
@@ -242,7 +219,7 @@ export function LibrarianDashboard() {
       const user = getUser(checkout.userId);
       if (!user) return acc;
 
-      const userIdentifier = user.username;
+      const userIdentifier = user.id;
       if (!acc[userIdentifier]) {
           acc[userIdentifier] = {
               user: user,
@@ -462,9 +439,7 @@ export function LibrarianDashboard() {
                                             <div className="p-3 border-t mt-auto text-center">
                                                 <p className="text-xs font-semibold text-primary mb-2">Solicitado por:</p>
                                                 <div className='flex items-center justify-center gap-2'>
-                                                    <Avatar className="h-6 w-6 shrink-0">
-                                                    <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
-                                                    </Avatar>
+                                                    <User className="h-4 w-4" />
                                                     <p className="text-sm font-medium truncate">{user?.name || request.userId}</p>
                                                 </div>
                                             </div>
@@ -510,9 +485,7 @@ export function LibrarianDashboard() {
                                                         <div className="p-3 border-t mt-auto text-center">
                                                             <p className="text-xs font-semibold text-primary mb-2">Prestado a:</p>
                                                             <div className='flex items-center justify-center gap-2'>
-                                                                <Avatar className="h-6 w-6 shrink-0">
-                                                                <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
-                                                                </Avatar>
+                                                                <User className="h-4 w-4" />
                                                                 <p className="text-sm font-medium truncate">{checkout.userId}</p>
                                                             </div>
                                                         </div>
@@ -540,7 +513,7 @@ export function LibrarianDashboard() {
                                             key={user.username}
                                             user={user}
                                             loans={loans}
-                                            onReactivateAccount={() => handleUserStatusChange(user.username, true)}
+                                            onReactivateAccount={() => handleUserStatusChange(user.id, true)}
                                         />
                                         ))
                                     ) : (
@@ -558,3 +531,4 @@ export function LibrarianDashboard() {
   );
 }
 
+    

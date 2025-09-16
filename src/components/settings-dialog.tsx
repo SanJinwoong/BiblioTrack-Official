@@ -42,7 +42,7 @@ interface SettingsDialogProps {
   categories: Category[];
   setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
   onEditBook: (book: Book) => void;
-  onDeleteBook: (bookId: number) => void;
+  onDeleteBook: (bookId: string) => void;
   users: User[];
   onUserStatusChange: (userId: string, reactivate: boolean) => void;
 }
@@ -283,7 +283,7 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
                                             variant="default"
                                             size="sm"
                                             className="bg-green-600 hover:bg-green-700"
-                                            onClick={() => onUserStatusChange(user.username, true)}
+                                            onClick={() => onUserStatusChange(user.id, true)}
                                         >
                                             <UserCheck className="mr-2 h-4 w-4" />
                                             Reactivar
@@ -292,7 +292,7 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
                                         <Button 
                                             variant="destructive" 
                                             size="sm"
-                                            onClick={() => onUserStatusChange(user.username, false)}
+                                            onClick={() => onUserStatusChange(user.id, false)}
                                         >
                                             <UserX className="mr-2 h-4 w-4" />
                                             Desactivar
@@ -358,3 +358,5 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
     </Dialog>
   );
 }
+
+    

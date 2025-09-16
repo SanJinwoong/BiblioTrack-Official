@@ -17,7 +17,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { AddBookForm } from './add-book-form';
 import type { Book, Category } from '@/lib/types';
@@ -101,3 +100,5 @@ export function AddBookDialog({ open, onOpenChange, onBookAdded, onBookUpdated, 
     </>
   );
 }
+
+    

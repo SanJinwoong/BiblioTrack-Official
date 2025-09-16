@@ -24,7 +24,7 @@ interface BookDetailsDialogProps {
   checkout?: Checkout | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccessfulCheckout: (bookId: number, checkoutData: {userId: string; dueDate: string}) => void;
+  onSuccessfulCheckout: (bookId: string, checkoutData: {userId: string; dueDate: string}) => void;
   onApproveRequest?: (checkout: Checkout) => void;
   onReturnBook: (checkout: Checkout) => void;
   onDeactivateUser: (userId: string) => void;
@@ -278,5 +278,7 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
     </Dialog>
   );
 }
+
+    
 
     
