@@ -221,132 +221,138 @@ export function UserProfile({ username }: UserProfileProps) {
         role={currentUser?.role || 'client'}
        />
        
-      {/* Banner */}
-      <div className="h-48 md:h-56 w-full bg-muted">
-          {user.bannerUrl ? (
-          <Image
-              src={user.bannerUrl}
-              alt={`${user.name}'s banner`}
-              width={1200}
-              height={300}
-              className="object-cover w-full h-full"
-              data-ai-hint="abstract background"
-          />
-          ) : (
-          <div className="h-full w-full bg-gradient-to-r from-gray-200 to-gray-300"></div>
-          )}
-      </div>
-
-      {/* Main Content */}
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8">
-            <div className="lg:col-span-1">
-                 {/* Profile Header */}
-                 <div className="relative flex justify-between items-start -mt-16 md:-mt-20">
-                    <Avatar className="h-32 w-32 md:h-40 md:w-40 border-4 border-background bg-background shrink-0">
-                        <AvatarImage src={user.avatarUrl} alt={user.name} />
-                        <AvatarFallback className="text-5xl">{user.name?.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                </div>
+      <div className="w-full">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8">
+                <div className="lg:col-span-1">
+                    <div className="px-4">
+                        <div className="h-48 md:h-56 w-full bg-muted rounded-lg overflow-hidden">
+                          {user.bannerUrl ? (
+                          <Image
+                              src={user.bannerUrl}
+                              alt={`${user.name}'s banner`}
+                              width={1200}
+                              height={300}
+                              className="object-cover w-full h-full"
+                              data-ai-hint="abstract background"
+                          />
+                          ) : (
+                          <div className="h-full w-full bg-gradient-to-r from-gray-200 to-gray-300"></div>
+                          )}
+                        </div>
+                    </div>
                 
-                <div className="mt-4 space-y-4">
-                    <div className="flex justify-between items-center">
-                        <div>
-                            <h1 className="text-3xl font-bold">{user.name}</h1>
-                            <p className="text-md text-muted-foreground">@{user.username}</p>
-                        </div>
-                        {isOwnProfile ? (
-                            <Button variant="outline" onClick={() => setIsEditDialogOpen(true)} className="rounded-full">
-                                <Edit className="mr-2 h-4 w-4" /> Editar Perfil
-                            </Button>
-                        ) : isFollowing ? (
-                            <Button variant="secondary" onClick={handleFollowToggle} className="rounded-full">
-                                <UserCheck className="mr-2 h-4 w-4" />
-                                Siguiendo
-                            </Button>
-                        ) : (
-                            <Button onClick={handleFollowToggle} className="rounded-full">
-                                <UserPlus className="mr-2 h-4 w-4" />
-                                Seguir
-                            </Button>
-                        )}
-                    </div>
-                    
-                    <p className="text-foreground max-w-2xl">{user.bio || 'Este usuario aún no ha añadido una biografía.'}</p>
-                    
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
-                        <p className='font-light'>Puedes hacer clic en los números para explorar las conexiones.</p>
-                        <Link href="#" className="hover:underline">
-                            <span className="font-bold text-foreground">{user.following?.length || 0}</span> Siguiendo
-                        </Link>
-                        <Link href="#" className="hover:underline">
-                            <span className="font-bold text-foreground">{user.followers?.length || 0}</span> Seguidores
-                        </Link>
-                         {user.createdAt && (
-                            <div className="flex items-center space-x-1">
-                                <Calendar className="h-4 w-4" />
-                                <span>Se unió en {format(new Date(user.createdAt), "MMMM 'de' yyyy", { locale: es })}</span>
+                    {/* Profile Header */}
+                    <div className="relative p-4 flex flex-col">
+                        <div className="flex justify-between items-start">
+                            <div className="relative -mt-20">
+                                <Avatar className="h-32 w-32 md:h-40 md:w-40 border-4 border-background bg-background shrink-0">
+                                    <AvatarImage src={user.avatarUrl} alt={user.name} />
+                                    <AvatarFallback className="text-5xl">{user.name?.charAt(0)}</AvatarFallback>
+                                </Avatar>
                             </div>
-                        )}
+                            <div className='pt-4'>
+                                {isOwnProfile ? (
+                                    <Button variant="outline" onClick={() => setIsEditDialogOpen(true)} className="rounded-full">
+                                        <Edit className="mr-2 h-4 w-4" /> Editar Perfil
+                                    </Button>
+                                ) : isFollowing ? (
+                                    <Button variant="secondary" onClick={handleFollowToggle} className="rounded-full">
+                                        <UserCheck className="mr-2 h-4 w-4" />
+                                        Siguiendo
+                                    </Button>
+                                ) : (
+                                    <Button onClick={handleFollowToggle} className="rounded-full">
+                                        <UserPlus className="mr-2 h-4 w-4" />
+                                        Seguir
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                        
+                        <div className="mt-4 space-y-4">
+                            <div>
+                                <h1 className="text-3xl font-bold">{user.name}</h1>
+                                <p className="text-md text-muted-foreground">@{user.username}</p>
+                            </div>
+                            
+                            <p className="text-foreground max-w-2xl">{user.bio || 'Este usuario aún no ha añadido una biografía.'}</p>
+                            
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+                                <p className='font-light'>Puedes hacer clic en los números para explorar las conexiones.</p>
+                                <Link href="#" className="hover:underline">
+                                    <span className="font-bold text-foreground">{user.following?.length || 0}</span> Siguiendo
+                                </Link>
+                                <Link href="#" className="hover:underline">
+                                    <span className="font-bold text-foreground">{user.followers?.length || 0}</span> Seguidores
+                                </Link>
+                                {user.createdAt && (
+                                    <div className="flex items-center space-x-1">
+                                        <Calendar className="h-4 w-4" />
+                                        <span>Se unió en {format(new Date(user.createdAt), "MMMM 'de' yyyy", { locale: es })}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="mt-6">
+                            <Tabs defaultValue="favorites" className="w-full">
+                                <TabsList>
+                                    <TabsTrigger value="favorites">Libros Favoritos</TabsTrigger>
+                                    <TabsTrigger value="reviews">Reseñas ({userReviews.length})</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="favorites" className="mt-4">
+                                    {favoriteBooks && favoriteBooks.length > 0 ? (
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                            {favoriteBooks.map(book => (
+                                            <BookCard key={book.id} book={book} onClick={() => handleOpenBookDialog(book)} />
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-16 text-muted-foreground bg-muted/50 rounded-lg">
+                                            <p>Aún no se han añadido libros favoritos.</p>
+                                        </div>
+                                    )}
+                                </TabsContent>
+                                <TabsContent value="reviews" className="mt-4 space-y-4">
+                                    {userReviews.length > 0 ? (
+                                        <>
+                                        {userReviews.map(review => (
+                                            <ReviewCard key={review.id} review={review} />
+                                        ))}
+                                        </>
+                                    ) : (
+                                        <div className="text-center py-16 text-muted-foreground bg-muted/50 rounded-lg">
+                                            <p>Este usuario aún no ha dejado ninguna reseña.</p>
+                                        </div>
+                                    )}
+                                </TabsContent>
+                            </Tabs>
+                        </div>
                     </div>
                 </div>
+                <div className="lg:col-span-1 space-y-8 pt-8">
+                    <Recommendations onBookSelect={handleOpenBookDialog} displayStyle="compact" />
 
-                <div className="mt-6">
-                    <Tabs defaultValue="favorites" className="w-full">
-                        <TabsList>
-                            <TabsTrigger value="favorites">Libros Favoritos</TabsTrigger>
-                            <TabsTrigger value="reviews">Reseñas ({userReviews.length})</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="favorites" className="mt-4">
-                            {favoriteBooks && favoriteBooks.length > 0 ? (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                    {favoriteBooks.map(book => (
-                                    <BookCard key={book.id} book={book} onClick={() => handleOpenBookDialog(book)} />
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-16 text-muted-foreground bg-muted/50 rounded-lg">
-                                    <p>Aún no se han añadido libros favoritos.</p>
-                                </div>
-                            )}
-                        </TabsContent>
-                        <TabsContent value="reviews" className="mt-4 space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Actividad Reciente</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
                             {userReviews.length > 0 ? (
-                                <>
-                                {userReviews.map(review => (
-                                    <ReviewCard key={review.id} review={review} />
+                            <>
+                                {userReviews.slice(0, 3).map(review => (
+                                    <ReviewCard key={`activity-${review.id}`} review={review} />
                                 ))}
-                                </>
+                            </>
                             ) : (
-                                <div className="text-center py-16 text-muted-foreground bg-muted/50 rounded-lg">
+                            <div className="text-center text-sm text-muted-foreground py-8">
                                     <p>Este usuario aún no ha dejado ninguna reseña.</p>
-                                </div>
+                            </div>
                             )}
-                        </TabsContent>
-                    </Tabs>
+                        </CardContent>
+                    </Card>
                 </div>
-            </div>
-            <div className="lg:col-span-1 space-y-8 pt-8">
-                <Recommendations onBookSelect={handleOpenBookDialog} displayStyle="compact" />
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Actividad Reciente</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        {userReviews.length > 0 ? (
-                        <>
-                            {userReviews.slice(0, 3).map(review => (
-                                <ReviewCard key={`activity-${review.id}`} review={review} />
-                            ))}
-                        </>
-                        ) : (
-                        <div className="text-center text-sm text-muted-foreground py-8">
-                                <p>Este usuario aún no ha dejado ninguna reseña.</p>
-                        </div>
-                        )}
-                    </CardContent>
-                </Card>
             </div>
         </div>
       </div>
