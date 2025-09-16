@@ -6,11 +6,11 @@ import type { Book, Checkout, User, Category } from './types';
 
 export const initialUsers: Omit<User, 'id'>[] = [
     { 
-        username: 'librarian', 
-        password: 'password', 
+        username: 'admin', 
+        password: 'admin', 
         role: 'librarian',
         name: 'Librarian Admin',
-        email: 'librarian',
+        email: 'admin',
         curp: 'ADMINCURP12345',
         phone: '123-456-7890',
         address: 'Library Address, 123',
@@ -64,19 +64,7 @@ export const initialUsers: Omit<User, 'id'>[] = [
         address: 'Calle Luna 8, Mante',
         status: 'active',
         avatarUrl: 'https://i.pravatar.cc/150?u=a3333333333'
-    },
-    { 
-        username: 'admin', 
-        password: 'admin', 
-        role: 'librarian',
-        name: 'Super Admin',
-        email: 'admin',
-        curp: 'ADMINCURP67890',
-        phone: '098-765-4321',
-        address: 'Admin Address, 456',
-        status: 'active',
-        avatarUrl: 'https://i.pravatar.cc/150?u=admin'
-    },
+    }
 ];
 
 export const initialCategories: Omit<Category, 'id'>[] = [
@@ -203,5 +191,3 @@ export const readingHistory: { [key: string]: string[] } = {
     'a1234567890@alumnos.uat.edu.mx': ["book4_id", "book6_id"], // Placeholder IDs, to be mapped to real book IDs
     'a0987654321@alumnos.uat.edu.mx': ["book1_id"],
 };
-
-    
