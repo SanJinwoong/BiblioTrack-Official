@@ -18,7 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import type { Book, Category } from '@/lib/types';
 import { ScrollArea } from './ui/scroll-area';
 import Image from 'next/image';
-import { Upload, Image as ImageIcon } from 'lucide-react';
+import { Image as ImageIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
@@ -45,6 +45,17 @@ interface AddBookFormProps {
   onCancel: () => void;
   onFormDirtyChange: (isDirty: boolean) => void;
 }
+
+// Helper function to convert a file to a Base64 Data URI
+const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = (error) => reject(error);
+    });
+};
+
 
 export function AddBookForm({ bookToEdit, categories, onSuccess, onCancel, onFormDirtyChange }: AddBookFormProps) {
     const [previewUrl, setPreviewUrl] = useState<string>('');
@@ -79,20 +90,30 @@ export function AddBookForm({ bookToEdit, categories, onSuccess, onCancel, onFor
   }, [isDirty, onFormDirtyChange]);
 
   useEffect(() => {
-    let newPreviewUrl = '';
-    if (coverFileValue && coverFileValue.length > 0) {
-        newPreviewUrl = URL.createObjectURL(coverFileValue[0]);
-    } else if (coverUrlValue) {
-        newPreviewUrl = coverUrlValue;
-    } else if (bookToEdit?.coverUrl) {
-        newPreviewUrl = bookToEdit.coverUrl;
+    let objectUrl: string | null = null;
+
+    const generatePreview = async () => {
+        if (coverFileValue && coverFileValue.length > 0) {
+            const file = coverFileValue[0];
+            if (file instanceof File) {
+              objectUrl = URL.createObjectURL(file);
+              setPreviewUrl(objectUrl);
+            }
+        } else if (coverUrlValue) {
+            setPreviewUrl(coverUrlValue);
+        } else if (bookToEdit?.coverUrl) {
+            setPreviewUrl(bookToEdit.coverUrl);
+        } else {
+            setPreviewUrl('');
+        }
     }
-    setPreviewUrl(newPreviewUrl);
+
+    generatePreview();
     
     // Cleanup function to revoke the object URL
     return () => {
-        if (newPreviewUrl && newPreviewUrl.startsWith('blob:')) {
-            URL.revokeObjectURL(newPreviewUrl);
+        if (objectUrl) {
+            URL.revokeObjectURL(objectUrl);
         }
     };
   }, [coverUrlValue, coverFileValue, bookToEdit?.coverUrl]);
@@ -101,9 +122,10 @@ export function AddBookForm({ bookToEdit, categories, onSuccess, onCancel, onFor
     let finalCoverUrl = values.coverUrl;
 
     if (values.coverFile && values.coverFile.length > 0) {
-        // In a real app, upload file to storage and get URL.
-        // For now, we are simulating this. We'll just pass the preview URL.
-        finalCoverUrl = previewUrl; 
+        const file = values.coverFile[0];
+        if (file instanceof File) {
+            finalCoverUrl = await fileToBase64(file);
+        }
     }
     
     const { coverFile, ...bookData } = values;
@@ -216,3 +238,5 @@ export function AddBookForm({ bookToEdit, categories, onSuccess, onCancel, onFor
     </Form>
   );
 }
+
+    
