@@ -15,6 +15,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from './ui/input';
 import { Library } from './icons/uat-logo';
+import { useEffect, useState } from 'react';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import type { User as UserType } from '@/lib/types';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+
 
 interface ClientHeaderProps {
     username: string;
@@ -24,6 +30,20 @@ interface ClientHeaderProps {
 
 export function ClientHeader({ username, searchTerm, setSearchTerm }: ClientHeaderProps) {
   const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<UserType | null>(null);
+
+  useEffect(() => {
+    if (!username) return;
+
+    const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
+        const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserType));
+        const foundUser = usersData.find(u => u.username === username);
+        setCurrentUser(foundUser || null);
+    });
+
+    return () => unsubscribe();
+  }, [username]);
+
 
   const handleLogout = () => {
     localStorage.removeItem('userRole');
@@ -78,7 +98,12 @@ export function ClientHeader({ username, searchTerm, setSearchTerm }: ClientHead
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                <User className="h-5 w-5" />
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={currentUser?.avatarUrl} alt={currentUser?.name || ''} />
+                  <AvatarFallback>
+                    {currentUser?.name ? currentUser.name.charAt(0) : <User className="h-5 w-5" />}
+                  </AvatarFallback>
+                </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
