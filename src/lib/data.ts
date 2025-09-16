@@ -17,6 +17,7 @@ export const initialUsers: Omit<User, 'id'>[] = [
         status: 'active',
         avatarUrl: 'https://i.pravatar.cc/150?u=admin'
     },
+    // Este usuario estará DESACTIVADO porque su préstamo tiene más de 2 semanas de vencido.
     { 
         username: 'a1234567890', 
         password: 'password',
@@ -26,9 +27,10 @@ export const initialUsers: Omit<User, 'id'>[] = [
         phone: '834-111-2233',
         email: 'a1234567890@alumnos.uat.edu.mx',
         address: 'Calle Falsa 123, Ciudad Victoria',
-        status: 'deactivated',
+        status: 'active', // Inicia como activo, la lógica lo desactivará
         avatarUrl: 'https://i.pravatar.cc/150?u=a1234567890'
     },
+    // Este usuario está ACTIVO y tiene préstamos y solicitudes.
     { 
         username: 'a0987654321', 
         password: 'password', 
@@ -41,6 +43,7 @@ export const initialUsers: Omit<User, 'id'>[] = [
         status: 'active',
         avatarUrl: 'https://i.pravatar.cc/150?u=a0987654321'
     },
+    // Este usuario estará DESACTIVADO porque su préstamo tiene más de 2 semanas de vencido.
      { 
         username: 'a2222222222', 
         password: 'password',
@@ -50,9 +53,10 @@ export const initialUsers: Omit<User, 'id'>[] = [
         phone: '834-555-7788',
         email: 'a2222222222@alumnos.uat.edu.mx',
         address: 'Boulevard del Sol 456, Tampico',
-        status: 'deactivated',
+        status: 'active', // Inicia como activo, la lógica lo desactivará
         avatarUrl: 'https://i.pravatar.cc/150?u=a2222222222'
     },
+    // Este usuario está ACTIVO y tiene una solicitud pendiente.
     { 
         username: 'a3333333333', 
         password: 'password', 
@@ -65,6 +69,7 @@ export const initialUsers: Omit<User, 'id'>[] = [
         status: 'active',
         avatarUrl: 'https://i.pravatar.cc/150?u=a3333333333'
     },
+    // Este usuario tiene un préstamo VENCIDO RECIENTEMENTE (menos de 1 semana), por lo que su cuenta AÚN ESTÁ ACTIVA.
     { 
         username: 'a4444444444', 
         password: 'password', 
@@ -181,29 +186,34 @@ const getPastDate = (days: number) => {
     date.setDate(date.getDate() - days);
     return date.toISOString().split('T')[0];
 };
+const getFutureDate = (days: number) => {
+    const date = new Date(today);
+    date.setDate(date.getDate() + days);
+    return date.toISOString().split('T')[0];
+}
 
 // We use the matricula/username as the userId now
 export const initialCheckouts: Omit<Checkout, 'id' | 'bookId'> & { bookTitle: string }[] = [
-  // Préstamo vencido por más de 2 semanas -> Cuenta Desactivada
+  // Préstamo VENCIDO (+20 días) para Juan Pérez -> Cuenta Desactivada
   { userId: 'a1234567890', bookTitle: '1984', dueDate: getPastDate(20), status: 'approved' },
-  // Otro Préstamo Vencido para el mismo usuario
+  // Otro préstamo VENCIDO (+30 días) para el mismo Juan Pérez
   { userId: 'a1234567890', bookTitle: 'Don Quijote de la Mancha', dueDate: getPastDate(30), status: 'approved' },
   
-  // Préstamo vencido por más de 2 semanas -> Cuenta Desactivada
+  // Préstamo VENCIDO (+15 días) para Carlos Sánchez -> Cuenta Desactivada
   { userId: 'a2222222222', bookTitle: 'Dune', dueDate: getPastDate(15), status: 'approved' },
 
-  // Préstamo vencido recientemente (menos de 7 días) -> Usuario Activo pero con alerta
+  // Préstamo VENCIDO RECIENTEMENTE (4 días) para Laura Gómez -> Cuenta AÚN ACTIVA
   { userId: 'a4444444444', bookTitle: 'Cien años de soledad', dueDate: getPastDate(4), status: 'approved' },
 
-  // Préstamo Activo para Maria Rodríguez (aún no vence)
-  { userId: 'a0987654321', bookTitle: 'El Alquimista', dueDate: '2024-09-25', status: 'approved' },
-  // Préstamo Activo para Ana García (aún no vence)
-  { userId: 'a3333333333', bookTitle: 'Orgullo y Prejuicio', dueDate: '2024-09-30', status: 'approved' },
+  // Préstamo ACTIVO para Maria Rodríguez (vence en el futuro)
+  { userId: 'a0987654321', bookTitle: 'El Alquimista', dueDate: getFutureDate(10), status: 'approved' },
+  // Préstamo ACTIVO para Ana García (vence en el futuro)
+  { userId: 'a3333333333', bookTitle: 'Orgullo y Prejuicio', dueDate: getFutureDate(15), status: 'approved' },
 ];
 
 export const initialCheckoutRequests: Omit<Checkout, 'id' | 'bookId'> & { bookTitle: string }[] = [
-    { userId: 'a0987654321', bookTitle: 'Sapiens: De animales a dioses', dueDate: '2024-09-22', status: 'pending' },
-    { userId: 'a3333333333', bookTitle: 'El nombre del viento', dueDate: '2024-09-20', status: 'pending' },
+    { userId: 'a0987654321', bookTitle: 'Sapiens: De animales a dioses', dueDate: getFutureDate(7), status: 'pending' },
+    { userId: 'a3333333333', bookTitle: 'El nombre del viento', dueDate: getFutureDate(7), status: 'pending' },
 ];
 
 // This part is for the AI recommendations, which can remain local as it's a mock
