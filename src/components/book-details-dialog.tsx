@@ -14,7 +14,7 @@ import {
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
-import { User, Calendar, AlertCircle, MoreHorizontal, Bell, Check, FolderKanban, BookCheck, UserX } from 'lucide-react';
+import { User, Calendar, AlertCircle, MoreHorizontal, Bell, Check, FolderKanban, BookCheck, UserX, Loader2 } from 'lucide-react';
 import { CheckoutForm } from './checkout-form';
 import { useState } from 'react';
 import { UserDetailsTooltip } from './user-details-tooltip';
@@ -34,6 +34,7 @@ interface BookDetailsDialogProps {
 
 export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSuccessfulCheckout, onApproveRequest, onReturnBook, onDeactivateUser, username, role }: BookDetailsDialogProps) {
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   if (!book) {
     return null;
@@ -42,6 +43,7 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
       setShowCheckoutForm(false); // Reset form view on close
+      setIsProcessing(false); // Reset processing state on close
     }
     onOpenChange(isOpen);
   };
@@ -53,9 +55,18 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
     onOpenChange(false); 
   }
 
-  const handleApprove = () => {
+  const handleApprove = async () => {
     if (checkout && onApproveRequest) {
-      onApproveRequest(checkout);
+      setIsProcessing(true);
+      try {
+        await onApproveRequest(checkout);
+        handleOpenChange(false); // Close dialog on success
+      } catch (error) {
+        console.error("Failed to approve request:", error);
+        // Optionally show a toast message here
+      } finally {
+        setIsProcessing(false);
+      }
     }
   }
 
@@ -240,9 +251,13 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
           
             <DialogFooter className="p-6 border-t bg-background">
                 {role === 'librarian' && isPendingRequestForLibrarian && !showCheckoutForm && (
-                     <Button type="button" disabled={book.stock === 0} onClick={handleApprove}>
-                        <Check className="mr-2 h-4 w-4" />
-                        Aprobar Préstamo
+                     <Button type="button" disabled={book.stock === 0 || isProcessing} onClick={handleApprove}>
+                        {isProcessing ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <Check className="mr-2 h-4 w-4" />
+                        )}
+                        {isProcessing ? 'Aprobando...' : 'Aprobar Préstamo'}
                     </Button>
                 )}
                 {role === 'librarian' && isLoanForLibrarian && !showCheckoutForm && (
@@ -278,7 +293,3 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
     </Dialog>
   );
 }
-
-    
-
-    
