@@ -136,8 +136,12 @@ function CroppingView({
               ref={imgRef}
               alt="Crop preview"
               src={imgSrc}
-              fill
+              width={0}
+              height={0}
+              sizes="100vw"
               style={{
+                width: '100%',
+                height: 'auto',
                 objectFit: 'contain',
                 transform: `scale(${scale}) rotate(${rotate}deg)`,
               }}
