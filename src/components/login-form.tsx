@@ -58,8 +58,8 @@ export function LoginForm() {
       if (querySnapshot.empty) {
         toast({
             variant: "destructive",
-            title: "❌ Credenciales incorrectas",
-            description: "El usuario o la contraseña no son correctos. Por favor, inténtalo de nuevo.",
+            title: "Usuario no encontrado",
+            description: "El usuario ingresado no existe. Por favor, verifícalo o regístrate.",
         });
         setIsLoading(false);
         return;
@@ -69,19 +69,20 @@ export function LoginForm() {
       const user = userDoc.data() as User;
 
       if (user.password === password) {
+        // Store user info in localStorage for session persistence
         localStorage.setItem('userRole', user.role);
         localStorage.setItem('userUsername', user.username);
         
         router.push('/dashboard');
         toast({
-          title: `✅ ¡Bienvenido de nuevo!`,
+          title: `✅ ¡Bienvenido de nuevo, ${user.name || user.username}!`,
           description: 'Has iniciado sesión correctamente.',
         });
       } else {
         toast({
             variant: "destructive",
-            title: "❌ Credenciales incorrectas",
-            description: "El usuario o la contraseña no son correctos. Por favor, inténtalo de nuevo.",
+            title: "Contraseña incorrecta",
+            description: "La contraseña no es correcta. Por favor, inténtalo de nuevo.",
         });
       }
 
@@ -90,7 +91,7 @@ export function LoginForm() {
       toast({
         variant: "destructive",
         title: "🔥 Error del sistema",
-        description: "Ocurrió un error inesperado al intentar iniciar sesión.",
+        description: "Ocurrió un error inesperado al intentar iniciar sesión. Intenta de nuevo.",
       });
     } finally {
       setIsLoading(false);
