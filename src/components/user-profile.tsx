@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import Image from 'next/image';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
@@ -21,7 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ReviewCard } from './review-card';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Card } from './ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 
 interface UserProfileProps {
   username: string;
@@ -225,32 +225,34 @@ export function UserProfile({ username }: UserProfileProps) {
         username={currentUser?.username || ''}
         role={currentUser?.role || 'client'}
        />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-                {/* Profile Header */}
-                 <div className="w-full">
-                    {/* Banner */}
-                    <div className="h-48 md:h-56 w-full bg-muted rounded-lg overflow-hidden">
-                      {user.bannerUrl ? (
-                        <Image
-                          src={user.bannerUrl}
-                          alt={`${user.name}'s banner`}
-                          width={1000}
-                          height={300}
-                          className="object-cover w-full h-full"
-                          data-ai-hint="abstract background"
-                        />
-                      ) : (
-                        <div className="h-full w-full bg-gradient-to-r from-gray-200 to-gray-300"></div>
-                      )}
-                    </div>
-                </div>
-                 <div className="px-4 sm:px-6 lg:px-8">
+       
+       <div className="w-full">
+            {/* Banner */}
+            <div className="h-48 md:h-56 w-full bg-muted rounded-lg overflow-hidden">
+                {user.bannerUrl ? (
+                <Image
+                    src={user.bannerUrl}
+                    alt={`${user.name}'s banner`}
+                    width={1000}
+                    height={300}
+                    className="object-cover w-full h-full"
+                    data-ai-hint="abstract background"
+                />
+                ) : (
+                <div className="h-full w-full bg-gradient-to-r from-gray-200 to-gray-300"></div>
+                )}
+            </div>
+        </div>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2">
+                    {/* Profile Header */}
+                    
                     <div className="relative -mt-16 md:-mt-20">
-                      <Avatar className="h-32 w-32 md:h-40 md:w-40 border-4 border-background bg-background">
+                        <Avatar className="h-32 w-32 md:h-40 md:w-40 border-4 border-background bg-background">
                         <AvatarImage src={user.avatarUrl} alt={user.name} />
                         <AvatarFallback className="text-5xl">{user.name?.charAt(0)}</AvatarFallback>
-                      </Avatar>
+                        </Avatar>
                     </div>
 
                     <div className="flex justify-end h-14 items-center">
@@ -329,32 +331,33 @@ export function UserProfile({ username }: UserProfileProps) {
                             </TabsContent>
                         </Tabs>
                     </div>
+
                 </div>
+                <div className="lg:col-span-1 space-y-8 pt-20">
+                    <Recommendations onBookSelect={handleOpenBookDialog} displayStyle="compact" />
 
-            </div>
-            <div className="lg:col-span-1 space-y-8">
-                <Recommendations onBookSelect={handleOpenBookDialog} displayStyle="compact" />
-
-                <Card>
-                    <Card.Header>
-                        <Card.Title>Actividad Reciente</Card.Title>
-                    </Card.Header>
-                    <Card.Content className="space-y-4">
-                        {userReviews.length > 0 ? (
-                           <>
-                             {userReviews.slice(0, 3).map(review => (
-                                <ReviewCard key={`activity-${review.id}`} review={review} />
-                             ))}
-                           </>
-                        ) : (
-                           <div className="text-center text-sm text-muted-foreground py-8">
-                                <p>Este usuario aún no ha dejado ninguna reseña.</p>
-                           </div>
-                        )}
-                    </Card.Content>
-                </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Actividad Reciente</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {userReviews.length > 0 ? (
+                            <>
+                                {userReviews.slice(0, 3).map(review => (
+                                    <ReviewCard key={`activity-${review.id}`} review={review} />
+                                ))}
+                            </>
+                            ) : (
+                            <div className="text-center text-sm text-muted-foreground py-8">
+                                    <p>Este usuario aún no ha dejado ninguna reseña.</p>
+                            </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
       </div>
     </>
   );
 }
+
