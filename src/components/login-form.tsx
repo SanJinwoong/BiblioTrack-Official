@@ -5,9 +5,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
-import { LogIn } from 'lucide-react';
+import { LogIn, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -21,7 +20,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import type { User } from '@/lib/types';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 const formSchema = z.object({
   username: z.string().min(1, {
@@ -35,7 +34,7 @@ const formSchema = z.object({
 export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
-  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -44,37 +43,61 @@ export function LoginForm() {
       password: '',
     },
   });
-  
-  useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'users'), snapshot => {
-      setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
-    });
-    return () => unsubscribe();
-  }, []);
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
     const { username, password } = values;
 
-    // Step 1: Find the user by their exact username.
-    const user = users.find(u => u.username === username);
-
-    // Step 2: If the user is found, check their password.
-    if (user && user.password === password) {
-      localStorage.setItem('userRole', user.role);
-      localStorage.setItem('userUsername', user.username);
+    try {
+      // 1. Create a direct query to Firestore
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('username', '==', username));
       
-      router.push('/dashboard');
-      toast({
-        title: `✅ ¡Bienvenido de nuevo!`,
-        description: 'Has iniciado sesión correctamente.',
-      });
-    } else {
-        // Step 3: If no user is found, or password doesn't match, show an error.
+      // 2. Execute the query
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        // No user found with that username
         toast({
             variant: "destructive",
             title: "❌ Credenciales incorrectas",
             description: "El usuario o la contraseña no son correctos. Por favor, inténtalo de nuevo.",
         });
+        setIsLoading(false);
+        return;
+      }
+      
+      // 3. Get the user data and check the password
+      const userDoc = querySnapshot.docs[0];
+      const user = { id: userDoc.id, ...userDoc.data() } as User;
+
+      if (user.password === password) {
+        localStorage.setItem('userRole', user.role);
+        localStorage.setItem('userUsername', user.username);
+        
+        router.push('/dashboard');
+        toast({
+          title: `✅ ¡Bienvenido de nuevo!`,
+          description: 'Has iniciado sesión correctamente.',
+        });
+      } else {
+        // Password does not match
+        toast({
+            variant: "destructive",
+            title: "❌ Credenciales incorrectas",
+            description: "El usuario o la contraseña no son correctos. Por favor, inténtalo de nuevo.",
+        });
+      }
+
+    } catch (error) {
+      console.error("Error authenticating user:", error);
+      toast({
+        variant: "destructive",
+        title: "🔥 Error del sistema",
+        description: "Ocurrió un error inesperado al intentar iniciar sesión.",
+      });
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -107,9 +130,13 @@ export function LoginForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" size="lg" className="w-full mt-4">
-          <LogIn className="mr-2 h-4 w-4" />
-          Entrar
+        <Button type="submit" size="lg" className="w-full mt-4" disabled={isLoading}>
+          {isLoading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <LogIn className="mr-2 h-4 w-4" />
+          )}
+          {isLoading ? 'Verificando...' : 'Entrar'}
         </Button>
       </form>
     </Form>
