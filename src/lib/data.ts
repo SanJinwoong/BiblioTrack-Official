@@ -20,7 +20,8 @@ export const initialUsers: Omit<User, 'id'>[] = [
         bannerUrl: 'https://picsum.photos/seed/banner-admin/1200/300',
         bio: 'Managing the library and ensuring everything is in order. Passionate about classic literature and historical archives.',
         favoriteBooks: ['Don Quijote de la Mancha', '1984'],
-        friends: ['a0987654321'],
+        following: ['a0987654321'],
+        followers: [],
     },
     // Este usuario estará DESACTIVADO porque su préstamo tiene más de 2 semanas de vencido.
     { 
@@ -37,7 +38,8 @@ export const initialUsers: Omit<User, 'id'>[] = [
         bannerUrl: 'https://picsum.photos/seed/banner-1/1200/300',
         bio: 'Estudiante de ingeniería. En mis tiempos libres, me sumerjo en mundos de ciencia ficción y distopías.',
         favoriteBooks: ['1984', 'Dune'],
-        friends: ['a0987654321', 'a3333333333'],
+        following: ['a0987654321', 'a3333333333'],
+        followers: ['a0987654321'],
     },
     // Este usuario está ACTIVO y tiene préstamos y solicitudes.
     { 
@@ -54,7 +56,8 @@ export const initialUsers: Omit<User, 'id'>[] = [
         bannerUrl: 'https://picsum.photos/seed/banner-2/1200/300',
         bio: 'Amante del realismo mágico y las historias que te hacen pensar. Siempre en busca de una nueva aventura literaria.',
         favoriteBooks: ['Cien años de soledad', 'El Alquimista', 'La Sombra del Viento'],
-        friends: ['a1234567890', 'admin'],
+        following: ['a1234567890', 'admin'],
+        followers: ['a1234567890'],
     },
     // Este usuario estará DESACTIVADO porque su préstamo tiene más de 2 semanas de vencido.
      { 
@@ -71,7 +74,8 @@ export const initialUsers: Omit<User, 'id'>[] = [
         bannerUrl: 'https://picsum.photos/seed/banner-3/1200/300',
         bio: 'Futuro historiador. Me interesan los libros que exploran el pasado de la humanidad y las grandes civilizaciones.',
         favoriteBooks: ['Sapiens: De animales a dioses'],
-        friends: [],
+        following: [],
+        followers: [],
     },
     // Este usuario está ACTIVO y tiene una solicitud pendiente.
     { 
@@ -88,7 +92,8 @@ export const initialUsers: Omit<User, 'id'>[] = [
         bannerUrl: 'https://picsum.photos/seed/banner-4/1200/300',
         bio: 'Devoradora de novelas de fantasía. Si tiene dragones, magia o mundos épicos, ¡lo leo!',
         favoriteBooks: ['El Señor de los Anillos: La Comunidad del Anillo', 'El nombre del viento'],
-        friends: ['a1234567890'],
+        following: [],
+        followers: ['a1234567890'],
     },
     // Este usuario tiene un préstamo VENCIDO RECIENTEMENTE (menos de 1 semana), por lo que su cuenta AÚN ESTÁ ACTIVA.
     { 
@@ -105,7 +110,8 @@ export const initialUsers: Omit<User, 'id'>[] = [
         bannerUrl: 'https://picsum.photos/seed/banner-5/1200/300',
         bio: 'Disfruto de un buen misterio y novelas románticas clásicas. Jane Austen es mi autora preferida.',
         favoriteBooks: ['Orgullo y Prejuicio'],
-        friends: [],
+        following: [],
+        followers: [],
     }
 ];
 
@@ -278,4 +284,3 @@ export const initialReviews: Omit<Review, 'id' | 'bookId'> & { bookTitle: string
 ];
 
     
-

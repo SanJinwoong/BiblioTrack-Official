@@ -5,11 +5,11 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, updateDoc, query, where, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import type { User, Book, Checkout as CheckoutType, Review } from '@/lib/types';
 import { Skeleton } from './ui/skeleton';
 import { Button } from './ui/button';
-import { UserPlus, Mail, Edit, Check } from 'lucide-react';
+import { UserPlus, UserCheck, Edit, Check } from 'lucide-react';
 import { BookCard } from './book-card';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import Link from 'next/link';
@@ -98,6 +98,36 @@ export function UserProfile({ username }: UserProfileProps) {
       });
     }
   };
+  
+  const handleFollowToggle = async () => {
+    if (!currentUser || !user || currentUser.id === user.id) return;
+    
+    const currentUserRef = doc(db, 'users', currentUser.id);
+    const targetUserRef = doc(db, 'users', user.id);
+
+    const isFollowing = currentUser.following?.includes(user.username);
+
+    try {
+        if (isFollowing) {
+            // Unfollow
+            await updateDoc(currentUserRef, { following: arrayRemove(user.username) });
+            await updateDoc(targetUserRef, { followers: arrayRemove(currentUser.username) });
+            toast({ description: `Dejaste de seguir a @${user.username}` });
+        } else {
+            // Follow
+            await updateDoc(currentUserRef, { following: arrayUnion(user.username) });
+            await updateDoc(targetUserRef, { followers: arrayUnion(currentUser.username) });
+            toast({ description: `Ahora sigues a @${user.username}` });
+        }
+    } catch (error) {
+        console.error('Error following/unfollowing user:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'No se pudo completar la acción. Inténtalo de nuevo.',
+        });
+    }
+  };
 
   const handleOpenBookDialog = (book: Book) => {
     setSelectedBook(book);
@@ -156,10 +186,6 @@ export function UserProfile({ username }: UserProfileProps) {
     ?.map(title => books.find(b => b.title === title))
     .filter((b): b is Book => !!b);
     
-  const friends = user.friends
-    ?.map(friendUsername => allUsers.find(u => u.username === friendUsername))
-    .filter((u): u is User => !!u);
-    
   const userReviews = reviews
     .filter(review => review.userId === user.username)
     .map(review => {
@@ -171,7 +197,7 @@ export function UserProfile({ username }: UserProfileProps) {
 
 
   const isOwnProfile = currentUser?.username === user.username;
-  const isFriend = currentUser?.friends?.includes(user.username);
+  const isFollowing = currentUser?.following?.includes(user.username);
 
   return (
     <>
@@ -200,7 +226,7 @@ export function UserProfile({ username }: UserProfileProps) {
                 {/* Main Content Column */}
                 <main className="lg:col-span-2">
                     {/* Banner */}
-                    <div className="relative h-48 md:h-56 w-full bg-muted rounded-t-lg overflow-hidden">
+                    <div className="relative h-48 md:h-56 w-full bg-muted rounded-lg overflow-hidden">
                         {user.bannerUrl ? (
                         <Image
                             src={user.bannerUrl}
@@ -215,7 +241,7 @@ export function UserProfile({ username }: UserProfileProps) {
                     </div>
 
                     {/* Profile Header */}
-                    <div className="relative px-4 sm:px-6 pb-6 bg-card rounded-b-lg">
+                    <div className="relative px-4 sm:px-6 pb-6 bg-card -mt-1">
                         <div className="flex justify-between items-start">
                             <div className="absolute -top-12 md:-top-16">
                                 <Avatar className="h-24 w-24 md:h-32 md:w-32 border-4 border-card bg-card shrink-0">
@@ -229,15 +255,15 @@ export function UserProfile({ username }: UserProfileProps) {
                                     <Button variant="outline" onClick={() => setIsEditDialogOpen(true)}>
                                         Editar Perfil
                                     </Button>
-                                ) : isFriend ? (
-                                    <Button variant="secondary" disabled>
-                                        <Check className="mr-2 h-4 w-4" />
-                                        Amigo
+                                ) : isFollowing ? (
+                                    <Button variant="secondary" onClick={handleFollowToggle}>
+                                        <UserCheck className="mr-2 h-4 w-4" />
+                                        Siguiendo
                                     </Button>
                                 ) : (
-                                    <Button>
+                                    <Button onClick={handleFollowToggle}>
                                         <UserPlus className="mr-2 h-4 w-4" />
-                                        Añadir Amigo
+                                        Seguir
                                     </Button>
                                 )}
                             </div>
@@ -252,7 +278,10 @@ export function UserProfile({ username }: UserProfileProps) {
                             <p className="text-foreground max-w-2xl">{user.bio || 'Este usuario aún no ha añadido una biografía.'}</p>
                             <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                                 <Link href="#" className="hover:underline">
-                                    <span className="font-bold text-foreground">{friends?.length || 0}</span> Amigos
+                                    <span className="font-bold text-foreground">{user.following?.length || 0}</span> Siguiendo
+                                </Link>
+                                <Link href="#" className="hover:underline">
+                                    <span className="font-bold text-foreground">{user.followers?.length || 0}</span> Seguidores
                                 </Link>
                             </div>
                         </div>

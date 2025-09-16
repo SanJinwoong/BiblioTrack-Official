@@ -33,7 +33,8 @@ export interface User {
     bannerUrl?: string;
     bio?: string;
     favoriteBooks?: string[];
-    friends?: string[];
+    following?: string[];
+    followers?: string[];
 }
 
 export interface Category {
@@ -52,4 +53,3 @@ export interface Review {
     
 
     
-
