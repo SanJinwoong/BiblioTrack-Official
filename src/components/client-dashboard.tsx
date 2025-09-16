@@ -41,33 +41,49 @@ export function ClientDashboard() {
 
   useEffect(() => {
     // This effect runs once on component mount to safely initialize state from localStorage.
-    const storedBooks = localStorage.getItem('books');
-    const storedCategories = localStorage.getItem('categories');
-    const storedCheckouts = localStorage.getItem('checkouts');
-    const storedCheckoutRequests = localStorage.getItem('checkoutRequests');
-    const storedUsers = localStorage.getItem('users');
-    
-    setBooks(storedBooks ? JSON.parse(storedBooks) : initialBooks);
-    setCategories(storedCategories ? JSON.parse(storedCategories) : initialCategories);
-    setCheckouts(storedCheckouts ? JSON.parse(storedCheckouts) : initialCheckouts);
-    setCheckoutRequests(storedCheckoutRequests ? JSON.parse(storedCheckoutRequests) : initialCheckoutRequests);
-    setUsers(storedUsers ? JSON.parse(storedUsers) : initialUsers);
+    const loadState = (key: string, setter: Function, initialState: any) => {
+        try {
+            const storedValue = localStorage.getItem(key);
+            if (storedValue) {
+                const parsedValue = JSON.parse(storedValue);
+                if (Array.isArray(parsedValue) && parsedValue.length > 0) {
+                    setter(parsedValue);
+                    return; // Data loaded from storage, exit
+                }
+            }
+            // If no data in storage or it's an empty array, initialize and save
+            setter(initialState);
+            localStorage.setItem(key, JSON.stringify(initialState));
+        } catch (error) {
+            console.error(`Failed to load state for ${key}:`, error);
+            setter(initialState);
+        }
+    };
+
+    loadState('books', setBooks, initialBooks);
+    loadState('categories', setCategories, initialCategories);
+    loadState('checkouts', setCheckouts, initialCheckouts);
+    loadState('checkoutRequests', setCheckoutRequests, initialCheckoutRequests);
+    loadState('users', setUsers, initialUsers);
 
     const storedUsername = localStorage.getItem('userUsername') || '';
     setUsername(storedUsername);
     
     const fullUsername = storedUsername.includes('@') ? storedUsername : `${storedUsername}@alumnos.uat.edu.mx`;
-    const currentUser = (storedUsers ? JSON.parse(storedUsers) : initialUsers).find((u: User) => u.username === fullUsername);
+    // We need to ensure we are checking against the most recent user list
+    const usersFromStorage = localStorage.getItem('users');
+    const currentUsers = usersFromStorage ? JSON.parse(usersFromStorage) : initialUsers;
+    const currentUser = currentUsers.find((u: User) => u.username === fullUsername);
     setUser(currentUser || null);
 
   }, []);
 
   // Persist state to localStorage whenever it changes
-  useEffect(() => { localStorage.setItem('books', JSON.stringify(books)); }, [books]);
-  useEffect(() => { localStorage.setItem('categories', JSON.stringify(categories)); }, [categories]);
-  useEffect(() => { localStorage.setItem('checkouts', JSON.stringify(checkouts)); }, [checkouts]);
-  useEffect(() => { localStorage.setItem('checkoutRequests', JSON.stringify(checkoutRequests)); }, [checkoutRequests]);
-  useEffect(() => { localStorage.setItem('users', JSON.stringify(users)); }, [users]);
+  useEffect(() => { if (books.length > 0) localStorage.setItem('books', JSON.stringify(books)); }, [books]);
+  useEffect(() => { if (categories.length > 0) localStorage.setItem('categories', JSON.stringify(categories)); }, [categories]);
+  useEffect(() => { if (checkouts.length > 0) localStorage.setItem('checkouts', JSON.stringify(checkouts)); }, [checkouts]);
+  useEffect(() => { if (checkoutRequests.length > 0) localStorage.setItem('checkoutRequests', JSON.stringify(checkoutRequests)); }, [checkoutRequests]);
+  useEffect(() => { if (users.length > 0) localStorage.setItem('users', JSON.stringify(users)); }, [users]);
 
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
@@ -287,4 +303,6 @@ export function ClientDashboard() {
 }
 
     
+    
+
     
