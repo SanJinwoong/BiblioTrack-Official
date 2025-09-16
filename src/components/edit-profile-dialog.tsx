@@ -21,10 +21,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { User } from '@/lib/types';
 import Image from 'next/image';
-import { Camera } from 'lucide-react';
+import { Camera, ZoomIn, ZoomOut } from 'lucide-react';
 import React, { useEffect, useState, useRef } from 'react';
 import ReactCrop, { type Crop as CropType, centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import { Slider } from './ui/slider';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
@@ -32,39 +33,54 @@ const formSchema = z.object({
 });
 
 
-function getCroppedImg(image: HTMLImageElement, crop: CropType): Promise<string> {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
+// Helper function to get the cropped image as a data URL
+async function getCroppedImg(
+    image: HTMLImageElement,
+    crop: CropType,
+    scale: number,
+): Promise<string> {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
 
-  if (!ctx) {
-      return Promise.reject('Could not get canvas context');
-  }
+    if (!ctx) {
+        throw new Error('Could not get canvas context');
+    }
 
-  const scaleX = image.naturalWidth / image.width;
-  const scaleY = image.naturalHeight / image.height;
-  
-  canvas.width = crop.width * scaleX;
-  canvas.height = crop.height * scaleY;
-  
-  ctx.drawImage(
-    image,
-    crop.x * scaleX,
-    crop.y * scaleY,
-    crop.width * scaleX,
-    crop.height * scaleY,
-    0,
-    0,
-    canvas.width,
-    canvas.height
-  );
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    
+    // The crop coordinates are relative to the scaled image, so we need to adjust
+    const cropX = crop.x * scaleX;
+    const cropY = crop.y * scaleY;
 
-  return new Promise((resolve) => {
-      resolve(canvas.toDataURL('image/jpeg'));
-  });
+    // The crop size is also relative to the scaled image
+    const cropWidth = crop.width * scaleX;
+    const cropHeight = crop.height * scaleY;
+    
+    // The final canvas should have the size of the crop area
+    canvas.width = cropWidth;
+    canvas.height = cropHeight;
+
+    // Draw the part of the original image that corresponds to the crop area onto the canvas
+    ctx.drawImage(
+        image,
+        cropX,
+        cropY,
+        cropWidth,
+        cropHeight,
+        0,
+        0,
+        cropWidth,
+        cropHeight
+    );
+    
+    return new Promise((resolve) => {
+        resolve(canvas.toDataURL('image/jpeg'));
+    });
 }
 
 
-// Optimized Cropping Component
+// Optimized Cropping Component with Zoom and Pan
 function CroppingView({
   imgSrc,
   aspect,
@@ -82,6 +98,9 @@ function CroppingView({
   const [completedCrop, setCompletedCrop] = useState<CropType>();
   const imgRef = useRef<HTMLImageElement>(null);
 
+  const [scale, setScale] = useState(1);
+  const [rotate, setRotate] = useState(0);
+
   function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
     const { width, height } = e.currentTarget;
     const newCrop = centerCrop(
@@ -90,12 +109,13 @@ function CroppingView({
       height
     );
     setCrop(newCrop);
+    setCompletedCrop(newCrop);
   }
 
   const handleConfirmCrop = async () => {
     if (completedCrop && completedCrop.width > 0 && completedCrop.height > 0 && imgRef.current) {
         try {
-            const croppedDataUrl = await getCroppedImg(imgRef.current, completedCrop);
+            const croppedDataUrl = await getCroppedImg(imgRef.current, completedCrop, scale);
             onConfirm(croppedDataUrl);
         } catch (e) {
             console.error("Error cropping image:", e);
@@ -105,8 +125,8 @@ function CroppingView({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium">Recortar Imagen</h3>
-       <div className="flex justify-center">
+      <h3 className="text-lg font-medium">Ajustar Imagen</h3>
+      <div className="flex justify-center bg-muted/50 p-4 rounded-md">
         {imgSrc && (
           <ReactCrop
             crop={crop}
@@ -114,6 +134,7 @@ function CroppingView({
             onComplete={(c) => setCompletedCrop(c)}
             aspect={aspect}
             circularCrop={isCircular}
+            keepSelection
           >
             <Image
               ref={imgRef}
@@ -121,11 +142,29 @@ function CroppingView({
               src={imgSrc}
               width={800}
               height={600}
+              style={{ 
+                  transform: `scale(${scale}) rotate(${rotate}deg)`,
+                  maxHeight: '60vh', 
+                  objectFit: 'contain'
+              }}
               onLoad={onImageLoad}
-              style={{ maxHeight: '60vh', objectFit: 'contain' }}
             />
           </ReactCrop>
         )}
+      </div>
+       <div className="space-y-4 px-4">
+        <div className="flex items-center gap-2">
+          <ZoomOut className="h-5 w-5 text-muted-foreground" />
+          <Slider
+            defaultValue={[1]}
+            min={1}
+            max={3}
+            step={0.01}
+            onValueChange={(value) => setScale(value[0])}
+            aria-label="Zoom"
+          />
+          <ZoomIn className="h-5 w-5 text-muted-foreground" />
+        </div>
       </div>
       <div className="flex justify-end gap-2">
         <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
@@ -182,6 +221,8 @@ export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }:
       reader.readAsDataURL(e.target.files[0]);
       setCroppingTarget(target);
     }
+    // Reset file input to allow re-selecting the same file
+    e.target.value = '';
   };
   
   const handleConfirmCrop = (croppedDataUrl: string) => {
@@ -264,7 +305,7 @@ export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }:
         <DialogHeader>
           <DialogTitle>Editar Perfil</DialogTitle>
           <DialogDescription>
-            {croppingTarget ? 'Ajusta tu imagen para que se vea perfecta.' : 'Personaliza tu perfil. Los cambios serán visibles para otros usuarios.'}
+            {croppingTarget ? 'Arrastra la imagen para encuadrarla y usa el deslizador para hacer zoom.' : 'Personaliza tu perfil. Los cambios serán visibles para otros usuarios.'}
           </DialogDescription>
         </DialogHeader>
         {croppingTarget ? (
@@ -282,3 +323,6 @@ export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }:
 }
 
 
+
+
+    
