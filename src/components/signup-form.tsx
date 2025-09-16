@@ -35,28 +35,28 @@ const studentEmailRegex = /^a\d{10}@alumnos\.uat\.edu\.mx$/;
 
 const baseSchema = z.object({
     password: z.string().min(6, {
-        message: 'Password must be at least 6 characters.',
+        message: 'La contraseña debe tener al menos 6 caracteres.',
     }),
 });
 
 const clientSchema = baseSchema.extend({
     email: z.string().regex(studentEmailRegex, {
-        message: 'Please enter a valid institutional email (e.g., a1234567890@alumnos.uat.edu.mx).',
+        message: 'Por favor ingrese un correo institucional válido (ej. a1234567890@alumnos.uat.edu.mx).',
     }),
-    name: z.string().min(1, { message: "Name is required." }),
-    curp: z.string().min(1, { message: "CURP is required." }),
-    phone: z.string().min(1, { message: "Phone is required." }),
-    address: z.string().min(1, { message: "Address is required." }),
+    name: z.string().min(1, { message: "El nombre es obligatorio." }),
+    curp: z.string().min(1, { message: "La CURP es obligatoria." }),
+    phone: z.string().min(1, { message: "El teléfono es obligatorio." }),
+    address: z.string().min(1, { message: "La dirección es obligatoria." }),
     username: z.string().optional(),
     librarianId: z.string().optional(),
 });
 
 const librarianSchema = baseSchema.extend({
     username: z.string().min(2, {
-        message: 'Username must be at least 2 characters.',
+        message: 'El nombre de usuario debe tener al menos 2 caracteres.',
     }),
     email: z.string().optional(),
-    librarianId: z.string().min(1, { message: "Please enter your librarian ID."}),
+    librarianId: z.string().min(1, { message: "Por favor ingrese su ID de bibliotecario."}),
 });
 
 
@@ -98,7 +98,7 @@ export function SignUpForm() {
     
     if (role === 'client') {
         const clientValues = values as z.infer<typeof clientSchema>;
-        usernameToRegister = clientValues.email;
+        usernameToRegister = clientValues.email.split('@')[0]; // Use matricula as username
         newUser = {
             username: usernameToRegister,
             password: clientValues.password,
@@ -107,7 +107,7 @@ export function SignUpForm() {
             curp: clientValues.curp,
             phone: clientValues.phone,
             address: clientValues.address,
-            email: usernameToRegister, // Using institutional email as the primary contact for clients
+            email: clientValues.email, 
             status: 'active',
         };
     } else { // librarian
@@ -125,8 +125,8 @@ export function SignUpForm() {
     if (existingUser) {
         toast({
             variant: "destructive",
-            title: "Uh oh! Something went wrong.",
-            description: "This username is already taken. Please choose another one.",
+            title: "¡Ups! Ocurrió un error.",
+            description: "Este nombre de usuario ya está registrado. Por favor, elige otro.",
         });
         return;
     }
@@ -134,18 +134,12 @@ export function SignUpForm() {
     await addDoc(collection(db, 'users'), newUser);
     
     localStorage.setItem('userRole', role);
-
-    if (role === 'client') {
-      const matricula = newUser.username.split('@')[0];
-      localStorage.setItem('userUsername', matricula);
-    } else {
-      localStorage.setItem('userUsername', newUser.username);
-    }
+    localStorage.setItem('userUsername', newUser.username);
     
     router.push('/dashboard');
     toast({
-        title: "✅ Sign-up successful!",
-        description: "Your account has been created and you've been logged in."
+        title: "✅ ¡Registro exitoso!",
+        description: "Tu cuenta ha sido creada y has iniciado sesión."
     });
   }
 
@@ -153,19 +147,19 @@ export function SignUpForm() {
     return (
       <>
         <CardHeader className="px-0 pt-0">
-            <CardTitle className="text-2xl">Choose your Role</CardTitle>
+            <CardTitle className="text-2xl">Elige tu Rol</CardTitle>
             <CardDescription>
-            Tell us what kind of account you need to get started.
+            Dinos qué tipo de cuenta necesitas para empezar.
             </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col space-y-4 pt-4 px-0 pb-0">
             <Button onClick={() => setRole('client')} size="lg" className="w-full bg-primary hover:bg-primary/90">
                 <User className="mr-2 h-4 w-4" />
-                I'm a Student
+                Soy Estudiante
             </Button>
             <Button onClick={() => setRole('librarian')} size="lg" variant="secondary" className="w-full">
                 <Library className="mr-2 h-4 w-4" />
-                I'm a Librarian
+                Soy Bibliotecario
             </Button>
         </CardContent>
       </>
@@ -175,9 +169,9 @@ export function SignUpForm() {
   return (
     <>
       <CardHeader className="px-0 pt-0">
-        <CardTitle className="text-2xl">Create {role === 'client' ? 'Student' : 'Librarian'} Account</CardTitle>
+        <CardTitle className="text-2xl">Crear Cuenta de {role === 'client' ? 'Estudiante' : 'Bibliotecario'}</CardTitle>
         <CardDescription>
-          It&apos;s quick and easy! Start exploring the library now.
+          ¡Es rápido y fácil! Comienza a explorar la biblioteca ahora.
         </CardDescription>
       </CardHeader>
       <CardContent className="px-0 pb-0">
@@ -185,10 +179,10 @@ export function SignUpForm() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {role === 'client' && (
               <>
-                <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Full name</FormLabel> <FormControl><Input placeholder="John Doe" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
+                <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Nombre completo</FormLabel> <FormControl><Input placeholder="Juan Pérez" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
                 <FormField control={form.control} name="email" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Institutional Email</FormLabel>
+                    <FormLabel>Correo Institucional</FormLabel>
                     <FormControl>
                       <Input placeholder="a1234567890@alumnos.uat.edu.mx" {...field} />
                     </FormControl>
@@ -198,8 +192,8 @@ export function SignUpForm() {
                 />
                 <FormField control={form.control} name="curp" render={({ field }) => ( <FormItem> <FormLabel>CURP</FormLabel> <FormControl><Input placeholder="ABCD123456H..." {...field} />
                     </FormControl> <FormMessage /> </FormItem>)} />
-                <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem> <FormLabel>Contact phone</FormLabel> <FormControl><Input placeholder="834-123-4567" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
-                <FormField control={form.control} name="address" render={({ field }) => ( <FormItem> <FormLabel>Address</FormLabel> <FormControl><Input placeholder="123 Main St, City, Country" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
+                <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem> <FormLabel>Teléfono de contacto</FormLabel> <FormControl><Input placeholder="834-123-4567" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
+                <FormField control={form.control} name="address" render={({ field }) => ( <FormItem> <FormLabel>Dirección</FormLabel> <FormControl><Input placeholder="Calle Falsa 123, Ciudad" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
               </>
             )}
             {role === 'librarian' && (
@@ -209,9 +203,9 @@ export function SignUpForm() {
                   name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Username</FormLabel>
+                      <FormLabel>Nombre de usuario</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. library-admin" {...field} />
+                        <Input placeholder="ej. admin" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -222,9 +216,9 @@ export function SignUpForm() {
                  name="librarianId"
                  render={({ field }) => (
                    <FormItem>
-                     <FormLabel>Librarian ID</FormLabel>
+                     <FormLabel>ID de Bibliotecario</FormLabel>
                      <FormControl>
-                       <Input placeholder="Enter your staff ID" {...field} />
+                       <Input placeholder="Ingresa tu ID de personal" {...field} />
                      </FormControl>
                      <FormMessage />
                    </FormItem>
@@ -237,7 +231,7 @@ export function SignUpForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>Contraseña</FormLabel>
                   <FormControl>
                     <Input type="password" placeholder="••••••••" {...field} />
                   </FormControl>
@@ -249,10 +243,10 @@ export function SignUpForm() {
             <div className="flex flex-col space-y-2 pt-4">
                 <Button type="submit" size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
                     <UserPlus className="mr-2 h-4 w-4" />
-                    Create my account
+                    Crear mi cuenta
                 </Button>
                 <Button variant="link" size="sm" onClick={() => { form.reset(); setRole(null);}}>
-                    &larr; Go back
+                    &larr; Volver
                 </Button>
             </div>
           </form>

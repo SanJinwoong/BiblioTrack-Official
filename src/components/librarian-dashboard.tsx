@@ -18,7 +18,7 @@ import { SettingsDialog } from './settings-dialog';
 import { isPast, parseISO, differenceInDays } from 'date-fns';
 import { UserLoanCard } from './user-loan-card';
 import { db } from '@/lib/firebase';
-import { collection, doc, getDocs, writeBatch, onSnapshot, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, writeBatch, onSnapshot, addDoc, updateDoc, deleteDoc, query, where, getDoc } from 'firebase/firestore';
 import { initialBooks, initialCategories, initialUsers, initialCheckouts, initialCheckoutRequests } from '@/lib/data';
 
 export function LibrarianDashboard() {
@@ -70,72 +70,72 @@ export function LibrarianDashboard() {
         const booksSnapshot = await getDocs(collection(db, 'books'));
         if (booksSnapshot.empty) {
             console.log('Database is empty. Seeding...');
-            toast({ title: "Populando Base de Datos", description: "Por favor espere..."});
+            toast({ title: "Poblando Base de Datos", description: "Por favor espere..."});
             const batch = writeBatch(db);
 
-            // Add categories and create a map for reference
-            const categoryMap: { [name: string]: string } = {};
-            initialCategories.forEach(category => {
-                const catRef = doc(collection(db, 'categories'));
-                batch.set(catRef, category);
-                categoryMap[category.name] = catRef.id;
-            });
-
-            // Add users and create a map for reference
-            const userMap: { [email: string]: string } = {};
             initialUsers.forEach(user => {
                 const userRef = doc(collection(db, 'users'));
                 batch.set(userRef, user);
-                if (user.email) {
-                    userMap[user.email] = userRef.id;
+            });
+
+            initialCategories.forEach(category => {
+                const catRef = doc(collection(db, 'categories'));
+                batch.set(catRef, category);
+            });
+            
+            const bookTitleToIdMap: {[key: string]: string} = {};
+            initialBooks.forEach(book => {
+                const bookRef = doc(collection(db, 'books'));
+                batch.set(bookRef, book );
+                bookTitleToIdMap[book.title] = bookRef.id;
+            });
+
+            await batch.commit(); // Commit users and books to get their IDs
+
+            // Now, we need to fetch the created books to map titles to real IDs for checkouts.
+            const newBatch = writeBatch(db);
+            const booksQuery = await getDocs(collection(db, 'books'));
+            const bookIdMap: { [title: string]: string } = {};
+            booksQuery.forEach(doc => {
+                const book = doc.data() as BookType;
+                bookIdMap[book.title] = doc.id;
+            });
+
+            initialCheckouts.forEach(checkout => {
+                const checkoutRef = doc(collection(db, 'checkouts'));
+                const bookId = bookIdMap[checkout.bookTitle];
+                if(bookId) {
+                    newBatch.set(checkoutRef, {
+                        userId: checkout.userId,
+                        bookId: bookId,
+                        dueDate: checkout.dueDate,
+                        status: checkout.status
+                    });
+                }
+            });
+
+            initialCheckoutRequests.forEach(request => {
+                const requestRef = doc(collection(db, 'checkoutRequests'));
+                const bookId = bookIdMap[request.bookTitle];
+                if (bookId) {
+                    newBatch.set(requestRef, {
+                        userId: request.userId,
+                        bookId: bookId,
+                        dueDate: request.dueDate,
+                        status: request.status
+                    });
                 }
             });
             
-            // Add books
-            const bookMap: { [title: string]: string } = {};
-            initialBooks.forEach(book => {
-                const bookRef = doc(collection(db, 'books'));
-                batch.set(bookRef, { ...book });
-                bookMap[book.title] = bookRef.id;
-            });
-
-            // Add checkouts
-            initialCheckouts.forEach(checkout => {
-                const checkoutRef = doc(collection(db, 'checkouts'));
-                const userId = users.find(u => u.username === checkout.userEmail)?.id;
-                const bookId = books.find(b => b.title === checkout.bookTitle)?.id;
-
-                // Note: This simple mapping won't work because IDs are generated on write.
-                // For a real seeding script, you'd write books/users first, get their IDs, then write checkouts.
-                // For this purpose, we'll simulate it by finding the first match which is good enough for demo.
-                 batch.set(checkoutRef, {
-                    userId: checkout.userEmail,
-                    bookId: Object.keys(bookMap).find(key => key === checkout.bookTitle) || '',
-                    dueDate: checkout.dueDate,
-                    status: checkout.status
-                });
-            });
-
-            // Add checkout requests
-            initialCheckoutRequests.forEach(request => {
-                const requestRef = doc(collection(db, 'checkoutRequests'));
-                batch.set(requestRef, {
-                    userId: request.userEmail,
-                    bookId: Object.keys(bookMap).find(key => key === request.bookTitle) || '',
-                    dueDate: request.dueDate,
-                    status: request.status
-                });
-            });
-            
-            await batch.commit();
+            await newBatch.commit();
             toast({ title: "✅ Base de Datos Poblada", description: "Los datos de ejemplo han sido cargados."});
         } else {
             console.log('Database already contains data. Skipping seed.');
         }
     };
 
-    seedDatabase();
-  }, []); // Runs only once on mount
+    seedDatabase().catch(console.error);
+  }, []); 
 
 
   useEffect(() => {
@@ -155,13 +155,7 @@ export function LibrarianDashboard() {
   };
 
   const getUser = (userId: string): UserType | undefined => {
-      // Find by ID first, then by username or name as a fallback for seeding cases
-      const userById = users.find(u => u.id === userId);
-      if (userById) return userById;
-      
-      const userByName = users.find(u => u.name === userId)
-      const userByUsername = users.find(u => u.username === userId);
-      return userByUsername || userByName;
+      return users.find(u => u.username === userId || u.id === userId);
   }
   
   const handleOpenDialog = (book: BookType, checkout: Checkout | null = null) => {
@@ -258,13 +252,17 @@ export function LibrarianDashboard() {
     const checkoutRef = doc(db, 'checkouts', checkoutToReturn.id);
     batch.delete(checkoutRef);
     
-    // Logic for user reactivation if they have no other overdue books
-    const user = getUser(checkoutToReturn.userId);
-    if (user && user.status === 'deactivated') {
-        const otherCheckouts = checkouts.filter(c => c.userId === checkoutToReturn.userId && c.id !== checkoutToReturn.id);
+    const userToUpdate = users.find(u => u.username === checkoutToReturn.userId);
+
+    if (userToUpdate && userToUpdate.status === 'deactivated') {
+        const otherCheckoutsQuery = query(collection(db, 'checkouts'), where('userId', '==', checkoutToReturn.userId));
+        const otherCheckoutsSnapshot = await getDocs(otherCheckoutsQuery);
+        const otherCheckouts = otherCheckoutsSnapshot.docs.map(d => d.data() as Checkout).filter(c => c.id !== checkoutToReturn.id);
         const hasOtherOverdueBooks = otherCheckouts.some(c => isPast(parseISO(c.dueDate)));
+
         if (!hasOtherOverdueBooks) {
-            handleUserStatusChange(user.id, true);
+            const userRef = doc(db, 'users', userToUpdate.id);
+            batch.update(userRef, { status: 'active' });
         }
     }
 
@@ -273,10 +271,11 @@ export function LibrarianDashboard() {
   };
 
   const handleUserStatusChange = async (userId: string, reactivate: boolean) => {
-    const userRef = doc(db, "users", userId);
+    const user = users.find(u => u.username === userId);
+    if (!user) return;
+    const userRef = doc(db, "users", user.id);
     await updateDoc(userRef, { status: reactivate ? 'active' : 'deactivated' });
     
-    const user = users.find(u => u.id === userId);
     toast({
         title: reactivate ? '👤 Cuenta Reactivada' : '🚫 Cuenta Desactivada',
         description: `La cuenta de ${user?.name || userId} ha sido ${reactivate ? 'reactivada' : 'desactivada'}.`,
@@ -353,7 +352,7 @@ export function LibrarianDashboard() {
           onOpenChange={setIsSettingsDialogOpen}
           books={books}
           categories={categories}
-          setCategories={setCategories}
+          setCategories={() => {}}
           onEditBook={handleOpenEditBookDialog}
           onDeleteBook={handleDeleteBook}
           users={users}
@@ -482,9 +481,9 @@ export function LibrarianDashboard() {
                     ) : books.length === 0 ? (
                        <div className="text-center py-16">
                         <BookCopy className="mx-auto h-12 w-12 text-muted-foreground"/>
-                        <h3 className="mt-4 text-lg font-medium">No Books in Catalog</h3>
-                        <p className="mt-1 text-sm text-muted-foreground">Get started by adding a book to the library.</p>
-                        <Button className="mt-4" onClick={handleOpenAddBookDialog}><PlusCircle className="mr-2 h-4 w-4" /> Add First Book</Button>
+                        <h3 className="mt-4 text-lg font-medium">No hay libros en el catálogo</h3>
+                        <p className="mt-1 text-sm text-muted-foreground">Empieza añadiendo un libro a la biblioteca.</p>
+                        <Button className="mt-4" onClick={handleOpenAddBookDialog}><PlusCircle className="mr-2 h-4 w-4" /> Añadir Primer Libro</Button>
                       </div>
                     ) : (
                       <>

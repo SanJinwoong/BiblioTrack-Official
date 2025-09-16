@@ -23,11 +23,8 @@ import { db } from '@/lib/firebase';
 import type { User } from '@/lib/types';
 import { collection, onSnapshot } from 'firebase/firestore';
 
-const studentEmailRegex = /^a\d{10}@alumnos\.uat\.edu\.mx$/;
-const matriculaRegex = /^a\d{10}$/;
-
 const formSchema = z.object({
-  emailOrMatricula: z.string().min(1, {
+  username: z.string().min(1, {
     message: 'Por favor ingrese su correo o matrícula.',
   }),
   password: z.string().min(1, {
@@ -43,7 +40,7 @@ export function LoginForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      emailOrMatricula: '',
+      username: '',
       password: '',
     },
   });
@@ -56,26 +53,13 @@ export function LoginForm() {
   }, []);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    const { emailOrMatricula, password } = values;
-    
-    let searchInput = emailOrMatricula;
-    if (matriculaRegex.test(emailOrMatricula)) {
-      searchInput = `${emailOrMatricula}@alumnos.uat.edu.mx`;
-    }
+    const { username, password } = values;
 
-    const user = users.find(u => 
-        (u.username === searchInput || u.email === searchInput) && 
-        u.password === password
-    );
+    const user = users.find(u => u.username === username && u.password === password);
 
     if (user) {
       localStorage.setItem('userRole', user.role);
-      
-      let displayUsername = user.username;
-      if (user.role === 'client' && studentEmailRegex.test(user.username)) {
-        displayUsername = user.username.split('@')[0];
-      }
-      localStorage.setItem('userUsername', displayUsername);
+      localStorage.setItem('userUsername', user.username);
       
       router.push('/dashboard');
       toast({
@@ -96,12 +80,12 @@ export function LoginForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
-          name="emailOrMatricula"
+          name="username"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Correo Institucional o Usuario</FormLabel>
+              <FormLabel>Usuario o Matrícula</FormLabel>
               <FormControl>
-                <Input placeholder="a1234567890 o admin" {...field} />
+                <Input placeholder="admin o a1234567890" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

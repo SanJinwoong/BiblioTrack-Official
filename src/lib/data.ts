@@ -18,7 +18,7 @@ export const initialUsers: Omit<User, 'id'>[] = [
         avatarUrl: 'https://i.pravatar.cc/150?u=librarian'
     },
     { 
-        username: 'a1234567890@alumnos.uat.edu.mx', 
+        username: 'a1234567890', 
         password: 'password',
         role: 'client',
         name: 'Juan Pérez',
@@ -30,7 +30,7 @@ export const initialUsers: Omit<User, 'id'>[] = [
         avatarUrl: 'https://i.pravatar.cc/150?u=a1234567890'
     },
     { 
-        username: 'a0987654321@alumnos.uat.edu.mx', 
+        username: 'a0987654321', 
         password: 'password', 
         role: 'client',
         name: 'Maria Rodríguez',
@@ -42,7 +42,7 @@ export const initialUsers: Omit<User, 'id'>[] = [
         avatarUrl: 'https://i.pravatar.cc/150?u=a0987654321'
     },
      { 
-        username: 'a2222222222@alumnos.uat.edu.mx', 
+        username: 'a2222222222', 
         password: 'password',
         role: 'client',
         name: 'Carlos Sánchez',
@@ -54,7 +54,7 @@ export const initialUsers: Omit<User, 'id'>[] = [
         avatarUrl: 'https://i.pravatar.cc/150?u=a2222222222'
     },
     { 
-        username: 'a3333333333@alumnos.uat.edu.mx', 
+        username: 'a3333333333', 
         password: 'password', 
         role: 'client',
         name: 'Ana García',
@@ -163,31 +163,29 @@ export const initialBooks: Omit<Book, 'id'>[] = [
     },
 ];
 
-// We need to map book titles and user names to their future Firestore IDs
-// For seeding purposes, we'll use a placeholder mapping.
-// The seeding script will need to resolve these to actual IDs.
-export const initialCheckouts: Omit<Checkout, 'id' | 'bookId' | 'userId'> & { userEmail: string; bookTitle: string }[] = [
+// We use the matricula/username as the userId now
+export const initialCheckouts: Omit<Checkout, 'id' | 'bookId'> & { bookTitle: string }[] = [
   // Préstamo Vencido para Juan Pérez (causa de desactivación)
-  { userEmail: 'a1234567890@alumnos.uat.edu.mx', bookTitle: '1984', dueDate: '2024-05-10', status: 'approved' },
+  { userId: 'a1234567890', bookTitle: '1984', dueDate: '2024-05-10', status: 'approved' },
   // Otro Préstamo Vencido para Juan Pérez
-  { userEmail: 'a1234567890@alumnos.uat.edu.mx', bookTitle: 'Don Quijote de la Mancha', dueDate: '2024-06-15', status: 'approved' },
+  { userId: 'a1234567890', bookTitle: 'Don Quijote de la Mancha', dueDate: '2024-06-15', status: 'approved' },
   // Préstamo Vencido para Carlos Sánchez
-  { userEmail: 'a2222222222@alumnos.uat.edu.mx', bookTitle: 'Dune', dueDate: '2024-07-01', status: 'approved' },
+  { userId: 'a2222222222', bookTitle: 'Dune', dueDate: '2024-07-01', status: 'approved' },
 
   // Préstamo Activo para Maria Rodríguez
-  { userEmail: 'a0987654321@alumnos.uat.edu.mx', bookTitle: 'El Alquimista', dueDate: '2024-09-25', status: 'approved' },
+  { userId: 'a0987654321', bookTitle: 'El Alquimista', dueDate: '2024-09-25', status: 'approved' },
   // Préstamo Activo para Ana García
-  { userEmail: 'a3333333333@alumnos.uat.edu.mx', bookTitle: 'Orgullo y Prejuicio', dueDate: '2024-09-30', status: 'approved' },
+  { userId: 'a3333333333', bookTitle: 'Orgullo y Prejuicio', dueDate: '2024-09-30', status: 'approved' },
 ];
 
-export const initialCheckoutRequests: Omit<Checkout, 'id' | 'bookId' | 'userId'> & { userEmail: string; bookTitle: string }[] = [
-    { userEmail: 'a0987654321@alumnos.uat.edu.mx', bookTitle: 'Sapiens: De animales a dioses', dueDate: '2024-09-22', status: 'pending' },
-    { userEmail: 'a3333333333@alumnos.uat.edu.mx', bookTitle: 'El nombre del viento', dueDate: '2024-09-20', status: 'pending' },
+export const initialCheckoutRequests: Omit<Checkout, 'id' | 'bookId'> & { bookTitle: string }[] = [
+    { userId: 'a0987654321', bookTitle: 'Sapiens: De animales a dioses', dueDate: '2024-09-22', status: 'pending' },
+    { userId: 'a3333333333', bookTitle: 'El nombre del viento', dueDate: '2024-09-20', status: 'pending' },
 ];
 
 // This part is for the AI recommendations, which can remain local as it's a mock
-// We use the full username for the key now to be consistent.
+// We use the matricula/username for the key now to be consistent.
 export const readingHistory: { [key: string]: string[] } = {
-    'a1234567890@alumnos.uat.edu.mx': ["book4_id", "book6_id"], // Placeholder IDs, to be mapped to real book IDs
-    'a0987654321@alumnos.uat.edu.mx': ["book1_id"],
+    'a1234567890': ["book4_id", "book6_id"], // Placeholder IDs, to be mapped to real book IDs
+    'a0987654321': ["book1_id"],
 };
