@@ -33,6 +33,13 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
         </Badge>
       );
     }
+    if (book.stock <= 3) {
+      return (
+        <Badge className={cn("text-xs font-semibold", 'bg-yellow-100 text-yellow-800')}>
+          Disponible
+        </Badge>
+      );
+    }
     return (
       <Badge className={cn("text-xs font-semibold", 'bg-green-100 text-green-800')}>
         Disponible
