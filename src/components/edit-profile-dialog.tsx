@@ -133,6 +133,14 @@ function CroppingView({
   );
 }
 
+interface EditProfileDialogProps {
+    user: User;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onProfileUpdate: (data: { name: string; bio?: string; newAvatarUrl?: string; newBannerUrl?: string }) => void;
+}
+
+
 export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }: EditProfileDialogProps) {
   const [avatarPreview, setAvatarPreview] = useState<string | undefined>(user.avatarUrl);
   const [bannerPreview, setBannerPreview] = useState<string | undefined>(user.bannerUrl);
