@@ -31,44 +31,36 @@ const formSchema = z.object({
   bio: z.string().optional(),
 });
 
-// Helper to get the cropped image as a data URL
 function getCroppedImg(image: HTMLImageElement, crop: CropType): Promise<string> {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
 
-    if (!ctx) {
-        return Promise.reject('Could not get canvas context');
-    }
+  if (!ctx) {
+      return Promise.reject('Could not get canvas context');
+  }
 
-    const scaleX = image.naturalWidth / image.width;
-    const scaleY = image.naturalHeight / image.height;
-    
-    const cropX = crop.x * scaleX;
-    const cropY = crop.y * scaleY;
-    
-    const cropWidth = crop.width * scaleX;
-    const cropHeight = crop.height * scaleY;
+  const scaleX = image.naturalWidth / image.width;
+  const scaleY = image.naturalHeight / image.height;
 
-    canvas.width = cropWidth;
-    canvas.height = cropHeight;
+  canvas.width = crop.width * scaleX;
+  canvas.height = crop.height * scaleY;
 
-    ctx.drawImage(
-        image,
-        cropX,
-        cropY,
-        cropWidth,
-        cropHeight,
-        0,
-        0,
-        cropWidth,
-        cropHeight
-    );
+  ctx.drawImage(
+      image,
+      crop.x * scaleX,
+      crop.y * scaleY,
+      crop.width * scaleX,
+      crop.height * scaleY,
+      0,
+      0,
+      canvas.width,
+      canvas.height
+  );
 
-    return new Promise((resolve) => {
-        resolve(canvas.toDataURL('image/jpeg'));
-    });
+  return new Promise((resolve) => {
+      resolve(canvas.toDataURL('image/jpeg'));
+  });
 }
-
 
 // Optimized Cropping Component
 function CroppingView({
@@ -112,7 +104,7 @@ function CroppingView({
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium">Recortar Imagen</h3>
-      <div className="flex justify-center">
+       <div className="flex justify-center">
         {imgSrc && (
           <ReactCrop
             crop={crop}
@@ -128,8 +120,7 @@ function CroppingView({
               width={800}
               height={600}
               onLoad={onImageLoad}
-              className="object-cover"
-              style={{ maxHeight: '60vh' }}
+              style={{ maxHeight: '60vh', objectFit: 'contain' }}
             />
           </ReactCrop>
         )}
@@ -287,3 +278,4 @@ export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }:
     </Dialog>
   );
 }
+
