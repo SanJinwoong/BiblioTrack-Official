@@ -54,6 +54,7 @@ async function getCroppedImg(
 
   let renderWidth, renderHeight, offsetX = 0, offsetY = 0;
 
+  // This logic mirrors the browser's 'object-fit: contain' behavior
   if (imageAspectRatio > containerAspectRatio) {
     renderWidth = containerWidth;
     renderHeight = containerWidth / imageAspectRatio;
@@ -64,6 +65,7 @@ async function getCroppedImg(
     offsetX = (containerWidth - renderWidth) / 2;
   }
   
+  // Adjust crop selection based on the offset of the contained image
   const cropX = (crop.x - offsetX) * (image.naturalWidth / renderWidth);
   const cropY = (crop.y - offsetY) * (image.naturalHeight / renderHeight);
 
@@ -86,7 +88,7 @@ async function getCroppedImg(
 }
 
 
-// Optimized Cropping Component with Zoom and Pan
+// Optimized Cropping Component
 function CroppingView({
   imgSrc,
   aspect,
@@ -294,7 +296,7 @@ export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }:
         <DialogHeader>
           <DialogTitle>Editar Perfil</DialogTitle>
           <DialogDescription>
-            {croppingTarget ? 'Arrastra la imagen para encuadrarla y usa el deslizador para hacer zoom.' : 'Personaliza tu perfil. Los cambios serán visibles para otros usuarios.'}
+            {croppingTarget ? 'Arrastra y ajusta el recuadro para seleccionar la parte de la imagen que quieres usar.' : 'Personaliza tu perfil. Los cambios serán visibles para otros usuarios.'}
           </DialogDescription>
         </DialogHeader>
         {croppingTarget ? (
@@ -310,8 +312,3 @@ export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }:
     </Dialog>
   );
 }
-
-
-
-
-    
