@@ -31,6 +31,7 @@ const formSchema = z.object({
   bio: z.string().optional(),
 });
 
+
 function getCroppedImg(image: HTMLImageElement, crop: CropType): Promise<string> {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -41,26 +42,27 @@ function getCroppedImg(image: HTMLImageElement, crop: CropType): Promise<string>
 
   const scaleX = image.naturalWidth / image.width;
   const scaleY = image.naturalHeight / image.height;
-
+  
   canvas.width = crop.width * scaleX;
   canvas.height = crop.height * scaleY;
-
+  
   ctx.drawImage(
-      image,
-      crop.x * scaleX,
-      crop.y * scaleY,
-      crop.width * scaleX,
-      crop.height * scaleY,
-      0,
-      0,
-      canvas.width,
-      canvas.height
+    image,
+    crop.x * scaleX,
+    crop.y * scaleY,
+    crop.width * scaleX,
+    crop.height * scaleY,
+    0,
+    0,
+    canvas.width,
+    canvas.height
   );
 
   return new Promise((resolve) => {
       resolve(canvas.toDataURL('image/jpeg'));
   });
 }
+
 
 // Optimized Cropping Component
 function CroppingView({
@@ -278,4 +280,5 @@ export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }:
     </Dialog>
   );
 }
+
 
