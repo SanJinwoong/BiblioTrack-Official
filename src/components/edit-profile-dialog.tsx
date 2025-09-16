@@ -36,67 +36,72 @@ const formSchema = z.object({
 // Helper function to get the cropped image as a data URL
 async function getCroppedImg(
   image: HTMLImageElement,
-  crop: CropType,
-  scale = 1,
+  crop: CropType
 ): Promise<string> {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
 
-    if (!ctx) {
-        throw new Error('Could not get canvas context');
-    }
+  if (!ctx) {
+    throw new Error('Could not get canvas context');
+  }
 
-    const cropWidth = crop.width;
-    const cropHeight = crop.height;
+  // Get the rendered size of the image and its aspect ratio
+  const imageWidth = image.width;
+  const imageHeight = image.height;
+  const imageAspectRatio = image.naturalWidth / image.naturalHeight;
 
-    // Set canvas size to the crop size.
-    canvas.width = cropWidth;
-    canvas.height = cropHeight;
-    
-    // Calculate the scale and offsets for 'object-contain'
-    const imageAspectRatio = image.naturalWidth / image.naturalHeight;
-    const containerAspectRatio = image.width / image.height;
-    
-    let renderWidth, renderHeight, offsetX, offsetY;
+  // Get the container size and aspect ratio
+  const containerWidth = image.parentElement?.clientWidth || image.width;
+  const containerHeight = image.parentElement?.clientHeight || image.height;
+  const containerAspectRatio = containerWidth / containerHeight;
 
-    if (imageAspectRatio > containerAspectRatio) {
-        // Image is wider than container
-        renderWidth = image.width;
-        renderHeight = image.width / imageAspectRatio;
-        offsetX = 0;
-        offsetY = (image.height - renderHeight) / 2;
-    } else {
-        // Image is taller than or same aspect as container
-        renderHeight = image.height;
-        renderWidth = image.height * imageAspectRatio;
-        offsetY = 0;
-        offsetX = (image.width - renderWidth) / 2;
-    }
-    
-    // Adjust crop coordinates to be relative to the actual image content, not the container
-    const relativeCropX = crop.x - offsetX;
-    const relativeCropY = crop.y - offsetY;
+  let renderWidth, renderHeight, offsetX, offsetY;
 
-    // Calculate the source coordinates and dimensions on the original, unscaled image
-    const sourceX = (relativeCropX / renderWidth) * image.naturalWidth;
-    const sourceY = (relativeCropY / renderHeight) * image.naturalHeight;
-    const sourceWidth = (cropWidth / renderWidth) * image.naturalWidth;
-    const sourceHeight = (cropHeight / renderHeight) * image.naturalHeight;
-    
-    // Draw the cropped section of the original image onto the canvas
-    ctx.drawImage(
-        image,
-        sourceX,
-        sourceY,
-        sourceWidth,
-        sourceHeight,
-        0,
-        0,
-        cropWidth,
-        cropHeight
-    );
-    
-    return canvas.toDataURL('image/jpeg');
+  // Calculate the rendered dimensions of the image inside the container (object-contain logic)
+  if (imageAspectRatio > containerAspectRatio) {
+    renderWidth = containerWidth;
+    renderHeight = containerWidth / imageAspectRatio;
+    offsetX = 0;
+    offsetY = (containerHeight - renderHeight) / 2;
+  } else {
+    renderHeight = containerHeight;
+    renderWidth = containerHeight * imageAspectRatio;
+    offsetY = 0;
+    offsetX = (containerWidth - renderWidth) / 2;
+  }
+  
+  const scaleX = image.naturalWidth / renderWidth;
+  const scaleY = image.naturalHeight / renderHeight;
+
+  // Adjust the crop coordinates to be relative to the actual image, not the container
+  // This removes the offset of the blank spaces
+  const relativeCropX = crop.x - offsetX;
+  const relativeCropY = crop.y - offsetY;
+
+  // The source coordinates on the original, unscaled image
+  const sourceX = relativeCropX * scaleX;
+  const sourceY = relativeCropY * scaleY;
+  const sourceWidth = crop.width * scaleX;
+  const sourceHeight = crop.height * scaleY;
+
+  // The canvas size is the size of the crop on the screen
+  canvas.width = crop.width;
+  canvas.height = crop.height;
+
+  // Draw the cropped section of the original image onto the canvas
+  ctx.drawImage(
+    image,
+    sourceX,
+    sourceY,
+    sourceWidth,
+    sourceHeight,
+    0,
+    0,
+    crop.width,
+    crop.height
+  );
+
+  return canvas.toDataURL('image/jpeg');
 }
 
 
@@ -118,7 +123,6 @@ function CroppingView({
   const [completedCrop, setCompletedCrop] = useState<CropType>();
   const imgRef = useRef<HTMLImageElement>(null);
 
-  const [scale, setScale] = useState(1);
   const [rotate, setRotate] = useState(0);
 
   function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
@@ -135,7 +139,7 @@ function CroppingView({
   const handleConfirmCrop = async () => {
     if (completedCrop && completedCrop.width > 0 && completedCrop.height > 0 && imgRef.current) {
         try {
-            const croppedDataUrl = await getCroppedImg(imgRef.current, completedCrop, scale);
+            const croppedDataUrl = await getCroppedImg(imgRef.current, completedCrop);
             onConfirm(croppedDataUrl);
         } catch (e) {
             console.error("Error cropping image:", e);
@@ -163,7 +167,7 @@ function CroppingView({
               width={800}
               height={600}
               style={{ 
-                  transform: `scale(${scale}) rotate(${rotate}deg)`,
+                  transform: `rotate(${rotate}deg)`,
                   maxHeight: '60vh', 
                   objectFit: 'contain'
               }}
@@ -171,20 +175,6 @@ function CroppingView({
             />
           </ReactCrop>
         )}
-      </div>
-       <div className="space-y-4 px-4">
-        <div className="flex items-center gap-2">
-          <ZoomOut className="h-5 w-5 text-muted-foreground" />
-          <Slider
-            defaultValue={[1]}
-            min={1}
-            max={3}
-            step={0.01}
-            onValueChange={(value) => setScale(value[0])}
-            aria-label="Zoom"
-          />
-          <ZoomIn className="h-5 w-5 text-muted-foreground" />
-        </div>
       </div>
       <div className="flex justify-end gap-2">
         <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
