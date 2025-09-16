@@ -34,7 +34,6 @@ const formSchema = z.object({
 });
 
 
-// Helper function to get the cropped image as a data URL
 async function getCroppedImg(
   image: HTMLImageElement,
   crop: CropType,
@@ -50,32 +49,23 @@ async function getCroppedImg(
 
   const scaleX = image.naturalWidth / image.width;
   const scaleY = image.naturalHeight / image.height;
-  const pixelRatio = window.devicePixelRatio;
   
-  canvas.width = Math.floor(crop.width * scaleX * pixelRatio);
-  canvas.height = Math.floor(crop.height * scaleY * pixelRatio);
+  canvas.width = crop.width * scaleX;
+  canvas.height = crop.height * scaleY;
 
-  ctx.scale(pixelRatio, pixelRatio);
   ctx.imageSmoothingQuality = 'high';
 
   const cropX = crop.x * scaleX;
   const cropY = crop.y * scaleY;
 
-  const rotateRads = (rotate * Math.PI) / 180;
   const centerX = image.naturalWidth / 2;
   const centerY = image.naturalHeight / 2;
-
+  
   ctx.save();
-
-  // 5) Move the crop origin to the canvas origin (0,0)
   ctx.translate(-cropX, -cropY);
-  // 4) Move the origin to the center of the original position
   ctx.translate(centerX, centerY);
-  // 3) Rotate around the origin
-  ctx.rotate(rotateRads);
-  // 2) Scale the image
+  ctx.rotate((rotate * Math.PI) / 180);
   ctx.scale(scale, scale);
-  // 1) Move the center of the image to the origin (0,0)
   ctx.translate(-centerX, -centerY);
   ctx.drawImage(
     image,
@@ -113,13 +103,11 @@ function CroppingView({
 
   function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
     const { width, height } = e.currentTarget;
-    const newCrop = centerCrop(
+    setCrop(centerCrop(
       makeAspectCrop({ unit: '%', width: 90 }, aspect, width, height),
       width,
       height
-    );
-    setCrop(newCrop);
-    setCompletedCrop(newCrop);
+    ));
   }
 
   const handleConfirmCrop = async () => {
@@ -135,8 +123,7 @@ function CroppingView({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium">Ajustar Imagen</h3>
-      <div className="flex flex-col items-center justify-center bg-muted/50 p-4 rounded-md h-[450px]">
+      <div className="flex flex-col items-center justify-center bg-muted/50 p-4 rounded-md h-min-[450px] h-max-[450px]">
         {imgSrc && (
           <ReactCrop
             crop={crop}
@@ -145,16 +132,15 @@ function CroppingView({
             aspect={aspect}
             circularCrop={isCircular}
             keepSelection
-            className="flex-1 w-full h-full"
           >
             <Image
               ref={imgRef}
               alt="Crop preview"
               src={imgSrc}
               fill
-              style={{ 
-                  objectFit: 'contain',
-                  transform: `scale(${scale}) rotate(${rotate}deg)`,
+              style={{
+                objectFit: 'contain',
+                transform: `scale(${scale}) rotate(${rotate}deg)`,
               }}
               onLoad={onImageLoad}
             />
@@ -175,10 +161,10 @@ function CroppingView({
         <ZoomIn className="h-5 w-5 text-muted-foreground" />
       </div>
 
-      <div className="flex justify-end gap-2">
+      <DialogFooter>
         <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
         <Button onClick={handleConfirmCrop}>Confirmar Recorte</Button>
-      </div>
+      </DialogFooter>
     </div>
   );
 }
@@ -312,7 +298,7 @@ export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }:
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Editar Perfil</DialogTitle>
+          <DialogTitle>{croppingTarget ? 'Ajustar Imagen' : 'Editar Perfil'}</DialogTitle>
           <DialogDescription>
             {croppingTarget ? 'Arrastra y ajusta el recuadro para seleccionar la parte de la imagen que quieres usar.' : 'Personaliza tu perfil. Los cambios serán visibles para otros usuarios.'}
           </DialogDescription>
