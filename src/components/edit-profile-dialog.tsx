@@ -35,8 +35,9 @@ const formSchema = z.object({
 
 // Helper function to get the cropped image as a data URL
 async function getCroppedImg(
-    image: HTMLImageElement,
-    crop: CropType,
+  image: HTMLImageElement,
+  crop: CropType,
+  scale = 1,
 ): Promise<string> {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -45,33 +46,57 @@ async function getCroppedImg(
         throw new Error('Could not get canvas context');
     }
 
-    const scaleX = image.naturalWidth / image.width;
-    const scaleY = image.naturalHeight / image.height;
-    
-    const cropX = crop.x * scaleX;
-    const cropY = crop.y * scaleY;
+    const cropWidth = crop.width;
+    const cropHeight = crop.height;
 
-    const cropWidth = crop.width * scaleX;
-    const cropHeight = crop.height * scaleY;
-    
+    // Set canvas size to the crop size.
     canvas.width = cropWidth;
     canvas.height = cropHeight;
+    
+    // Calculate the scale and offsets for 'object-contain'
+    const imageAspectRatio = image.naturalWidth / image.naturalHeight;
+    const containerAspectRatio = image.width / image.height;
+    
+    let renderWidth, renderHeight, offsetX, offsetY;
 
+    if (imageAspectRatio > containerAspectRatio) {
+        // Image is wider than container
+        renderWidth = image.width;
+        renderHeight = image.width / imageAspectRatio;
+        offsetX = 0;
+        offsetY = (image.height - renderHeight) / 2;
+    } else {
+        // Image is taller than or same aspect as container
+        renderHeight = image.height;
+        renderWidth = image.height * imageAspectRatio;
+        offsetY = 0;
+        offsetX = (image.width - renderWidth) / 2;
+    }
+    
+    // Adjust crop coordinates to be relative to the actual image content, not the container
+    const relativeCropX = crop.x - offsetX;
+    const relativeCropY = crop.y - offsetY;
+
+    // Calculate the source coordinates and dimensions on the original, unscaled image
+    const sourceX = (relativeCropX / renderWidth) * image.naturalWidth;
+    const sourceY = (relativeCropY / renderHeight) * image.naturalHeight;
+    const sourceWidth = (cropWidth / renderWidth) * image.naturalWidth;
+    const sourceHeight = (cropHeight / renderHeight) * image.naturalHeight;
+    
+    // Draw the cropped section of the original image onto the canvas
     ctx.drawImage(
         image,
-        cropX,
-        cropY,
-        cropWidth,
-        cropHeight,
+        sourceX,
+        sourceY,
+        sourceWidth,
+        sourceHeight,
         0,
         0,
         cropWidth,
         cropHeight
     );
     
-    return new Promise((resolve) => {
-        resolve(canvas.toDataURL('image/jpeg'));
-    });
+    return canvas.toDataURL('image/jpeg');
 }
 
 
@@ -110,7 +135,7 @@ function CroppingView({
   const handleConfirmCrop = async () => {
     if (completedCrop && completedCrop.width > 0 && completedCrop.height > 0 && imgRef.current) {
         try {
-            const croppedDataUrl = await getCroppedImg(imgRef.current, completedCrop);
+            const croppedDataUrl = await getCroppedImg(imgRef.current, completedCrop, scale);
             onConfirm(croppedDataUrl);
         } catch (e) {
             console.error("Error cropping image:", e);
