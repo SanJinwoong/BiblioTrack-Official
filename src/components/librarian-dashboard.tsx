@@ -26,7 +26,6 @@ export function LibrarianDashboard() {
   const [checkouts, setCheckouts] = useState<Checkout[]>([]);
   const [checkoutRequests, setCheckoutRequests] = useState<Checkout[]>([]);
   const [users, setUsers] = useState<UserType[]>([]);
-  const [loading, setLoading] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -40,11 +39,9 @@ export function LibrarianDashboard() {
   const { toast } = useToast();
   
   useEffect(() => {
-    setLoading(true);
     const unsubscribes = [
       onSnapshot(collection(db, 'books'), snapshot => {
         setBooks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BookType)))
-        setLoading(false);
       }),
       onSnapshot(collection(db, 'categories'), snapshot => 
         setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)))
@@ -399,11 +396,7 @@ export function LibrarianDashboard() {
                       </div>
                   </CardHeader>
                   <CardContent>
-                    {loading ? (
-                       <div className="text-center py-16">
-                          <p>Cargando libros...</p>
-                       </div>
-                    ) : books.length === 0 ? (
+                    {books.length === 0 ? (
                        <div className="text-center py-16">
                         <BookCopy className="mx-auto h-12 w-12 text-muted-foreground"/>
                         <h3 className="mt-4 text-lg font-medium">No hay libros en el catálogo</h3>
@@ -540,3 +533,5 @@ export function LibrarianDashboard() {
     </>
   );
 }
+
+    

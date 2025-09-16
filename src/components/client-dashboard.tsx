@@ -33,7 +33,6 @@ export function ClientDashboard() {
   const [checkouts, setCheckouts] = useState<Checkout[]>([]);
   const [checkoutRequests, setCheckoutRequests] = useState<Checkout[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
 
   const [filteredBooks, setFilteredBooks] = useState<BookType[]>([]);
   const [selectedBook, setSelectedBook] = useState<BookType | null>(null);
@@ -47,7 +46,6 @@ export function ClientDashboard() {
     const unsubscribes = [
       onSnapshot(collection(db, 'books'), snapshot => {
         setBooks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BookType)));
-        setLoading(false);
       }),
       onSnapshot(collection(db, 'categories'), snapshot => 
         setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)))
@@ -204,7 +202,7 @@ export function ClientDashboard() {
                           <div className="flex space-x-6 pb-4">
                           {userCheckouts.map((loan) =>
                               <div key={`checkout-${loan.id}`} className="w-44 min-w-44">
-                                  <BookCard book={loan as BookType} onClick={() => handleOpenDialog(loan as BookType, loan)} isApproved={true}>
+                                  <BookCard book={loan as BookType} onClick={() => handleOpenDialog(loan as BookType)} isApproved={true}>
                                   <div className="p-3 pt-0 text-xs">
                                       <p className="text-muted-foreground mt-1">Vence: {loan.dueDate}</p>
                                   </div>
@@ -213,7 +211,7 @@ export function ClientDashboard() {
                           )}
                            {userRequests.map((request) =>
                               <div key={`request-${request.id}`} className="w-44 min-w-44">
-                                  <BookCard book={request as BookType} onClick={() => handleOpenDialog(request as BookType, request)} isPending={true}>
+                                  <BookCard book={request as BookType} onClick={() => handleOpenDialog(request as BookType)} isPending={true}>
                                   <div className="p-3 pt-0 text-xs">
                                       <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 animate-pulse">Pendiente</Badge>
                                   </div>
@@ -267,3 +265,5 @@ export function ClientDashboard() {
     </>
   );
 }
+
+    
