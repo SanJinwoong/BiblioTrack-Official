@@ -68,7 +68,7 @@ export function UserLoanCard({ user, loans, onReactivateAccount }: UserLoanCardP
                             <h5 className="text-sm font-medium mb-2">Libros Prestados ({sortedLoans.length})</h5>
                             <div className="space-y-3">
                                 {sortedLoans.map(loan => (
-                                    <div key={loan.bookId} className="flex items-center gap-3">
+                                    <div key={loan.id} className="flex items-center gap-3">
                                         <Image src={loan.book.coverUrl} alt={loan.book.title} width={40} height={60} className="rounded-sm object-cover"/>
                                         <div>
                                             <p className="text-sm font-semibold">{loan.book.title}</p>
