@@ -42,11 +42,12 @@ export function LoginForm() {
     // Listen to the user's collection to get real-time data
     // This will first read from the cache (if available) and then from the server.
     const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
+      // The seeder might be running, so we wait until we have users.
       if (!snapshot.empty) {
         setUsers(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as User)));
         setIsDataLoading(false); // Data is loaded, enable the form
       } else {
-        // This case can happen during the re-seeding process
+        // This case happens during the re-seeding process
         setIsDataLoading(true);
       }
     }, (error) => {

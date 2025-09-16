@@ -10,7 +10,7 @@ import { initialUsers, initialCategories, initialBooks, initialCheckouts, initia
 // DEV_NOTE: This component is configured to force-reset the database on every load.
 // This is useful for development to ensure a consistent data state.
 // For production, change FORCE_RESEED to false.
-const FORCE_RESEED = true; 
+const FORCE_RESEED = false; 
 
 async function clearCollection(collectionName: string) {
     const batch = writeBatch(db);
@@ -42,6 +42,7 @@ export function DatabaseSeeder() {
         console.log('Database already seeded and force-reseeding is off. Skipping.');
         setIsSeeding(false);
         setHasSeeded(true);
+        sessionStorage.setItem('db_seeded_session', 'true'); // Ensure session knows it's seeded
         return;
       }
         
@@ -71,18 +72,18 @@ export function DatabaseSeeder() {
           const catRef = doc(collection(db, 'categories'));
           batch.set(catRef, { name: category.name });
         });
-
-        // Add books and get their new IDs
+        
+        // Use a map to track new book IDs
         const bookTitleToIdMap: { [title: string]: string } = {};
-        const bookPromises = initialBooks.map(async (bookData) => {
+
+        // Create book docs and store their new IDs in the map
+        for (const bookData of initialBooks) {
             const bookRef = doc(collection(db, 'books'));
             batch.set(bookRef, bookData);
             bookTitleToIdMap[bookData.title] = bookRef.id;
-        });
-        
-        await Promise.all(bookPromises);
-        
-        // Add checkouts and requests using the new book IDs
+        }
+
+        // Add checkouts and requests using the new book IDs from the map
         initialCheckouts.forEach(checkout => {
             const bookId = bookTitleToIdMap[checkout.bookTitle];
             if (bookId) {
@@ -122,5 +123,3 @@ export function DatabaseSeeder() {
   // This component renders nothing
   return null;
 }
-
-    
