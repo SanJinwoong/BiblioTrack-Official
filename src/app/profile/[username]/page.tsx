@@ -11,9 +11,8 @@ import { collection, onSnapshot } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 
 export default function ProfilePage({ params }: { params: { username: string } }) {
-  const [searchTerm, setSearchTerm] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
-  const { username } = use(params);
+  const { username } = params;
   const router = useRouter();
 
   useEffect(() => {
@@ -24,24 +23,19 @@ export default function ProfilePage({ params }: { params: { username: string } }
   }, []);
 
   const handleSelectCategory = (category: string | null) => {
-    // On profile page, selecting a category should likely navigate to the main dashboard
-    // and apply the filter there. We'll store it and redirect.
     if (category) {
-      localStorage.setItem('selectedCategory', category);
+      router.push(`/search?category=${encodeURIComponent(category)}`);
     } else {
-      localStorage.removeItem('selectedCategory');
+      router.push('/dashboard');
     }
-    router.push('/dashboard');
   };
   
   return (
     <div className="bg-background min-h-screen">
       <ClientHeader 
         username={username} 
-        searchTerm={searchTerm} 
-        setSearchTerm={setSearchTerm}
-        categories={categories}
         onSelectCategory={handleSelectCategory}
+        categories={categories}
       />
       <main>
         <UserProfile username={username} />

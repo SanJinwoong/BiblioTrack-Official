@@ -37,16 +37,15 @@ import {
 
 interface ClientHeaderProps {
     username: string;
-    searchTerm: string;
-    setSearchTerm: (term: string) => void;
     onSelectCategory: (category: string | null) => void;
     categories: Category[];
 }
 
-export function ClientHeader({ username, searchTerm, setSearchTerm, onSelectCategory, categories }: ClientHeaderProps) {
+export function ClientHeader({ username, onSelectCategory, categories }: ClientHeaderProps) {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<UserType | null>(null);
   const [open, setOpen] = useState(false);
+  const [localSearchTerm, setLocalSearchTerm] = useState('');
 
   useEffect(() => {
     if (!username) return;
@@ -69,7 +68,9 @@ export function ClientHeader({ username, searchTerm, setSearchTerm, onSelectCate
 
   const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Prevent default but allow live filtering via state change
+    if (localSearchTerm.trim()) {
+      router.push(`/search?q=${encodeURIComponent(localSearchTerm.trim())}`);
+    }
   }
 
   const handleScrollTo = (id: string) => {
@@ -130,10 +131,10 @@ export function ClientHeader({ username, searchTerm, setSearchTerm, onSelectCate
             <form onSubmit={handleSearchSubmit} className="relative w-full max-w-xs">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                    placeholder="Buscar libros..."
+                    placeholder="Buscar libros o amigos..."
                     className="pl-9 h-9 rounded-full bg-muted border-0 focus-visible:ring-primary"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    value={localSearchTerm}
+                    onChange={(e) => setLocalSearchTerm(e.target.value)}
                 />
             </form>
          
