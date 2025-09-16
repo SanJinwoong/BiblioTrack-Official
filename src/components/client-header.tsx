@@ -36,28 +36,33 @@ import {
 
 
 interface ClientHeaderProps {
-    username: string;
     onSelectCategory: (category: string | null) => void;
     categories: Category[];
 }
 
-export function ClientHeader({ username, onSelectCategory, categories }: ClientHeaderProps) {
+export function ClientHeader({ onSelectCategory, categories }: ClientHeaderProps) {
   const router = useRouter();
+  const [username, setUsername] = useState('');
   const [currentUser, setCurrentUser] = useState<UserType | null>(null);
   const [open, setOpen] = useState(false);
   const [localSearchTerm, setLocalSearchTerm] = useState('');
 
   useEffect(() => {
-    if (!username) return;
+    const storedUsername = localStorage.getItem('userUsername');
+    if (storedUsername) {
+      setUsername(storedUsername);
+    }
+    
+    if (!storedUsername) return;
 
     const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
         const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserType));
-        const foundUser = usersData.find(u => u.username === username);
+        const foundUser = usersData.find(u => u.username === storedUsername);
         setCurrentUser(foundUser || null);
     });
 
     return () => unsubscribe();
-  }, [username]);
+  }, []);
 
 
   const handleLogout = () => {

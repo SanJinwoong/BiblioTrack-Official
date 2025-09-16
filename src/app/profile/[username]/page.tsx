@@ -33,7 +33,6 @@ export default function ProfilePage({ params }: { params: { username: string } }
   return (
     <div className="bg-background min-h-screen">
       <ClientHeader 
-        username={username} 
         onSelectCategory={handleSelectCategory}
         categories={categories}
       />

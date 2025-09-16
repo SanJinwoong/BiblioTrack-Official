@@ -24,12 +24,11 @@ export const initialUsers: Omit<User, 'id'>[] = [
         followers: [],
         createdAt: '2023-01-15T10:00:00.000Z',
     },
-    // Este usuario estará DESACTIVADO porque su préstamo tiene más de 2 semanas de vencido.
     { 
         username: 'a1234567890', 
         password: 'password',
         role: 'client',
-        name: 'Juan Pérez (Vencido +2 semanas)',
+        name: 'Juan Pérez',
         curp: 'PERJ900101HDFXXX',
         phone: '834-111-2233',
         email: 'a1234567890@alumnos.uat.edu.mx',
@@ -43,12 +42,11 @@ export const initialUsers: Omit<User, 'id'>[] = [
         followers: ['a0987654321'],
         createdAt: '2023-02-20T11:30:00.000Z',
     },
-    // Este usuario está ACTIVO y tiene préstamos y solicitudes.
     { 
         username: 'a0987654321', 
         password: 'password', 
         role: 'client',
-        name: 'Maria Rodríguez (Activa)',
+        name: 'Maria Rodríguez',
         curp: 'RODM920202MDFXXX',
         phone: '834-444-5566',
         email: 'a0987654321@alumnos.uat.edu.mx',
@@ -62,12 +60,11 @@ export const initialUsers: Omit<User, 'id'>[] = [
         followers: ['a1234567890'],
         createdAt: '2023-03-10T18:00:00.000Z',
     },
-    // Este usuario estará DESACTIVADO porque su préstamo tiene más de 2 semanas de vencido.
      { 
         username: 'a2222222222', 
         password: 'password',
         role: 'client',
-        name: 'Carlos Sánchez (Vencido +2 semanas)',
+        name: 'Carlos Sánchez',
         curp: 'SACC880303MDFABC',
         phone: '834-555-7788',
         email: 'a2222222222@alumnos.uat.edu.mx',
@@ -81,12 +78,11 @@ export const initialUsers: Omit<User, 'id'>[] = [
         followers: [],
         createdAt: '2023-04-05T09:00:00.000Z',
     },
-    // Este usuario está ACTIVO y tiene una solicitud pendiente.
     { 
         username: 'a3333333333', 
         password: 'password', 
         role: 'client',
-        name: 'Ana García (Activa)',
+        name: 'Ana García',
         curp: 'GANA950404HDFXYZ',
         phone: '834-666-9900',
         email: 'a3333333333@alumnos.uat.edu.mx',
@@ -100,12 +96,11 @@ export const initialUsers: Omit<User, 'id'>[] = [
         followers: ['a1234567890'],
         createdAt: '2023-05-12T14:20:00.000Z',
     },
-    // Este usuario tiene un préstamo VENCIDO RECIENTEMENTE (menos de 1 semana), por lo que su cuenta AÚN ESTÁ ACTIVA.
     { 
         username: 'a4444444444', 
         password: 'password', 
         role: 'client',
-        name: 'Laura Gómez (Vencido Reciente)',
+        name: 'Laura Gómez',
         curp: 'GOML980505MDFZYX',
         phone: '834-777-1122',
         email: 'a4444444444@alumnos.uat.edu.mx',
