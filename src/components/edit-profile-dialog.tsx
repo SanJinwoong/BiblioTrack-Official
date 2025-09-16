@@ -50,9 +50,8 @@ async function getCroppedImg(
 
   const scaleX = image.naturalWidth / image.width;
   const scaleY = image.naturalHeight / image.height;
-  // devicePixelRatio slightly increases sharpness on high-res screens
   const pixelRatio = window.devicePixelRatio;
-
+  
   canvas.width = Math.floor(crop.width * scaleX * pixelRatio);
   canvas.height = Math.floor(crop.height * scaleY * pixelRatio);
 
@@ -83,7 +82,7 @@ async function getCroppedImg(
     0,
     0,
     image.naturalWidth,
-    image.naturalHeight
+    image.naturalHeight,
   );
 
   ctx.restore();
@@ -146,18 +145,16 @@ function CroppingView({
             aspect={aspect}
             circularCrop={isCircular}
             keepSelection
-            className="flex-1"
+            className="flex-1 w-full h-full"
           >
             <Image
               ref={imgRef}
               alt="Crop preview"
               src={imgSrc}
-              width={800}
-              height={600}
+              fill
               style={{ 
+                  objectFit: 'contain',
                   transform: `scale(${scale}) rotate(${rotate}deg)`,
-                  maxHeight: '100%', 
-                  objectFit: 'contain'
               }}
               onLoad={onImageLoad}
             />
