@@ -21,10 +21,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { User } from '@/lib/types';
 import Image from 'next/image';
-import { Camera } from 'lucide-react';
+import { Camera, ZoomIn, ZoomOut } from 'lucide-react';
 import React, { useEffect, useState, useRef } from 'react';
 import ReactCrop, { type Crop as CropType, centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import { Slider } from './ui/slider';
+
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
@@ -35,56 +37,53 @@ const formSchema = z.object({
 // Helper function to get the cropped image as a data URL
 async function getCroppedImg(
   image: HTMLImageElement,
-  crop: CropType
+  crop: CropType,
+  scale: number = 1
 ): Promise<string> {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
 
-  if (!ctx) {
-    throw new Error('Could not get canvas context');
-  }
+    if (!ctx) {
+        throw new Error('Could not get canvas context');
+    }
 
-  const scaleX = image.naturalWidth / image.width;
-  const scaleY = image.naturalHeight / image.height;
-  
-  const imageAspectRatio = image.naturalWidth / image.naturalHeight;
-  const containerWidth = image.parentElement?.clientWidth || image.width;
-  const containerHeight = image.parentElement?.clientHeight || image.height;
-  const containerAspectRatio = containerWidth / containerHeight;
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    
+    // devicePixelRatio slightly increases sharpness on high-res screens
+    const pixelRatio = window.devicePixelRatio || 1;
 
-  let renderWidth, renderHeight, offsetX = 0, offsetY = 0;
+    canvas.width = Math.floor(crop.width * scaleX * pixelRatio);
+    canvas.height = Math.floor(crop.height * scaleY * pixelRatio);
 
-  // This logic mirrors the browser's 'object-fit: contain' behavior
-  if (imageAspectRatio > containerAspectRatio) {
-    renderWidth = containerWidth;
-    renderHeight = containerWidth / imageAspectRatio;
-    offsetY = (containerHeight - renderHeight) / 2;
-  } else {
-    renderHeight = containerHeight;
-    renderWidth = containerHeight * imageAspectRatio;
-    offsetX = (containerWidth - renderWidth) / 2;
-  }
-  
-  // Adjust crop selection based on the offset of the contained image
-  const cropX = (crop.x - offsetX) * (image.naturalWidth / renderWidth);
-  const cropY = (crop.y - offsetY) * (image.naturalHeight / renderHeight);
+    ctx.scale(pixelRatio, pixelRatio);
+    ctx.imageSmoothingQuality = 'high';
+    
+    const cropX = crop.x * scaleX;
+    const cropY = crop.y * scaleY;
 
-  canvas.width = crop.width * (image.naturalWidth / renderWidth);
-  canvas.height = crop.height * (image.naturalHeight / renderHeight);
+    const centerX = image.naturalWidth / 2;
+    const centerY = image.naturalHeight / 2;
 
-  ctx.drawImage(
-    image,
-    cropX,
-    cropY,
-    crop.width * (image.naturalWidth / renderWidth),
-    crop.height * (image.naturalHeight / renderHeight),
-    0,
-    0,
-    canvas.width,
-    canvas.height
-  );
+    ctx.save();
+    
+    // Translate and scale to simulate zoom and pan
+    ctx.translate(
+        -cropX,
+        -cropY
+    );
+    
+    ctx.drawImage(
+      image,
+      0,
+      0,
+      image.naturalWidth,
+      image.naturalHeight,
+    );
 
-  return canvas.toDataURL('image/jpeg', 0.95);
+    ctx.restore();
+
+    return canvas.toDataURL('image/jpeg', 0.95);
 }
 
 
@@ -105,6 +104,8 @@ function CroppingView({
   const [crop, setCrop] = useState<CropType>();
   const [completedCrop, setCompletedCrop] = useState<CropType>();
   const imgRef = useRef<HTMLImageElement>(null);
+  const [scale, setScale] = useState(1);
+  const [rotate, setRotate] = useState(0);
 
   function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
     const { width, height } = e.currentTarget;
@@ -120,7 +121,7 @@ function CroppingView({
   const handleConfirmCrop = async () => {
     if (completedCrop && completedCrop.width > 0 && completedCrop.height > 0 && imgRef.current) {
         try {
-            const croppedDataUrl = await getCroppedImg(imgRef.current, completedCrop);
+            const croppedDataUrl = await getCroppedImg(imgRef.current, completedCrop, scale);
             onConfirm(croppedDataUrl);
         } catch (e) {
             console.error("Error cropping image:", e);
@@ -149,6 +150,7 @@ function CroppingView({
               width={800}
               height={600}
               style={{ 
+                  transform: `scale(${scale}) rotate(${rotate}deg)`,
                   maxHeight: '100%', 
                   objectFit: 'contain'
               }}
@@ -157,6 +159,20 @@ function CroppingView({
           </ReactCrop>
         )}
       </div>
+
+       <div className="flex items-center gap-4 px-4">
+        <ZoomOut className="h-5 w-5 text-muted-foreground" />
+        <Slider
+          defaultValue={[1]}
+          value={[scale]}
+          min={0.5}
+          max={4}
+          step={0.01}
+          onValueChange={(value) => setScale(value[0])}
+        />
+        <ZoomIn className="h-5 w-5 text-muted-foreground" />
+      </div>
+
       <div className="flex justify-end gap-2">
         <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
         <Button onClick={handleConfirmCrop}>Confirmar Recorte</Button>
@@ -312,3 +328,5 @@ export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }:
     </Dialog>
   );
 }
+
+    
