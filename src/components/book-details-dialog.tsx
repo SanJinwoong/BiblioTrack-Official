@@ -82,10 +82,10 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
         text = 'Agotado';
         color = 'bg-gray-100 text-gray-600';
     } else if (book.stock <= 3) {
-        text = `Disponible (${book.stock})`;
+        text = `Disponible ${book.stock}`;
         color = 'bg-yellow-100 text-yellow-800';
     } else {
-        text = `Disponible (${book.stock})`;
+        text = `Disponible ${book.stock}`;
         color = 'bg-green-100 text-green-800';
     }
     
