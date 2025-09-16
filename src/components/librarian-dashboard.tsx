@@ -228,7 +228,7 @@ export function LibrarianDashboard() {
 
   return (
     <>
-      <DashboardHeader onAddNewBook={handleOpenAddBookDialog} onSettingsClick={()={() => setIsSettingsDialogOpen(true)}} />
+      <DashboardHeader onAddNewBook={handleOpenAddBookDialog} onSettingsClick={() => setIsSettingsDialogOpen(true)} />
       <div className="container mx-auto p-4 md:p-8">
         <AddBookDialog
           open={isAddBookDialogOpen}
