@@ -6,7 +6,8 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { UserPlus, User } from 'lucide-react';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { collection, addDoc, onSnapshot } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -24,10 +25,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { users } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import type { User as UserType } from '@/lib/types';
 import { Library } from '@/components/icons/uat-logo';
+import { db } from '@/lib/firebase';
+
 
 const studentEmailRegex = /^a\d{10}@alumnos\.uat\.edu\.mx$/;
 
@@ -62,6 +64,14 @@ export function SignUpForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [role, setRole] = React.useState<'client' | 'librarian' | null>(null);
+  const [users, setUsers] = useState<UserType[]>([]);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'users'), snapshot => {
+      setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserType)));
+    });
+    return () => unsubscribe();
+  }, []);
 
   const formSchema = role === 'client' ? clientSchema : (role === 'librarian' ? librarianSchema : z.object({}));
 
@@ -80,11 +90,11 @@ export function SignUpForm() {
     shouldUnregister: true,
   });
   
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!role) return;
 
     let usernameToRegister: string;
-    let newUser: UserType;
+    let newUser: Omit<UserType, 'id'>;
     
     if (role === 'client') {
         const clientValues = values as z.infer<typeof clientSchema>;
@@ -98,6 +108,7 @@ export function SignUpForm() {
             phone: clientValues.phone,
             address: clientValues.address,
             email: usernameToRegister, // Using institutional email as the primary contact for clients
+            status: 'active',
         };
     } else { // librarian
         const librarianValues = values as z.infer<typeof librarianSchema>;
@@ -106,6 +117,7 @@ export function SignUpForm() {
             username: usernameToRegister,
             password: librarianValues.password,
             role: 'librarian',
+            status: 'active',
         };
     }
 
@@ -119,7 +131,7 @@ export function SignUpForm() {
         return;
     }
     
-    users.push(newUser);
+    await addDoc(collection(db, 'users'), newUser);
     
     localStorage.setItem('userRole', role);
 

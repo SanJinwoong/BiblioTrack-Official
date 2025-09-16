@@ -1,7 +1,10 @@
 
 'use client';
 
-import { users } from '@/lib/data';
+import { useState, useEffect } from 'react';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import type { User as UserType } from '@/lib/types';
 import { CardContent, CardHeader, CardTitle } from './ui/card';
 import { User } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
@@ -12,9 +15,18 @@ interface UserDetailsTooltipProps {
 }
 
 export function UserDetailsTooltip({ userId, children }: UserDetailsTooltipProps) {
+    const [users, setUsers] = useState<UserType[]>([]);
+
+    useEffect(() => {
+        const unsubscribe = onSnapshot(collection(db, 'users'), snapshot => {
+            setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserType)));
+        });
+        return () => unsubscribe();
+    }, []);
+
     const user = users.find(u => {
         const usernameMatch = u.username.split('@')[0];
-        return usernameMatch === userId || u.name === userId || u.username === userId;
+        return usernameMatch === userId || u.name === userId || u.username === userId || u.id === userId;
     });
 
     const content = user ? (
@@ -34,7 +46,7 @@ export function UserDetailsTooltip({ userId, children }: UserDetailsTooltipProps
             </CardContent>
         </div>
     ) : (
-        <div className="p-4 text-sm">Usuario no encontrado.</div>
+        <div className="p-4 text-sm">Cargando datos del usuario...</div>
     );
 
     return (

@@ -5,11 +5,13 @@ import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { recommendBooks } from '@/ai/flows/recommend-books';
-import { books, readingHistory } from '@/lib/data';
+import { readingHistory } from '@/lib/data';
 import { Sparkles, Loader2, BookHeart } from 'lucide-react';
 import type { Book } from '@/lib/types';
 import { BookCard } from './book-card';
 import { ScrollArea, ScrollBar } from './ui/scroll-area';
+import { db } from '@/lib/firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
 
 interface RecommendationsProps {
   onBookSelect: (book: Book) => void;
@@ -17,12 +19,19 @@ interface RecommendationsProps {
 
 export function Recommendations({ onBookSelect }: RecommendationsProps) {
   const [recommendations, setRecommendations] = useState<string[]>([]);
+  const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   
   useEffect(() => {
     setUsername(localStorage.getItem('userUsername'));
+
+    const unsubscribe = onSnapshot(collection(db, 'books'), snapshot => {
+        setBooks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Book)));
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const handleGetRecommendations = async () => {
@@ -35,7 +44,10 @@ export function Recommendations({ onBookSelect }: RecommendationsProps) {
     setRecommendations([]);
 
     try {
-      const historyIds = readingHistory[username] || [];
+      const historyUsernames = Object.keys(readingHistory);
+      const userHistoryKey = historyUsernames.find(key => key === username);
+      const historyIds = userHistoryKey ? readingHistory[userHistoryKey] : [];
+
       const userHistoryTitles = historyIds.map(id => books.find(b => b.id === id)?.title).filter(Boolean) as string[];
       const inventoryTitles = books.filter(b => b.stock > 0).map(b => b.title);
 

@@ -198,7 +198,8 @@ export const initialCheckoutRequests: Omit<Checkout, 'id' | 'bookId' | 'userId'>
 ];
 
 // This part is for the AI recommendations, which can remain local as it's a mock
-export const readingHistory: { [key: string]: number[] } = {
-    'a1234567890': [4, 6],
-    'a0987654321': [1],
+// We use the full username for the key now to be consistent.
+export const readingHistory: { [key: string]: string[] } = {
+    'a1234567890@alumnos.uat.edu.mx': ["book4_id", "book6_id"], // Placeholder IDs, to be mapped to real book IDs
+    'a0987654321@alumnos.uat.edu.mx': ["book1_id"],
 };

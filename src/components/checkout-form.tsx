@@ -6,7 +6,9 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { format, addDays, startOfDay, addWeeks, addMonths } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { collection, onSnapshot, addDoc } from 'firebase/firestore';
+
 
 import {
   Form,
@@ -18,7 +20,7 @@ import {
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import type { Book, User } from '@/lib/types';
-import { users } from '@/lib/data';
+import { db } from '@/lib/firebase';
 import { Button } from './ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
@@ -64,6 +66,14 @@ const formSchema = z.union([clientSchema, librarianSchema]);
 
 export function CheckoutForm({ book, username, role, onSuccess, onCancel }: CheckoutFormProps) {
   const { toast } = useToast();
+  const [users, setUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'users'), snapshot => {
+      setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
+    });
+    return () => unsubscribe();
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(role === 'client' ? clientSchema : librarianSchema),
@@ -152,7 +162,7 @@ export function CheckoutForm({ book, username, role, onSuccess, onCancel }: Chec
     return format(dueDate, 'yyyy-MM-dd');
   }
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     if (book.stock === 0) {
       toast({
         variant: 'destructive',
@@ -178,20 +188,20 @@ export function CheckoutForm({ book, username, role, onSuccess, onCancel }: Chec
             const foundUser = users.find(u => u.username === clientUsername);
 
             if (!foundUser) {
-                const newUser: User = {
+                const newUser: Omit<User, 'id'> = {
                     username: clientUsername, password: 'password', role: 'client',
-                    name: userName, curp: librarianValues.curp!, phone: librarianValues.phone!, email: librarianValues.email!, address: librarianValues.address!,
+                    name: userName, curp: librarianValues.curp!, phone: librarianValues.phone!, email: librarianValues.email!, address: librarianValues.address!, status: 'active'
                 };
-                users.push(newUser);
+                await addDoc(collection(db, 'users'), newUser);
                 toast({ title: '👤 Nuevo usuario registrado', description: `El usuario con matrícula ${matricula} ha sido creado.` });
             }
         } else {
             checkoutUserId = userName;
-            const newUser: User = {
+            const newUser: Omit<User, 'id'> = {
                 username: `${userName.toLowerCase().replace(/\s/g, '.')}@externos.uat.edu.mx`, password: 'password', role: 'client',
-                name: userName, curp: librarianValues.curp!, phone: librarianValues.phone!, email: librarianValues.email!, address: librarianValues.address!,
+                name: userName, curp: librarianValues.curp!, phone: librarianValues.phone!, email: librarianValues.email!, address: librarianValues.address!, status: 'active'
             };
-            users.push(newUser);
+            await addDoc(collection(db, 'users'), newUser);
             toast({ title: '👤 Nuevo usuario registrado', description: `El usuario ${userName} ha sido creado.` });
         }
         toastDescriptionName = userName;
@@ -358,7 +368,7 @@ export function CheckoutForm({ book, username, role, onSuccess, onCancel }: Chec
           <Button type="button" variant="ghost" onClick={onCancel}>
             Cancelar
           </Button>
-          <Button type="submit" form="checkout-form">
+          <Button type="submit" form="checkout-form" disabled={users.length === 0}>
               Confirmar
           </Button>
         </div>

@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { LogIn } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -17,8 +18,10 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { users } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
+import { db } from '@/lib/firebase';
+import type { User } from '@/lib/types';
+import { collection, onSnapshot } from 'firebase/firestore';
 
 const studentEmailRegex = /^a\d{10}@alumnos\.uat\.edu\.mx$/;
 const matriculaRegex = /^a\d{10}$/;
@@ -35,6 +38,15 @@ const formSchema = z.object({
 export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
+  const [users, setUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'users'), snapshot => {
+      setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
+    });
+    return () => unsubscribe();
+  }, []);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -106,7 +118,7 @@ export function LoginForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" size="lg" className="w-full mt-4">
+        <Button type="submit" size="lg" className="w-full mt-4" disabled={users.length === 0}>
           <LogIn className="mr-2 h-4 w-4" />
           Entrar
         </Button>
