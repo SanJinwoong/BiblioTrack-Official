@@ -200,7 +200,7 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
                 </div>
                 <div className="flex items-center space-x-2 my-4">
                   <span className="font-semibold text-sm">Disponibilidad:</span>
-                  <Badge className={cn("text-xs font-bold", stockStatus.color)}>
+                  <Badge className={cn("text-xs font-semibold", stockStatus.color)}>
                     {stockStatus.text}
                   </Badge>
                 </div>
