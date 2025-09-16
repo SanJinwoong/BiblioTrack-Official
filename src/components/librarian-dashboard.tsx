@@ -8,7 +8,7 @@ import { Book, ListChecks, Search, User, Calendar, MoreHorizontal, Bell, BookCop
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { BookCard } from '@/components/book-card';
+import { BookCard } from './book-card';
 import { BookDetailsDialog } from './book-details-dialog';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -194,6 +194,7 @@ export function LibrarianDashboard() {
     
     if (!hasOtherOverdueBooks) {
         handleDeactivateUser(checkoutToReturn.userId, true); // true to reactivate
+        localStorage.setItem('justReactivated', 'true');
     }
     
     toast({ title: '✅ Libro Devuelto', description: `El libro ha sido marcado como devuelto.` });
@@ -429,6 +430,8 @@ export function LibrarianDashboard() {
 }
 
     
+    
+
     
 
     

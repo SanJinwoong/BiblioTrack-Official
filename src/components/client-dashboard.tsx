@@ -76,7 +76,15 @@ export function ClientDashboard() {
     const currentUser = currentUsers.find((u: User) => u.username === fullUsername);
     setUser(currentUser || null);
 
-  }, []);
+    if (localStorage.getItem('justReactivated') === 'true') {
+        toast({
+            title: '✅ ¡Bienvenido de nuevo!',
+            description: 'Gracias por tu apoyo. Ya puedes seguir disfrutando de nuestra biblioteca.',
+        });
+        localStorage.removeItem('justReactivated');
+    }
+
+  }, [toast]);
 
   // Persist state to localStorage whenever it changes
   useEffect(() => { if (books.length > 0) localStorage.setItem('books', JSON.stringify(books)); }, [books]);
@@ -303,6 +311,8 @@ export function ClientDashboard() {
 }
 
     
+    
+
     
 
     
