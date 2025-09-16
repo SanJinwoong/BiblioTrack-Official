@@ -104,7 +104,7 @@ function CroppingView({
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium">Recortar Imagen</h3>
-        <div className="flex justify-center max-h-[60vh]">
+        <div className="flex flex-col h-[450px]">
           {imgSrc && (
             <ReactCrop
               crop={crop}
@@ -112,6 +112,7 @@ function CroppingView({
               onComplete={(c) => setCompletedCrop(c)}
               aspect={aspect}
               circularCrop={isCircular}
+              className="flex-1"
             >
               <Image
                 ref={imgRef}
