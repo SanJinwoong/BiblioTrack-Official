@@ -1,11 +1,12 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, writeBatch, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { initialUsers, initialCategories, initialBooks, initialCheckouts, initialCheckoutRequests } from '@/lib/data';
+import { initialUsers, initialCategories, initialBooks, initialCheckouts, initialCheckoutRequests, initialReviews } from '@/lib/data';
 
 // DEV_NOTE: This component is configured to force-reset the database on every load.
 // This is useful for development to ensure a consistent data state.
@@ -57,6 +58,7 @@ export function DatabaseSeeder() {
             clearCollection('books'),
             clearCollection('checkouts'),
             clearCollection('checkoutRequests'),
+            clearCollection('reviews'),
         ]);
 
         const batch = writeBatch(db);
@@ -101,6 +103,16 @@ export function DatabaseSeeder() {
                 batch.set(requestRef, { ...requestData, bookId });
             }
         });
+        
+        initialReviews.forEach(review => {
+            const bookId = bookTitleToIdMap[review.bookTitle];
+            if (bookId) {
+                const reviewRef = doc(collection(db, 'reviews'));
+                const { bookTitle, ...reviewData } = review;
+                batch.set(reviewRef, { ...reviewData, bookId });
+            }
+        });
+
 
         await batch.commit();
 

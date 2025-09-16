@@ -1,5 +1,6 @@
 
-import type { Book, Checkout, User, Category } from './types';
+
+import type { Book, Checkout, User, Category, Review } from './types';
 
 // Note: The 'id' properties will be ignored by Firestore when we add these documents,
 // as Firestore auto-generates unique IDs. We keep them for local relationships if needed.
@@ -245,4 +246,36 @@ export const readingHistory: { [key: string]: string[] } = {
     'a0987654321': ["book1_id"],
 };
 
+export const initialReviews: Omit<Review, 'id' | 'bookId'> & { bookTitle: string }[] = [
+    {
+        userId: 'a0987654321',
+        bookTitle: 'Cien años de soledad',
+        rating: 5,
+        comment: 'Una obra maestra absoluta. La historia de los Buendía es inolvidable. El realismo mágico en su máxima expresión. ¡Totalmente recomendado!',
+        date: getPastDate(5),
+    },
+    {
+        userId: 'a1234567890',
+        bookTitle: 'Dune',
+        rating: 5,
+        comment: 'Increíble construcción de mundo. Arrakis se siente como un lugar real. La trama política y la acción son de primer nivel. Un clásico de la ciencia ficción por una razón.',
+        date: getPastDate(10),
+    },
+    {
+        userId: 'a3333333333',
+        bookTitle: 'El Señor de los Anillos: La Comunidad del Anillo',
+        rating: 4,
+        comment: 'El comienzo de una aventura épica. A veces puede ser un poco lento con las descripciones, pero la construcción del mundo es asombrosa.',
+        date: getPastDate(1),
+    },
+    {
+        userId: 'a0987654321',
+        bookTitle: 'El Alquimista',
+        rating: 4,
+        comment: 'Un libro inspirador y fácil de leer. Te hace reflexionar sobre tu propio "Propósito Personal". Muy recomendable para una lectura ligera y motivadora.',
+        date: getPastDate(2),
+    },
+];
+
     
+
