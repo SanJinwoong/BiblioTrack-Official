@@ -32,49 +32,58 @@ const formSchema = z.object({
   bio: z.string().optional(),
 });
 
-
+// Helper function to get the cropped image data URL
 async function getCroppedImg(
-  image: HTMLImageElement,
-  crop: CropType,
-  scale = 1
+    image: HTMLImageElement,
+    crop: CropType,
+    scale = 1
 ): Promise<string> {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
 
-  if (!ctx) {
-    throw new Error('No 2d context');
-  }
+    if (!ctx) {
+        throw new Error('No 2d context');
+    }
 
-  const scaleX = image.naturalWidth / image.width;
-  const scaleY = image.naturalHeight / image.height;
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    
+    const pixelRatio = window.devicePixelRatio;
 
-  canvas.width = crop.width;
-  canvas.height = crop.height;
+    canvas.width = Math.floor(crop.width * scaleX * pixelRatio);
+    canvas.height = Math.floor(crop.height * scaleY * pixelRatio);
 
-  ctx.imageSmoothingQuality = 'high';
+    ctx.scale(pixelRatio, pixelRatio);
+    ctx.imageSmoothingQuality = 'high';
 
-  const cropX = crop.x * scaleX;
-  const cropY = crop.y * scaleY;
+    const cropX = crop.x * scaleX;
+    const cropY = crop.y * scaleY;
 
-  const centerX = image.naturalWidth / 2;
-  const centerY = image.naturalHeight / 2;
+    const centerX = image.naturalWidth / 2;
+    const centerY = image.naturalHeight / 2;
 
-  ctx.save();
-  ctx.translate(-cropX, -cropY);
-  ctx.translate(centerX, centerY);
-  ctx.scale(scale, scale);
-  ctx.translate(-centerX, -centerY);
-  ctx.drawImage(
-    image,
-    0,
-    0,
-    image.naturalWidth,
-    image.naturalHeight
-  );
+    ctx.save();
+    
+    // 5. Move canvas translation to center of canvas
+    ctx.translate(canvas.width / 2 / pixelRatio, canvas.height / 2 / pixelRatio);
+    // 6. Rotate around canvas center
+    // ctx.rotate(rotateRads)
+    // 7. Scale around center
+    ctx.scale(scale, scale);
+    // 8. Translate canvas back to top-left corner
+    ctx.translate(-centerX, -centerY);
 
-  ctx.restore();
+    ctx.drawImage(
+        image,
+        0,
+        0,
+        image.naturalWidth,
+        image.naturalHeight
+    );
 
-  return canvas.toDataURL('image/jpeg', 0.95);
+    ctx.restore();
+
+    return canvas.toDataURL('image/jpeg', 0.95);
 }
 
 
@@ -110,8 +119,8 @@ function CroppingView({
   const handleConfirmCrop = async () => {
     if (completedCrop && completedCrop.width > 0 && completedCrop.height > 0 && imgRef.current) {
         try {
-            const croppedDataUrl = await getCroppedImg(imgRef.current, completedCrop, scale);
-            onConfirm(croppedDataUrl);
+            const dataUrl = await getCroppedImg(imgRef.current, completedCrop, scale);
+            onConfirm(dataUrl);
         } catch (e) {
             console.error("Error cropping image:", e);
         }
@@ -119,8 +128,8 @@ function CroppingView({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col items-center justify-center bg-muted/50 p-4 rounded-md min-h-[450px] max-h-[450px]">
+    <div className="flex flex-col h-full">
+      <div className="flex flex-col items-center justify-center bg-muted/50 p-4 rounded-md flex-1 min-h-0">
         {imgSrc && (
           <ReactCrop
             crop={crop}
@@ -129,6 +138,7 @@ function CroppingView({
             aspect={aspect}
             circularCrop={isCircular}
             keepSelection
+            className="max-h-[450px]"
           >
             <Image
               ref={imgRef}
@@ -138,8 +148,9 @@ function CroppingView({
               height={0}
               sizes="100vw"
               style={{
-                width: '100%',
+                width: 'auto',
                 height: 'auto',
+                maxHeight: '450px',
                 objectFit: 'contain',
                 transform: `scale(${scale}) rotate(${rotate}deg)`,
               }}
@@ -149,7 +160,7 @@ function CroppingView({
         )}
       </div>
 
-       <div className="flex items-center gap-4 px-4">
+       <div className="flex items-center gap-4 px-4 pt-4">
         <ZoomOut className="h-5 w-5 text-muted-foreground" />
         <Slider
           defaultValue={[1]}
@@ -162,7 +173,7 @@ function CroppingView({
         <ZoomIn className="h-5 w-5 text-muted-foreground" />
       </div>
 
-      <DialogFooter>
+      <DialogFooter className="pt-4">
         <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
         <Button onClick={handleConfirmCrop}>Confirmar Recorte</Button>
       </DialogFooter>
@@ -297,13 +308,14 @@ export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-2xl h-full max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{croppingTarget ? 'Ajustar Imagen' : 'Editar Perfil'}</DialogTitle>
           <DialogDescription>
             {croppingTarget ? 'Arrastra y ajusta el recuadro para seleccionar la parte de la imagen que quieres usar.' : 'Personaliza tu perfil. Los cambios serán visibles para otros usuarios.'}
           </DialogDescription>
         </DialogHeader>
+        <div className="flex-1 min-h-0">
         {croppingTarget ? (
             <CroppingView
                 imgSrc={imageToCrop}
@@ -313,6 +325,7 @@ export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }:
                 onCancel={handleCancelCrop}
             />
         ) : <EditFormView />}
+        </div>
       </DialogContent>
     </Dialog>
   );
