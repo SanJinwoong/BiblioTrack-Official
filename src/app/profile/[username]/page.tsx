@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation';
 
 export default function ProfilePage({ params }: { params: { username: string } }) {
   const [categories, setCategories] = useState<Category[]>([]);
-  const { username } = params;
+  const { username } = use(params);
   const router = useRouter();
 
   useEffect(() => {
