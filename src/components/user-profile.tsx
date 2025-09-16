@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
@@ -134,8 +134,6 @@ export function UserProfile({ username }: UserProfileProps) {
 
   const handleOpenBookDialog = (book: Book) => {
     setSelectedBook(book);
-    // In a public profile, we might not have direct checkout context.
-    // For now, let's check if the *current viewing user* has a checkout.
     const checkout = reviews.find(c => c.bookId === book.id && c.userId === currentUser?.username);
     setSelectedBookCheckout(null);
   };
@@ -147,39 +145,35 @@ export function UserProfile({ username }: UserProfileProps) {
   
   if (loading) {
     return (
-        <div className="w-full">
-            {/* Banner Skeleton */}
-            <Skeleton className="h-48 md:h-64 w-full" />
-            <div className="container mx-auto px-4 md:px-8">
-                {/* Profile Header Skeleton */}
-                <div className="relative -mt-16 md:-mt-20">
-                    <Skeleton className="h-32 w-32 md:h-40 md:w-40 rounded-full border-4 border-background" />
-                </div>
-                 <div className="h-16 flex justify-end items-center">
-                    <Skeleton className="h-10 w-32" />
-                </div>
-
-                <div className="mt-2 space-y-2">
-                    <Skeleton className="h-10 w-48" />
-                    <Skeleton className="h-5 w-32" />
-                    <Skeleton className="h-5 w-full max-w-lg mt-4" />
-                    <div className="flex gap-4 pt-2">
-                      <Skeleton className="h-5 w-24" />
-                      <Skeleton className="h-5 w-24" />
-                      <Skeleton className="h-5 w-40" />
+      <div className="w-full">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2">
+                    <Skeleton className="h-48 md:h-64 w-full rounded-lg" />
+                     <div className="relative -mt-16 md:-mt-20 ml-6">
+                        <Skeleton className="h-32 w-32 md:h-40 md:w-40 rounded-full border-4 border-background" />
+                    </div>
+                     <div className="p-4 pt-2 space-y-4">
+                        <div className="flex justify-end">
+                            <Skeleton className="h-10 w-32" />
+                        </div>
+                        <Skeleton className="h-10 w-48" />
+                        <Skeleton className="h-5 w-32" />
+                        <Skeleton className="h-5 w-full max-w-lg mt-4" />
+                        <div className="flex gap-4 pt-2">
+                          <Skeleton className="h-5 w-24" />
+                          <Skeleton className="h-5 w-24" />
+                          <Skeleton className="h-5 w-40" />
+                        </div>
                     </div>
                 </div>
-                {/* Content Skeleton */}
-                <div className="mt-12">
-                    <Skeleton className="h-8 w-48 mb-4" />
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                        <Skeleton className="h-56 w-full" />
-                        <Skeleton className="h-56 w-full" />
-                        <Skeleton className="h-56 w-full" />
-                    </div>
+                <div className="lg:col-span-1 space-y-8 pt-8">
+                    <Skeleton className="h-48 w-full" />
+                    <Skeleton className="h-64 w-full" />
                 </div>
             </div>
         </div>
+      </div>
     );
   }
 
@@ -226,10 +220,11 @@ export function UserProfile({ username }: UserProfileProps) {
         role={currentUser?.role || 'client'}
        />
        
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
-                {/* Banner */}
-                <div className="h-48 md:h-56 w-full bg-muted rounded-t-lg overflow-hidden">
+                 {/* Banner */}
+                <div className="h-48 md:h-56 w-full bg-muted rounded-lg overflow-hidden">
                     {user.bannerUrl ? (
                     <Image
                         src={user.bannerUrl}
@@ -245,26 +240,25 @@ export function UserProfile({ username }: UserProfileProps) {
                 </div>
 
                 {/* Profile Header */}
-                 <div className="p-4 bg-card rounded-b-lg">
-                    <div className="relative flex justify-between items-start -mt-20 md:-mt-24">
-                        <div className="p-1 bg-card rounded-full">
-                            <Avatar className="h-32 w-32 md:h-36 md:w-36 border-4 border-card">
-                                <AvatarImage src={user.avatarUrl} alt={user.name} />
-                                <AvatarFallback className="text-5xl">{user.name?.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                        </div>
-                        <div className="pt-24">
+                 <div className="p-4">
+                    <div className="relative flex justify-between items-start -mt-16 md:-mt-20">
+                        <Avatar className="h-32 w-32 md:h-36 md:w-36 border-4 border-background bg-background">
+                            <AvatarImage src={user.avatarUrl} alt={user.name} />
+                            <AvatarFallback className="text-5xl">{user.name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        
+                        <div className="pt-20">
                             {isOwnProfile ? (
-                                <Button variant="outline" onClick={() => setIsEditDialogOpen(true)}>
+                                <Button variant="outline" onClick={() => setIsEditDialogOpen(true)} className="rounded-full">
                                     <Edit className="mr-2 h-4 w-4" /> Editar Perfil
                                 </Button>
                             ) : isFollowing ? (
-                                <Button variant="secondary" onClick={handleFollowToggle}>
+                                <Button variant="secondary" onClick={handleFollowToggle} className="rounded-full">
                                     <UserCheck className="mr-2 h-4 w-4" />
                                     Siguiendo
                                 </Button>
                             ) : (
-                                <Button onClick={handleFollowToggle}>
+                                <Button onClick={handleFollowToggle} className="rounded-full">
                                     <UserPlus className="mr-2 h-4 w-4" />
                                     Seguir
                                 </Button>
@@ -281,18 +275,18 @@ export function UserProfile({ username }: UserProfileProps) {
                         <p className="text-foreground max-w-2xl">{user.bio || 'Este usuario aún no ha añadido una biografía.'}</p>
                         
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
-                            {user.createdAt && (
-                                <div className="flex items-center space-x-1">
-                                    <Calendar className="h-4 w-4" />
-                                    <span>Se unió en {format(new Date(user.createdAt), "MMMM 'de' yyyy", { locale: es })}</span>
-                                </div>
-                            )}
                             <Link href="#" className="hover:underline">
                                 <span className="font-bold text-foreground">{user.following?.length || 0}</span> Siguiendo
                             </Link>
                             <Link href="#" className="hover:underline">
                                 <span className="font-bold text-foreground">{user.followers?.length || 0}</span> Seguidores
                             </Link>
+                             {user.createdAt && (
+                                <div className="flex items-center space-x-1">
+                                    <Calendar className="h-4 w-4" />
+                                    <span>Se unió en {format(new Date(user.createdAt), "MMMM 'de' yyyy", { locale: es })}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -355,6 +349,7 @@ export function UserProfile({ username }: UserProfileProps) {
                 </Card>
             </div>
         </div>
+      </div>
     </>
   );
 }
