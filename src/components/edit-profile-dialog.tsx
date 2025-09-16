@@ -37,6 +37,7 @@ function getCroppedImg(image: HTMLImageElement, crop: CropType): Promise<string>
   const scaleX = image.naturalWidth / image.width;
   const scaleY = image.naturalHeight / image.height;
   
+  // Correctly calculate the dimensions and position of the crop on the original image
   const cropX = crop.x * scaleX;
   const cropY = crop.y * scaleY;
   const cropWidth = crop.width * scaleX;
@@ -51,6 +52,7 @@ function getCroppedImg(image: HTMLImageElement, crop: CropType): Promise<string>
       return Promise.reject('Could not get canvas context');
   }
 
+  // Draw the cropped portion of the original image onto the canvas
   ctx.drawImage(
     image,
     cropX,
@@ -64,6 +66,7 @@ function getCroppedImg(image: HTMLImageElement, crop: CropType): Promise<string>
   );
 
   return new Promise((resolve) => {
+    // Return the cropped image as a data URL
     resolve(canvas.toDataURL('image/jpeg'));
   });
 }
@@ -98,9 +101,13 @@ function CroppingView({
   }
 
   const handleConfirmCrop = async () => {
-    if (completedCrop && imgRef.current) {
-      const croppedDataUrl = await getCroppedImg(imgRef.current, completedCrop);
-      onConfirm(croppedDataUrl);
+    if (completedCrop && completedCrop.width > 0 && completedCrop.height > 0 && imgRef.current) {
+        try {
+            const croppedDataUrl = await getCroppedImg(imgRef.current, completedCrop);
+            onConfirm(croppedDataUrl);
+        } catch (e) {
+            console.error("Error cropping image:", e);
+        }
     }
   };
 
@@ -123,7 +130,7 @@ function CroppingView({
                 width={800}
                 height={600}
                 onLoad={onImageLoad}
-                style={{ objectFit: 'contain', maxHeight: '60vh' }}
+                style={{ maxHeight: '60vh', objectFit: 'contain' }}
               />
             </ReactCrop>
           )}
