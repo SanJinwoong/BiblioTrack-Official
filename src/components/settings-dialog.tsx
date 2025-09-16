@@ -27,7 +27,7 @@ import { Input } from './ui/input';
 import { useForm, useForm as useHookForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
 import { PlusCircle, Trash2, Edit, X, Search, UserX, UserCheck, Settings as SettingsIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import Image from 'next/image';
@@ -358,5 +358,3 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
     </Dialog>
   );
 }
-
-    
