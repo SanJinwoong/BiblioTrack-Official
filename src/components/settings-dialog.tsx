@@ -59,7 +59,6 @@ const policySchema = z.object({
 export function SettingsDialog({ open, onOpenChange, books, categories, setCategories, onEditBook, onDeleteBook, users, onUserStatusChange }: SettingsDialogProps) {
   const { toast } = useToast();
   const [bookSearchTerm, setBookSearchTerm] = useState('');
-  const [userSearchTerm, setUserSearchTerm] = useState('');
   
   const categoryForm = useForm({
     resolver: zodResolver(categorySchema),
@@ -125,14 +124,6 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
     book.author.toLowerCase().includes(bookSearchTerm.toLowerCase())
   );
 
-  const filteredUsers = users.filter(user =>
-    user.role === 'client' && 
-    (user.name?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-     user.email?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-     user.username.toLowerCase().includes(userSearchTerm.toLowerCase()))
-  );
-
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-4xl max-h-[80vh] flex flex-col p-0">
@@ -144,10 +135,9 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
         </DialogHeader>
         <div className="flex-1 overflow-y-auto p-6">
           <Tabs defaultValue="books">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="books">Gestionar Libros</TabsTrigger>
               <TabsTrigger value="categories">Gestionar Categorías</TabsTrigger>
-              <TabsTrigger value="users">Gestionar Cuentas</TabsTrigger>
               <TabsTrigger value="policies">Políticas</TabsTrigger>
             </TabsList>
             <TabsContent value="books" className="mt-4">
@@ -251,64 +241,6 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
                 </CardContent>
               </Card>
             </TabsContent>
-            <TabsContent value="users" className="mt-4">
-                <Card>
-                     <CardHeader className="p-4">
-                        <div className="relative">
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            placeholder="Buscar usuario por nombre o correo..."
-                            value={userSearchTerm}
-                            onChange={(e) => setUserSearchTerm(e.target.value)}
-                            className="pl-10"
-                          />
-                        </div>
-                    </CardHeader>
-                     <CardContent className="p-4 pt-0 space-y-2 max-h-[50vh] overflow-y-auto">
-                        {filteredUsers.map(user => (
-                            <div key={user.id} className="flex items-center justify-between gap-4 p-2 rounded-md hover:bg-muted/50">
-                                <div>
-                                    <p className="font-semibold">{user.name}</p>
-                                    <p className="text-sm text-muted-foreground">{user.email}</p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    {user.status === 'deactivated' ? (
-                                        <Badge variant="destructive">Desactivada</Badge>
-                                    ) : (
-                                        <Badge variant="secondary" className="bg-green-100 text-green-800">Activa</Badge>
-                                    )}
-
-                                    {user.status === 'deactivated' ? (
-                                        <Button
-                                            variant="default"
-                                            size="sm"
-                                            className="bg-green-600 hover:bg-green-700"
-                                            onClick={() => onUserStatusChange(user.id, true)}
-                                        >
-                                            <UserCheck className="mr-2 h-4 w-4" />
-                                            Reactivar
-                                        </Button>
-                                    ) : (
-                                        <Button 
-                                            variant="destructive" 
-                                            size="sm"
-                                            onClick={() => onUserStatusChange(user.id, false)}
-                                        >
-                                            <UserX className="mr-2 h-4 w-4" />
-                                            Desactivar
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                         {filteredUsers.length === 0 && (
-                            <div className="text-center text-muted-foreground py-8">
-                                <p>No se encontraron usuarios.</p>
-                            </div>
-                         )}
-                    </CardContent>
-                </Card>
-            </TabsContent>
             <TabsContent value="policies" className="mt-4">
               <Card>
                 <CardHeader>
@@ -358,5 +290,3 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
     </Dialog>
   );
 }
-
-    
