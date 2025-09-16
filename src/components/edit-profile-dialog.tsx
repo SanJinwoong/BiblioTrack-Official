@@ -36,8 +36,7 @@ const formSchema = z.object({
 async function getCroppedImg(
   image: HTMLImageElement,
   crop: CropType,
-  scale = 1,
-  rotate = 0
+  scale = 1
 ): Promise<string> {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -48,7 +47,7 @@ async function getCroppedImg(
 
   const scaleX = image.naturalWidth / image.width;
   const scaleY = image.naturalHeight / image.height;
-  
+
   canvas.width = crop.width;
   canvas.height = crop.height;
 
@@ -59,11 +58,10 @@ async function getCroppedImg(
 
   const centerX = image.naturalWidth / 2;
   const centerY = image.naturalHeight / 2;
-  
+
   ctx.save();
   ctx.translate(-cropX, -cropY);
   ctx.translate(centerX, centerY);
-  ctx.rotate((rotate * Math.PI) / 180);
   ctx.scale(scale, scale);
   ctx.translate(-centerX, -centerY);
   ctx.drawImage(
@@ -71,7 +69,7 @@ async function getCroppedImg(
     0,
     0,
     image.naturalWidth,
-    image.naturalHeight,
+    image.naturalHeight
   );
 
   ctx.restore();
@@ -112,7 +110,7 @@ function CroppingView({
   const handleConfirmCrop = async () => {
     if (completedCrop && completedCrop.width > 0 && completedCrop.height > 0 && imgRef.current) {
         try {
-            const croppedDataUrl = await getCroppedImg(imgRef.current, completedCrop, scale, rotate);
+            const croppedDataUrl = await getCroppedImg(imgRef.current, completedCrop, scale);
             onConfirm(croppedDataUrl);
         } catch (e) {
             console.error("Error cropping image:", e);
