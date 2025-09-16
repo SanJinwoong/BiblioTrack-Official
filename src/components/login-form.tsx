@@ -50,6 +50,7 @@ export function LoginForm() {
 
     try {
       const usersRef = collection(db, 'users');
+      // Create a query against the collection.
       const q = query(usersRef, where('username', '==', username));
       
       const querySnapshot = await getDocs(q);
