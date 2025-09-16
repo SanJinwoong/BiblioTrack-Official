@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -32,39 +33,41 @@ const formSchema = z.object({
 
 // Helper to get the cropped image as a data URL
 function getCroppedImg(image: HTMLImageElement, crop: CropType): Promise<string> {
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   const scaleX = image.naturalWidth / image.width;
   const scaleY = image.naturalHeight / image.height;
-  canvas.width = crop.width;
-  canvas.height = crop.height;
-  const ctx = canvas.getContext('2d');
+  
+  const cropX = crop.x * scaleX;
+  const cropY = crop.y * scaleY;
+  const cropWidth = crop.width * scaleX;
+  const cropHeight = crop.height * scaleY;
+
+  canvas.width = cropWidth;
+  canvas.height = cropHeight;
+  
+  const ctx = canvas.getContext("2d");
 
   if (!ctx) {
       return Promise.reject('Could not get canvas context');
   }
 
-  const pixelRatio = window.devicePixelRatio;
-  canvas.width = crop.width * pixelRatio;
-  canvas.height = crop.height * pixelRatio;
-  ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-  ctx.imageSmoothingQuality = 'high';
-
   ctx.drawImage(
     image,
-    crop.x * scaleX,
-    crop.y * scaleY,
-    crop.width * scaleX,
-    crop.height * scaleY,
+    cropX,
+    cropY,
+    cropWidth,
+    cropHeight,
     0,
     0,
-    crop.width,
-    crop.height
+    cropWidth,
+    cropHeight
   );
 
   return new Promise((resolve) => {
     resolve(canvas.toDataURL('image/jpeg'));
   });
 }
+
 
 // Optimized Cropping Component
 function CroppingView({
