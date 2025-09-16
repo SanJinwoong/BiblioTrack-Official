@@ -33,8 +33,18 @@ export function ClientHeader({ username, searchTerm, setSearchTerm }: ClientHead
 
   const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    // In a real app, you might want to navigate to a search results page
+    // or trigger a search action here.
     console.log("Searching for:", searchTerm);
   }
+
+  const handleScrollTo = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-sm">
@@ -47,18 +57,24 @@ export function ClientHeader({ username, searchTerm, setSearchTerm }: ClientHead
             </span>
           </Link>
         </div>
-        <div className="flex flex-1 items-center justify-center space-x-2 md:space-x-4 max-w-lg w-full">
-            <form onSubmit={handleSearchSubmit} className="relative w-full">
+
+        <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
+            <Button variant="link" className="text-muted-foreground hover:text-primary p-0" onClick={() => handleScrollTo('my-activity')}>Mi Actividad</Button>
+            <Button variant="link" className="text-muted-foreground hover:text-primary p-0" onClick={() => handleScrollTo('browse-categories')}>Explorar</Button>
+            <Button variant="link" className="text-muted-foreground hover:text-primary p-0" onClick={() => handleScrollTo('recommendations')}>Recomendaciones</Button>
+        </nav>
+
+        <div className="flex flex-1 items-center justify-end space-x-2 md:space-x-4">
+            <form onSubmit={handleSearchSubmit} className="relative w-full max-w-xs">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                    placeholder="Buscar libros por título o autor..."
-                    className="pl-9 h-10 rounded-full bg-muted border-0 focus-visible:ring-primary"
+                    placeholder="Buscar libros..."
+                    className="pl-9 h-9 rounded-full bg-muted border-0 focus-visible:ring-primary"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </form>
-        </div>
-         <div className="flex flex-1 items-center justify-end">
+         
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full">
