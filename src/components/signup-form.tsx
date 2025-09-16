@@ -30,8 +30,8 @@ import type { User as UserType } from '@/lib/types';
 import { Library } from '@/components/icons/uat-logo';
 import { db } from '@/lib/firebase';
 
-
 const studentEmailRegex = /^a\d{10}@alumnos\.uat\.edu\.mx$/;
+const ADMIN_REGISTRATION_CODE = 'SUPER_SECRET_CODE';
 
 const baseSchema = z.object({
     password: z.string().min(6, {
@@ -47,16 +47,16 @@ const clientSchema = baseSchema.extend({
     curp: z.string().min(1, { message: "La CURP es obligatoria." }),
     phone: z.string().min(1, { message: "El teléfono es obligatorio." }),
     address: z.string().min(1, { message: "La dirección es obligatoria." }),
-    username: z.string().optional(),
-    librarianId: z.string().optional(),
 });
 
 const librarianSchema = baseSchema.extend({
     username: z.string().min(2, {
         message: 'El nombre de usuario debe tener al menos 2 caracteres.',
     }),
-    email: z.string().email().optional(),
-    librarianId: z.string().min(1, { message: "Por favor ingrese su ID de bibliotecario."}),
+    email: z.string().email({ message: "Por favor ingrese un correo válido."}),
+    adminCode: z.string().refine(code => code === ADMIN_REGISTRATION_CODE, {
+        message: "El código de registro de administrador no es válido."
+    }),
 });
 
 
@@ -81,7 +81,7 @@ export function SignUpForm() {
       username: '',
       email: '',
       password: '',
-      librarianId: '',
+      adminCode: '',
       name: '',
       curp: '',
       phone: '',
@@ -98,7 +98,6 @@ export function SignUpForm() {
     
     if (role === 'client') {
         const clientValues = values as z.infer<typeof clientSchema>;
-        // The username for login will be the matricula (e.g., a1234567890)
         usernameToRegister = clientValues.email.split('@')[0];
         newUser = {
             username: usernameToRegister,
@@ -118,7 +117,7 @@ export function SignUpForm() {
             username: usernameToRegister,
             password: librarianValues.password,
             role: 'librarian',
-            email: librarianValues.email || `${usernameToRegister}@library.com`,
+            email: librarianValues.email,
             status: 'active',
         };
     }
@@ -207,7 +206,20 @@ export function SignUpForm() {
                     <FormItem>
                       <FormLabel>Nombre de usuario</FormLabel>
                       <FormControl>
-                        <Input placeholder="ej. admin" {...field} />
+                        <Input placeholder="ej. bibliotecario2" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Correo electrónico</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="tu@correo.com" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -215,12 +227,12 @@ export function SignUpForm() {
                 />
                  <FormField
                  control={form.control}
-                 name="librarianId"
+                 name="adminCode"
                  render={({ field }) => (
                    <FormItem>
-                     <FormLabel>ID de Bibliotecario</FormLabel>
+                     <FormLabel>Código de Registro de Administrador</FormLabel>
                      <FormControl>
-                       <Input placeholder="Ingresa tu ID de personal" {...field} />
+                       <Input type="password" placeholder="Ingresa el código secreto" {...field} />
                      </FormControl>
                      <FormMessage />
                    </FormItem>
@@ -257,3 +269,5 @@ export function SignUpForm() {
     </>
   );
 }
+
+    
