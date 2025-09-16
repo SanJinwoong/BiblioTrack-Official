@@ -368,7 +368,7 @@ export function CheckoutForm({ book, username, role, onSuccess, onCancel }: Chec
           <Button type="button" variant="ghost" onClick={onCancel}>
             Cancelar
           </Button>
-          <Button type="submit" form="checkout-form" disabled={users.length === 0}>
+          <Button type="submit" form="checkout-form">
               Confirmar
           </Button>
         </div>

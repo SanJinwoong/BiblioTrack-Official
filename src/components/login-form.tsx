@@ -118,7 +118,7 @@ export function LoginForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" size="lg" className="w-full mt-4" disabled={users.length === 0}>
+        <Button type="submit" size="lg" className="w-full mt-4">
           <LogIn className="mr-2 h-4 w-4" />
           Entrar
         </Button>
