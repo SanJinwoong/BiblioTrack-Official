@@ -6,11 +6,9 @@ import { useRouter } from 'next/navigation';
 import { ClientDashboard } from '@/components/client-dashboard';
 import { LibrarianDashboard } from '@/components/librarian-dashboard';
 import { Skeleton } from '@/components/ui/skeleton';
-import { DashboardHeader } from '@/components/dashboard-header';
 
 export default function DashboardPage() {
   const [role, setRole] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
@@ -19,11 +17,10 @@ export default function DashboardPage() {
       router.push('/');
     } else {
       setRole(userRole);
-      setLoading(false);
     }
   }, [router]);
 
-  if (loading) {
+  if (!role) {
     return (
       <div className="flex flex-col min-h-screen">
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

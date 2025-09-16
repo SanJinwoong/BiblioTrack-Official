@@ -266,7 +266,7 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
                     </CardHeader>
                      <CardContent className="p-4 pt-0 space-y-2 max-h-[50vh] overflow-y-auto">
                         {filteredUsers.map(user => (
-                            <div key={user.username} className="flex items-center justify-between gap-4 p-2 rounded-md hover:bg-muted/50">
+                            <div key={user.id} className="flex items-center justify-between gap-4 p-2 rounded-md hover:bg-muted/50">
                                 <div>
                                     <p className="font-semibold">{user.name}</p>
                                     <p className="text-sm text-muted-foreground">{user.email}</p>

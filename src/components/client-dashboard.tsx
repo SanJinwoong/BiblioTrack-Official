@@ -60,8 +60,7 @@ export function ClientDashboard() {
         const userList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
         setUsers(userList);
         
-        const fullUsername = storedUsername.includes('@') ? storedUsername : `${storedUsername}@alumnos.uat.edu.mx`;
-        const currentUser = userList.find((u: User) => u.username === fullUsername);
+        const currentUser = userList.find((u: User) => u.username === storedUsername);
         setUser(currentUser || null);
       }),
     ];
@@ -136,7 +135,8 @@ export function ClientDashboard() {
 
 
   if (user && user.status === 'deactivated') {
-    return <RestrictedView user={user} checkouts={userCheckouts.filter(c => c.id !== undefined)} />;
+    const userCheckoutsWithId = userCheckouts.filter((c): c is BookType & Checkout & { id: string } => !!c.id);
+    return <RestrictedView user={user} checkouts={userCheckoutsWithId} />;
   }
 
   return (

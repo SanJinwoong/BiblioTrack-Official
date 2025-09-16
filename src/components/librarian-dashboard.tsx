@@ -39,6 +39,9 @@ export function LibrarianDashboard() {
   const { toast } = useToast();
   
   useEffect(() => {
+    const storedUsername = localStorage.getItem('userUsername') || '';
+    setUsername(storedUsername);
+
     const unsubscribes = [
       onSnapshot(collection(db, 'books'), snapshot => {
         setBooks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BookType)))
@@ -193,7 +196,7 @@ export function LibrarianDashboard() {
   };
 
   const handleUserStatusChange = async (userId: string, reactivate: boolean) => {
-    const user = users.find(u => u.username === userId);
+    const user = users.find(u => u.username === userId || u.id === userId);
     if (!user) return;
     const userRef = doc(db, "users", user.id);
     await updateDoc(userRef, { status: reactivate ? 'active' : 'deactivated' });

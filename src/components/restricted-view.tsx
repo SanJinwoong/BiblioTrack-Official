@@ -10,7 +10,7 @@ import { isPast, parseISO } from 'date-fns';
 
 interface RestrictedViewProps {
   user: User;
-  checkouts: (Book & Checkout)[];
+  checkouts: (Book & Checkout & { id: string })[];
 }
 
 export function RestrictedView({ user, checkouts }: RestrictedViewProps) {
