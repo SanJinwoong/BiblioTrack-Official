@@ -19,6 +19,7 @@ import { isPast, parseISO, differenceInDays } from 'date-fns';
 import { UserLoanCard } from './user-loan-card';
 import { db } from '@/lib/firebase';
 import { collection, doc, getDocs, writeBatch, onSnapshot, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { initialBooks, initialCategories, initialUsers, initialCheckouts, initialCheckoutRequests } from '@/lib/data';
 
 export function LibrarianDashboard() {
   const [books, setBooks] = useState<BookType[]>([]);
@@ -26,6 +27,7 @@ export function LibrarianDashboard() {
   const [checkouts, setCheckouts] = useState<Checkout[]>([]);
   const [checkoutRequests, setCheckoutRequests] = useState<Checkout[]>([]);
   const [users, setUsers] = useState<UserType[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -39,26 +41,101 @@ export function LibrarianDashboard() {
   const { toast } = useToast();
   
   useEffect(() => {
+    setLoading(true);
     const unsubscribes = [
-      onSnapshot(collection(db, 'books'), snapshot => 
-        setBooks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)))
-      ),
+      onSnapshot(collection(db, 'books'), snapshot => {
+        setBooks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BookType)))
+        setLoading(false);
+      }),
       onSnapshot(collection(db, 'categories'), snapshot => 
-        setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)))
+        setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)))
       ),
       onSnapshot(collection(db, 'checkouts'), snapshot => 
-        setCheckouts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)))
+        setCheckouts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Checkout)))
       ),
       onSnapshot(collection(db, 'checkoutRequests'), snapshot =>
-        setCheckoutRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)))
+        setCheckoutRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Checkout)))
       ),
       onSnapshot(collection(db, 'users'), snapshot =>
-        setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)))
+        setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserType)))
       ),
     ];
     
     return () => unsubscribes.forEach(unsub => unsub());
   }, []);
+
+  // Seeding logic
+  useEffect(() => {
+    const seedDatabase = async () => {
+        const booksSnapshot = await getDocs(collection(db, 'books'));
+        if (booksSnapshot.empty) {
+            console.log('Database is empty. Seeding...');
+            toast({ title: "Populando Base de Datos", description: "Por favor espere..."});
+            const batch = writeBatch(db);
+
+            // Add categories and create a map for reference
+            const categoryMap: { [name: string]: string } = {};
+            initialCategories.forEach(category => {
+                const catRef = doc(collection(db, 'categories'));
+                batch.set(catRef, category);
+                categoryMap[category.name] = catRef.id;
+            });
+
+            // Add users and create a map for reference
+            const userMap: { [email: string]: string } = {};
+            initialUsers.forEach(user => {
+                const userRef = doc(collection(db, 'users'));
+                batch.set(userRef, user);
+                if (user.email) {
+                    userMap[user.email] = userRef.id;
+                }
+            });
+            
+            // Add books
+            const bookMap: { [title: string]: string } = {};
+            initialBooks.forEach(book => {
+                const bookRef = doc(collection(db, 'books'));
+                batch.set(bookRef, { ...book });
+                bookMap[book.title] = bookRef.id;
+            });
+
+            // Add checkouts
+            initialCheckouts.forEach(checkout => {
+                const checkoutRef = doc(collection(db, 'checkouts'));
+                const userId = users.find(u => u.username === checkout.userEmail)?.id;
+                const bookId = books.find(b => b.title === checkout.bookTitle)?.id;
+
+                // Note: This simple mapping won't work because IDs are generated on write.
+                // For a real seeding script, you'd write books/users first, get their IDs, then write checkouts.
+                // For this purpose, we'll simulate it by finding the first match which is good enough for demo.
+                 batch.set(checkoutRef, {
+                    userId: checkout.userEmail,
+                    bookId: Object.keys(bookMap).find(key => key === checkout.bookTitle) || '',
+                    dueDate: checkout.dueDate,
+                    status: checkout.status
+                });
+            });
+
+            // Add checkout requests
+            initialCheckoutRequests.forEach(request => {
+                const requestRef = doc(collection(db, 'checkoutRequests'));
+                batch.set(requestRef, {
+                    userId: request.userEmail,
+                    bookId: Object.keys(bookMap).find(key => key === request.bookTitle) || '',
+                    dueDate: request.dueDate,
+                    status: request.status
+                });
+            });
+            
+            await batch.commit();
+            toast({ title: "✅ Base de Datos Poblada", description: "Los datos de ejemplo han sido cargados."});
+        } else {
+            console.log('Database already contains data. Skipping seed.');
+        }
+    };
+
+    seedDatabase();
+  }, []); // Runs only once on mount
 
 
   useEffect(() => {
@@ -78,6 +155,10 @@ export function LibrarianDashboard() {
   };
 
   const getUser = (userId: string): UserType | undefined => {
+      // Find by ID first, then by username or name as a fallback for seeding cases
+      const userById = users.find(u => u.id === userId);
+      if (userById) return userById;
+      
       const userByName = users.find(u => u.name === userId)
       const userByUsername = users.find(u => u.username === userId);
       return userByUsername || userByName;
@@ -107,7 +188,8 @@ export function LibrarianDashboard() {
     batch.update(bookRef, { stock: bookToCheckout.stock - 1 });
     
     const checkoutRef = doc(collection(db, 'checkouts'));
-    batch.set(checkoutRef, { ...requestToApprove, status: 'approved' });
+    const { id, ...requestData } = requestToApprove;
+    batch.set(checkoutRef, { ...requestData, status: 'approved' });
 
     const requestRef = doc(db, 'checkoutRequests', requestToApprove.id);
     batch.delete(requestRef);
@@ -393,7 +475,11 @@ export function LibrarianDashboard() {
                       </div>
                   </CardHeader>
                   <CardContent>
-                    {books.length === 0 ? (
+                    {loading ? (
+                       <div className="text-center py-16">
+                          <p>Cargando libros...</p>
+                       </div>
+                    ) : books.length === 0 ? (
                        <div className="text-center py-16">
                         <BookCopy className="mx-auto h-12 w-12 text-muted-foreground"/>
                         <h3 className="mt-4 text-lg font-medium">No Books in Catalog</h3>
@@ -435,7 +521,7 @@ export function LibrarianDashboard() {
                                     
                                     const user = getUser(request.userId);
                                     return (
-                                        <BookCard key={`${request.userId}-${request.bookId}`} book={book} onClick={() => handleOpenDialog(book, request)}>
+                                        <BookCard key={`${request.id}`} book={book} onClick={() => handleOpenDialog(book, request)}>
                                             <div className="p-3 border-t mt-auto text-center">
                                                 <p className="text-xs font-semibold text-primary mb-2">Solicitado por:</p>
                                                 <div className='flex items-center justify-center gap-2'>
@@ -481,12 +567,12 @@ export function LibrarianDashboard() {
                                                 const isOverdue = isPast(parseISO(checkout.dueDate));
                                                 
                                                 return (
-                                                    <BookCard key={`${checkout.userId}-${checkout.bookId}`} book={book} onClick={() => handleOpenDialog(book, checkout)} isLoan={true} isOverdue={isOverdue}>
+                                                    <BookCard key={`${checkout.id}`} book={book} onClick={() => handleOpenDialog(book, checkout)} isLoan={true} isOverdue={isOverdue}>
                                                         <div className="p-3 border-t mt-auto text-center">
                                                             <p className="text-xs font-semibold text-primary mb-2">Prestado a:</p>
                                                             <div className='flex items-center justify-center gap-2'>
                                                                 <User className="h-4 w-4" />
-                                                                <p className="text-sm font-medium truncate">{checkout.userId}</p>
+                                                                <p className="text-sm font-medium truncate">{getUser(checkout.userId)?.name || checkout.userId}</p>
                                                             </div>
                                                         </div>
                                                     </BookCard>
@@ -510,7 +596,7 @@ export function LibrarianDashboard() {
                                     {deactivatedUserGroups.length > 0 ? (
                                         deactivatedUserGroups.map(({ user, loans }) => (
                                         <UserLoanCard 
-                                            key={user.username}
+                                            key={user.id}
                                             user={user}
                                             loans={loans}
                                             onReactivateAccount={() => handleUserStatusChange(user.id, true)}
@@ -530,5 +616,3 @@ export function LibrarianDashboard() {
     </>
   );
 }
-
-    

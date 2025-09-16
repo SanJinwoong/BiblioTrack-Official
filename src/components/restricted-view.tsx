@@ -3,18 +3,17 @@
 
 import type { User, Book, Checkout } from '@/lib/types';
 import { BookCard } from './book-card';
-import { AlertCircle, User as UserIcon } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { ClientHeader } from './client-header';
 import { isPast, parseISO } from 'date-fns';
 
 interface RestrictedViewProps {
   user: User;
-  checkouts: (Book & { dueDate: string; status: Checkout['status'] })[];
+  checkouts: (Book & Checkout)[];
 }
 
 export function RestrictedView({ user, checkouts }: RestrictedViewProps) {
-
   const overdueCheckouts = checkouts.filter(c => isPast(parseISO(c.dueDate)));
 
   return (
@@ -43,15 +42,13 @@ export function RestrictedView({ user, checkouts }: RestrictedViewProps) {
                 {overdueCheckouts.length > 0 ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {overdueCheckouts.map((book) => (
-                      book.id ? (
-                        <BookCard 
-                          key={`overdue-${book.id}`} 
-                          book={book as Book} 
-                          isLoan={true} 
-                          isOverdue={true} 
-                          className="cursor-default"
-                        />
-                      ) : null
+                      <BookCard 
+                        key={`overdue-${book.id}`} 
+                        book={book as Book} 
+                        isLoan={true} 
+                        isOverdue={true} 
+                        className="cursor-default"
+                      />
                     ))}
                   </div>
                 ) : (

@@ -7,12 +7,12 @@ import { LoginForm } from '@/components/login-form';
 import { SignUpForm } from '@/components/signup-form';
 import { Button } from '@/components/ui/button';
 import { Library } from '@/components/icons/uat-logo';
-import { books } from '@/lib/data';
+import { initialBooks } from '@/lib/data';
 
 export default function AuthPage() {
   const [view, setView] = useState<'login' | 'signup'>('login');
 
-  const featuredBooks = books.slice(0, 3);
+  const featuredBooks = initialBooks.slice(0, 3);
 
   return (
     <main className="grid grid-cols-1 md:grid-cols-2 min-h-screen bg-background text-foreground">
