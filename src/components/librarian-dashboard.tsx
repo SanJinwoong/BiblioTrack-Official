@@ -41,51 +41,28 @@ export function LibrarianDashboard() {
   
   useEffect(() => {
     // This effect runs once on component mount to safely initialize state from localStorage.
-    let storedBooks = localStorage.getItem('books');
-    let storedCategories = localStorage.getItem('categories');
-    let storedCheckouts = localStorage.getItem('checkouts');
-    let storedCheckoutRequests = localStorage.getItem('checkoutRequests');
-    let storedUsers = localStorage.getItem('users');
-    
-    const isDataMismatched = storedBooks && JSON.parse(storedBooks).length !== initialBooks.length;
-    
-    if (!storedBooks || isDataMismatched) {
-      storedBooks = JSON.stringify(initialBooks);
-      localStorage.setItem('books', storedBooks);
-    }
-    if (!storedCategories || isDataMismatched) {
-      storedCategories = JSON.stringify(initialCategories);
-      localStorage.setItem('categories', storedCategories);
-    }
-    if (!storedCheckouts || isDataMismatched) {
-      storedCheckouts = JSON.stringify(initialCheckouts);
-      localStorage.setItem('checkouts', storedCheckouts);
-    }
-    if (!storedCheckoutRequests || isDataMismatched) {
-      storedCheckoutRequests = JSON.stringify(initialCheckoutRequests);
-      localStorage.setItem('checkoutRequests', storedCheckoutRequests);
-    }
-    if (!storedUsers || isDataMismatched) {
-      storedUsers = JSON.stringify(initialUsers);
-      localStorage.setItem('users', storedUsers);
-    }
+    const storedBooks = localStorage.getItem('books');
+    const storedCategories = localStorage.getItem('categories');
+    const storedCheckouts = localStorage.getItem('checkouts');
+    const storedCheckoutRequests = localStorage.getItem('checkoutRequests');
+    const storedUsers = localStorage.getItem('users');
 
-    setBooks(JSON.parse(storedBooks));
-    setCategories(JSON.parse(storedCategories));
-    setCheckouts(JSON.parse(storedCheckouts));
-    setCheckoutRequests(JSON.parse(storedCheckoutRequests));
-    setUsers(JSON.parse(storedUsers));
-
+    setBooks(storedBooks ? JSON.parse(storedBooks) : initialBooks);
+    setCategories(storedCategories ? JSON.parse(storedCategories) : initialCategories);
+    setCheckouts(storedCheckouts ? JSON.parse(storedCheckouts) : initialCheckouts);
+    setCheckoutRequests(storedCheckoutRequests ? JSON.parse(storedCheckoutRequests) : initialCheckoutRequests);
+    setUsers(storedUsers ? JSON.parse(storedUsers) : initialUsers);
+    
     const storedUsername = localStorage.getItem('userUsername') || '';
     setUsername(storedUsername);
   }, []);
 
 
-  useEffect(() => { if (books.length > 0) localStorage.setItem('books', JSON.stringify(books)); }, [books]);
-  useEffect(() => { if (categories.length > 0) localStorage.setItem('categories', JSON.stringify(categories)); }, [categories]);
+  useEffect(() => { localStorage.setItem('books', JSON.stringify(books)); }, [books]);
+  useEffect(() => { localStorage.setItem('categories', JSON.stringify(categories)); }, [categories]);
   useEffect(() => { localStorage.setItem('checkouts', JSON.stringify(checkouts)); }, [checkouts]);
   useEffect(() => { localStorage.setItem('checkoutRequests', JSON.stringify(checkoutRequests)); }, [checkoutRequests]);
-  useEffect(() => { if (users.length > 0) localStorage.setItem('users', JSON.stringify(users)); }, [users]);
+  useEffect(() => { localStorage.setItem('users', JSON.stringify(users)); }, [users]);
 
 
   useEffect(() => {
@@ -437,3 +414,5 @@ export function LibrarianDashboard() {
     </>
   );
 }
+
+    
