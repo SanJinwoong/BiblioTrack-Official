@@ -38,52 +38,57 @@ const formSchema = z.object({
 async function getCroppedImg(
   image: HTMLImageElement,
   crop: CropType,
-  scale: number = 1
+  scale = 1,
+  rotate = 0
 ): Promise<string> {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
 
-    if (!ctx) {
-        throw new Error('Could not get canvas context');
-    }
+  if (!ctx) {
+    throw new Error('No 2d context');
+  }
 
-    const scaleX = image.naturalWidth / image.width;
-    const scaleY = image.naturalHeight / image.height;
-    
-    // devicePixelRatio slightly increases sharpness on high-res screens
-    const pixelRatio = window.devicePixelRatio || 1;
+  const scaleX = image.naturalWidth / image.width;
+  const scaleY = image.naturalHeight / image.height;
+  // devicePixelRatio slightly increases sharpness on high-res screens
+  const pixelRatio = window.devicePixelRatio;
 
-    canvas.width = Math.floor(crop.width * scaleX * pixelRatio);
-    canvas.height = Math.floor(crop.height * scaleY * pixelRatio);
+  canvas.width = Math.floor(crop.width * scaleX * pixelRatio);
+  canvas.height = Math.floor(crop.height * scaleY * pixelRatio);
 
-    ctx.scale(pixelRatio, pixelRatio);
-    ctx.imageSmoothingQuality = 'high';
-    
-    const cropX = crop.x * scaleX;
-    const cropY = crop.y * scaleY;
+  ctx.scale(pixelRatio, pixelRatio);
+  ctx.imageSmoothingQuality = 'high';
 
-    const centerX = image.naturalWidth / 2;
-    const centerY = image.naturalHeight / 2;
+  const cropX = crop.x * scaleX;
+  const cropY = crop.y * scaleY;
 
-    ctx.save();
-    
-    // Translate and scale to simulate zoom and pan
-    ctx.translate(
-        -cropX,
-        -cropY
-    );
-    
-    ctx.drawImage(
-      image,
-      0,
-      0,
-      image.naturalWidth,
-      image.naturalHeight,
-    );
+  const rotateRads = (rotate * Math.PI) / 180;
+  const centerX = image.naturalWidth / 2;
+  const centerY = image.naturalHeight / 2;
 
-    ctx.restore();
+  ctx.save();
 
-    return canvas.toDataURL('image/jpeg', 0.95);
+  // 5) Move the crop origin to the canvas origin (0,0)
+  ctx.translate(-cropX, -cropY);
+  // 4) Move the origin to the center of the original position
+  ctx.translate(centerX, centerY);
+  // 3) Rotate around the origin
+  ctx.rotate(rotateRads);
+  // 2) Scale the image
+  ctx.scale(scale, scale);
+  // 1) Move the center of the image to the origin (0,0)
+  ctx.translate(-centerX, -centerY);
+  ctx.drawImage(
+    image,
+    0,
+    0,
+    image.naturalWidth,
+    image.naturalHeight
+  );
+
+  ctx.restore();
+
+  return canvas.toDataURL('image/jpeg', 0.95);
 }
 
 
@@ -121,7 +126,7 @@ function CroppingView({
   const handleConfirmCrop = async () => {
     if (completedCrop && completedCrop.width > 0 && completedCrop.height > 0 && imgRef.current) {
         try {
-            const croppedDataUrl = await getCroppedImg(imgRef.current, completedCrop, scale);
+            const croppedDataUrl = await getCroppedImg(imgRef.current, completedCrop, scale, rotate);
             onConfirm(croppedDataUrl);
         } catch (e) {
             console.error("Error cropping image:", e);
@@ -165,7 +170,7 @@ function CroppingView({
         <Slider
           defaultValue={[1]}
           value={[scale]}
-          min={0.5}
+          min={0.1}
           max={4}
           step={0.01}
           onValueChange={(value) => setScale(value[0])}
@@ -328,5 +333,3 @@ export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }:
     </Dialog>
   );
 }
-
-    
