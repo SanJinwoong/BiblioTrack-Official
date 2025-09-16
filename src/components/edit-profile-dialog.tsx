@@ -20,7 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { User } from '@/lib/types';
 import Image from 'next/image';
-import { Camera, Crop, X } from 'lucide-react';
+import { Camera } from 'lucide-react';
 import React, { useEffect, useState, useRef } from 'react';
 import ReactCrop, { type Crop as CropType, centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
@@ -30,15 +30,8 @@ const formSchema = z.object({
   bio: z.string().optional(),
 });
 
-interface EditProfileDialogProps {
-  user: User;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onProfileUpdate: (data: Partial<User> & { newAvatarUrl?: string, newBannerUrl?: string }) => void;
-}
-
 // Helper to get the cropped image as a data URL
-function getCroppedImg(image: HTMLImageElement, crop: CropType, fileName: string): Promise<string> {
+function getCroppedImg(image: HTMLImageElement, crop: CropType): Promise<string> {
   const canvas = document.createElement('canvas');
   const scaleX = image.naturalWidth / image.width;
   const scaleY = image.naturalHeight / image.height;
@@ -73,18 +66,80 @@ function getCroppedImg(image: HTMLImageElement, crop: CropType, fileName: string
   });
 }
 
+// Optimized Cropping Component
+function CroppingView({
+  imgSrc,
+  aspect,
+  isCircular,
+  onConfirm,
+  onCancel,
+}: {
+  imgSrc: string;
+  aspect: number;
+  isCircular: boolean;
+  onConfirm: (dataUrl: string) => void;
+  onCancel: () => void;
+}) {
+  const [crop, setCrop] = useState<CropType>();
+  const [completedCrop, setCompletedCrop] = useState<CropType>();
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
+    const { width, height } = e.currentTarget;
+    const newCrop = centerCrop(
+      makeAspectCrop({ unit: '%', width: 90 }, aspect, width, height),
+      width,
+      height
+    );
+    setCrop(newCrop);
+  }
+
+  const handleConfirmCrop = async () => {
+    if (completedCrop && imgRef.current) {
+      const croppedDataUrl = await getCroppedImg(imgRef.current, completedCrop);
+      onConfirm(croppedDataUrl);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <h3 className="text-lg font-medium">Recortar Imagen</h3>
+      {imgSrc && (
+        <ReactCrop
+          crop={crop}
+          onChange={(_, percentCrop) => setCrop(percentCrop)}
+          onComplete={(c) => setCompletedCrop(c)}
+          aspect={aspect}
+          circularCrop={isCircular}
+        >
+          <Image
+            ref={imgRef}
+            alt="Crop preview"
+            src={imgSrc}
+            width={500}
+            height={500}
+            onLoad={onImageLoad}
+            className="max-h-[60vh] w-auto"
+          />
+        </ReactCrop>
+      )}
+      <div className="flex justify-end gap-2">
+        <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
+        <Button onClick={handleConfirmCrop}>Confirmar Recorte</Button>
+      </div>
+    </div>
+  );
+}
 
 export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }: EditProfileDialogProps) {
   const [avatarPreview, setAvatarPreview] = useState<string | undefined>(user.avatarUrl);
   const [bannerPreview, setBannerPreview] = useState<string | undefined>(user.bannerUrl);
   
-  // Cropping state
-  const [imgSrc, setImgSrc] = useState('');
-  const [crop, setCrop] = useState<CropType>();
-  const [completedCrop, setCompletedCrop] = useState<CropType>();
+  // State for the image that is currently being cropped
+  const [imageToCrop, setImageToCrop] = useState('');
   const [croppingTarget, setCroppingTarget] = useState<'avatar' | 'banner' | null>(null);
-  const imgRef = useRef<HTMLImageElement>(null);
 
+  // State for the final cropped images
   const [croppedAvatar, setCroppedAvatar] = useState<string | null>(null);
   const [croppedBanner, setCroppedBanner] = useState<string | null>(null);
 
@@ -104,56 +159,36 @@ export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }:
       setCroppedAvatar(null);
       setCroppedBanner(null);
       setCroppingTarget(null);
-      setImgSrc('');
+      setImageToCrop('');
     }
   }, [open, user, form]);
 
   const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>, target: 'avatar' | 'banner') => {
     if (e.target.files && e.target.files.length > 0) {
-      setCrop(undefined); // Reset crop on new image
       const reader = new FileReader();
-      reader.addEventListener('load', () => setImgSrc(reader.result?.toString() || ''));
+      reader.addEventListener('load', () => setImageToCrop(reader.result?.toString() || ''));
       reader.readAsDataURL(e.target.files[0]);
       setCroppingTarget(target);
     }
   };
-
-  function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
-    const { width, height } = e.currentTarget;
-    let aspect = 1; // Square for avatar
-    if (croppingTarget === 'banner') {
-      aspect = 16 / 9; // Rectangular for banner
+  
+  const handleConfirmCrop = (croppedDataUrl: string) => {
+    if (croppingTarget === 'avatar') {
+      setCroppedAvatar(croppedDataUrl);
+      setAvatarPreview(croppedDataUrl);
+    } else if (croppingTarget === 'banner') {
+      setCroppedBanner(croppedDataUrl);
+      setBannerPreview(croppedDataUrl);
     }
-    const newCrop = centerCrop(
-      makeAspectCrop(
-        {
-          unit: '%',
-          width: 90,
-        },
-        aspect,
-        width,
-        height
-      ),
-      width,
-      height
-    );
-    setCrop(newCrop);
-  }
-
-  const handleConfirmCrop = async () => {
-    if (completedCrop && imgRef.current) {
-        const croppedDataUrl = await getCroppedImg(imgRef.current, completedCrop, 'cropped.jpg');
-        if (croppingTarget === 'avatar') {
-            setCroppedAvatar(croppedDataUrl);
-            setAvatarPreview(croppedDataUrl);
-        } else if (croppingTarget === 'banner') {
-            setCroppedBanner(croppedDataUrl);
-            setBannerPreview(croppedDataUrl);
-        }
-        setCroppingTarget(null);
-        setImgSrc('');
-    }
+    // Exit cropping mode
+    setCroppingTarget(null);
+    setImageToCrop('');
   };
+
+  const handleCancelCrop = () => {
+    setCroppingTarget(null);
+    setImageToCrop('');
+  }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     onProfileUpdate({
@@ -165,35 +200,6 @@ export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }:
     onOpenChange(false);
   }
   
-  const CroppingView = () => (
-     <div className="space-y-4">
-        <h3 className="text-lg font-medium">Recortar Imagen</h3>
-        {imgSrc && (
-          <ReactCrop
-            crop={crop}
-            onChange={(_, percentCrop) => setCrop(percentCrop)}
-            onComplete={(c) => setCompletedCrop(c)}
-            aspect={croppingTarget === 'avatar' ? 1 : 16 / 9}
-            circularCrop={croppingTarget === 'avatar'}
-          >
-            <Image
-              ref={imgRef}
-              alt="Crop preview"
-              src={imgSrc}
-              width={500}
-              height={500}
-              onLoad={onImageLoad}
-              className="max-h-[60vh] w-auto"
-            />
-          </ReactCrop>
-        )}
-        <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => { setCroppingTarget(null); setImgSrc(''); }}>Cancelar</Button>
-            <Button onClick={handleConfirmCrop}>Confirmar Recorte</Button>
-        </div>
-      </div>
-  );
-
   const EditFormView = () => (
     <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -249,7 +255,15 @@ export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }:
             {croppingTarget ? 'Ajusta tu imagen para que se vea perfecta.' : 'Personaliza tu perfil. Los cambios serán visibles para otros usuarios.'}
           </DialogDescription>
         </DialogHeader>
-        {croppingTarget ? <CroppingView /> : <EditFormView />}
+        {croppingTarget ? (
+            <CroppingView
+                imgSrc={imageToCrop}
+                aspect={croppingTarget === 'avatar' ? 1 : 16 / 9}
+                isCircular={croppingTarget === 'avatar'}
+                onConfirm={handleConfirmCrop}
+                onCancel={handleCancelCrop}
+            />
+        ) : <EditFormView />}
       </DialogContent>
     </Dialog>
   );
