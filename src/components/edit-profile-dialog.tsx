@@ -37,14 +37,20 @@ function getCroppedImg(image: HTMLImageElement, crop: CropType): Promise<string>
   const scaleX = image.naturalWidth / image.width;
   const scaleY = image.naturalHeight / image.height;
   
-  canvas.width = crop.width * scaleX;
-  canvas.height = crop.height * scaleY;
+  canvas.width = crop.width;
+  canvas.height = crop.height;
   
   const ctx = canvas.getContext("2d");
 
   if (!ctx) {
       return Promise.reject('Could not get canvas context');
   }
+
+  const pixelRatio = window.devicePixelRatio;
+  canvas.width = crop.width * pixelRatio;
+  canvas.height = crop.height * pixelRatio;
+  ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  ctx.imageSmoothingQuality = 'high';
 
   ctx.drawImage(
     image,
@@ -54,8 +60,8 @@ function getCroppedImg(image: HTMLImageElement, crop: CropType): Promise<string>
     crop.height * scaleY,
     0,
     0,
-    crop.width * scaleX,
-    crop.height * scaleY
+    crop.width,
+    crop.height
   );
 
   return new Promise((resolve) => {
@@ -122,7 +128,8 @@ function CroppingView({
               width={800}
               height={600}
               onLoad={onImageLoad}
-              style={{ maxHeight: '60vh', objectFit: 'contain' }}
+              className="object-cover"
+              style={{ maxHeight: '60vh' }}
             />
           </ReactCrop>
         )}
