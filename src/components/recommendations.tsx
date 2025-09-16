@@ -15,9 +15,10 @@ import { collection, onSnapshot } from 'firebase/firestore';
 
 interface RecommendationsProps {
   onBookSelect: (book: Book) => void;
+  displayStyle?: 'full' | 'compact';
 }
 
-export function Recommendations({ onBookSelect }: RecommendationsProps) {
+export function Recommendations({ onBookSelect, displayStyle = 'full' }: RecommendationsProps) {
   const [recommendations, setRecommendations] = useState<string[]>([]);
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(false);
@@ -71,6 +72,41 @@ export function Recommendations({ onBookSelect }: RecommendationsProps) {
   };
   
   const recommendedBooks: Book[] = recommendations.map(title => books.find(b => b.title === title)).filter(Boolean) as Book[];
+
+  if (displayStyle === 'compact') {
+      return (
+          <Card>
+              <CardHeader>
+                  <CardTitle className="text-xl font-bold">También te podría gustar</CardTitle>
+              </CardHeader>
+              <CardContent>
+                  <Button onClick={handleGetRecommendations} disabled={loading || !username} className="w-full">
+                      {loading ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                          <Sparkles className="mr-2 h-4 w-4" />
+                      )}
+                      Obtener recomendaciones
+                  </Button>
+                  {loading && <div className="flex justify-center items-center h-24"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}
+                  {error && <p className="text-destructive text-center mt-4">{error}</p>}
+                  {recommendedBooks.length > 0 && (
+                      <div className="space-y-4 mt-4">
+                          {recommendedBooks.slice(0,3).map(book => (
+                              <div key={book.id} className="flex items-center gap-3 cursor-pointer" onClick={() => onBookSelect(book)}>
+                                  <Image src={book.coverUrl} alt={book.title} width={40} height={60} className="rounded-sm object-cover"/>
+                                  <div>
+                                      <p className="text-sm font-medium leading-tight">{book.title}</p>
+                                      <p className="text-xs text-muted-foreground">{book.author}</p>
+                                  </div>
+                              </div>
+                          ))}
+                      </div>
+                  )}
+              </CardContent>
+          </Card>
+      )
+  }
 
   return (
     <div className="w-full bg-muted/50 p-8 rounded-2xl">
