@@ -64,6 +64,47 @@ export function LibrarianDashboard() {
   }, []);
 
   useEffect(() => {
+    // Automatic deactivation logic
+    const checkOverdueAccounts = async () => {
+      const gracePeriod = 7; // days
+      const now = new Date();
+      const overdueUsersToDeactivate = new Set<string>();
+
+      checkouts.forEach(checkout => {
+        const dueDate = parseISO(checkout.dueDate);
+        if (isPast(dueDate) && differenceInDays(now, dueDate) > gracePeriod) {
+          overdueUsersToDeactivate.add(checkout.userId);
+        }
+      });
+      
+      if (overdueUsersToDeactivate.size > 0) {
+        const batch = writeBatch(db);
+        let deactivatedCount = 0;
+        
+        users.forEach(user => {
+          if (overdueUsersToDeactivate.has(user.username) && user.status === 'active') {
+            const userRef = doc(db, 'users', user.id);
+            batch.update(userRef, { status: 'deactivated' });
+            deactivatedCount++;
+          }
+        });
+
+        if (deactivatedCount > 0) {
+          await batch.commit();
+          toast({
+            title: 'Cuentas Desactivadas Automáticamente',
+            description: `${deactivatedCount} cuenta(s) han sido desactivadas por préstamos vencidos.`,
+          });
+        }
+      }
+    };
+
+    checkOverdueAccounts();
+
+  }, [checkouts, users, toast]);
+
+
+  useEffect(() => {
     const results = books.filter(book => {
       const matchesSearch =
         book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -74,13 +74,6 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
     }
   }
 
-  const handleDeactivateUser = () => {
-    if (checkout) {
-      onDeactivateUser(checkout.userId);
-      handleOpenChange(false);
-    }
-  }
-
   const getStockStatus = () => {
     let text;
     let color;
@@ -258,16 +251,10 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
                     </Button>
                 )}
                 {role === 'librarian' && isLoanForLibrarian && !showCheckoutForm && (
-                    <div className='flex justify-between w-full'>
-                      <Button type="button" variant="destructive" onClick={handleDeactivateUser}>
-                          <UserX className="mr-2 h-4 w-4" />
-                          Desactivar Cuenta
-                      </Button>
-                      <Button type="button" onClick={handleReturn}>
-                          <BookCheck className="mr-2 h-4 w-4" />
-                          Marcar como Devuelto
-                      </Button>
-                    </div>
+                    <Button type="button" onClick={handleReturn}>
+                        <BookCheck className="mr-2 h-4 w-4" />
+                        Marcar como Devuelto
+                    </Button>
                 )}
                 {role === 'librarian' && !isPendingRequestForLibrarian && !isLoanForLibrarian && !showCheckoutForm &&(
                     <Button type="button" disabled={book.stock === 0} onClick={() => setShowCheckoutForm(true)}>
