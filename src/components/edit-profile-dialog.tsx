@@ -37,14 +37,8 @@ function getCroppedImg(image: HTMLImageElement, crop: CropType): Promise<string>
   const scaleX = image.naturalWidth / image.width;
   const scaleY = image.naturalHeight / image.height;
   
-  // Correctly calculate the dimensions and position of the crop on the original image
-  const cropX = crop.x * scaleX;
-  const cropY = crop.y * scaleY;
-  const cropWidth = crop.width * scaleX;
-  const cropHeight = crop.height * scaleY;
-
-  canvas.width = cropWidth;
-  canvas.height = cropHeight;
+  canvas.width = crop.width * scaleX;
+  canvas.height = crop.height * scaleY;
   
   const ctx = canvas.getContext("2d");
 
@@ -52,21 +46,19 @@ function getCroppedImg(image: HTMLImageElement, crop: CropType): Promise<string>
       return Promise.reject('Could not get canvas context');
   }
 
-  // Draw the cropped portion of the original image onto the canvas
   ctx.drawImage(
     image,
-    cropX,
-    cropY,
-    cropWidth,
-    cropHeight,
+    crop.x * scaleX,
+    crop.y * scaleY,
+    crop.width * scaleX,
+    crop.height * scaleY,
     0,
     0,
-    cropWidth,
-    cropHeight
+    crop.width * scaleX,
+    crop.height * scaleY
   );
 
   return new Promise((resolve) => {
-    // Return the cropped image as a data URL
     resolve(canvas.toDataURL('image/jpeg'));
   });
 }
@@ -114,27 +106,27 @@ function CroppingView({
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium">Recortar Imagen</h3>
-        <div className="flex justify-center">
-          {imgSrc && (
-            <ReactCrop
-              crop={crop}
-              onChange={(_, percentCrop) => setCrop(percentCrop)}
-              onComplete={(c) => setCompletedCrop(c)}
-              aspect={aspect}
-              circularCrop={isCircular}
-            >
-              <Image
-                ref={imgRef}
-                alt="Crop preview"
-                src={imgSrc}
-                width={800}
-                height={600}
-                onLoad={onImageLoad}
-                style={{ maxHeight: '60vh', objectFit: 'contain' }}
-              />
-            </ReactCrop>
-          )}
-        </div>
+      <div className="flex justify-center">
+        {imgSrc && (
+          <ReactCrop
+            crop={crop}
+            onChange={(_, percentCrop) => setCrop(percentCrop)}
+            onComplete={(c) => setCompletedCrop(c)}
+            aspect={aspect}
+            circularCrop={isCircular}
+          >
+            <Image
+              ref={imgRef}
+              alt="Crop preview"
+              src={imgSrc}
+              width={800}
+              height={600}
+              onLoad={onImageLoad}
+              style={{ maxHeight: '60vh', objectFit: 'contain' }}
+            />
+          </ReactCrop>
+        )}
+      </div>
       <div className="flex justify-end gap-2">
         <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
         <Button onClick={handleConfirmCrop}>Confirmar Recorte</Button>
