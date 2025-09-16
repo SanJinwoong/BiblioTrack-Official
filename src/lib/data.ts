@@ -11,9 +11,9 @@ export const initialUsers: Omit<User, 'id'>[] = [
         role: 'librarian',
         name: 'Librarian Admin',
         email: 'admin@library.com',
-        curp: 'ADMINCURP12345',
-        phone: '123-456-7890',
-        address: 'Library Address, 123',
+        curp: 'ADMINCURP123456',
+        phone: '834-000-0000',
+        address: 'UAT, Centro Universitario Victoria',
         status: 'active',
         avatarUrl: 'https://i.pravatar.cc/150?u=admin'
     },
@@ -189,3 +189,5 @@ export const readingHistory: { [key: string]: string[] } = {
     'a1234567890': ["book4_id", "book6_id"], // Placeholder IDs, to be mapped to real book IDs
     'a0987654321': ["book1_id"],
 };
+
+    
