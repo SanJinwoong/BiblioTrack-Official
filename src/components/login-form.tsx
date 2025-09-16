@@ -40,13 +40,6 @@ export function LoginForm() {
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
 
-  useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'users'), snapshot => {
-      setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
-    });
-    return () => unsubscribe();
-  }, []);
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -55,25 +48,35 @@ export function LoginForm() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    let username = values.emailOrMatricula;
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'users'), snapshot => {
+      setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
+    });
+    return () => unsubscribe();
+  }, []);
 
-    // If user enters just matricula, convert to full email
-    if (matriculaRegex.test(username)) {
-      username = `${username}@alumnos.uat.edu.mx`;
+  function onSubmit(values: z.infer<typeof formSchema>) {
+    const { emailOrMatricula, password } = values;
+    
+    let potentialUsername = emailOrMatricula;
+    if (matriculaRegex.test(emailOrMatricula)) {
+      potentialUsername = `${emailOrMatricula}@alumnos.uat.edu.mx`;
     }
 
-    const user = users.find(u => u.username === username && u.password === values.password);
+    const user = users.find(u => 
+        (u.username === potentialUsername || u.username === emailOrMatricula) && 
+        u.password === password
+    );
+
 
     if (user) {
       localStorage.setItem('userRole', user.role);
-      // For students, store the matricula as the display username
+      
+      let displayUsername = user.username;
       if (user.role === 'client' && studentEmailRegex.test(user.username)) {
-        const matricula = user.username.split('@')[0];
-        localStorage.setItem('userUsername', matricula);
-      } else {
-        localStorage.setItem('userUsername', user.username);
+        displayUsername = user.username.split('@')[0];
       }
+      localStorage.setItem('userUsername', displayUsername);
       
       router.push('/dashboard');
       toast({
