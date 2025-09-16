@@ -55,10 +55,11 @@ export function LoginForm() {
   function onSubmit(values: z.infer<typeof formSchema>) {
     const { username, password } = values;
 
-    // Simple, direct search: Find a user where the username and password match exactly.
-    const user = users.find(u => u.username === username && u.password === password);
+    // Step 1: Find the user by their exact username.
+    const user = users.find(u => u.username === username);
 
-    if (user) {
+    // Step 2: If the user is found, check their password.
+    if (user && user.password === password) {
       localStorage.setItem('userRole', user.role);
       localStorage.setItem('userUsername', user.username);
       
@@ -68,6 +69,7 @@ export function LoginForm() {
         description: 'Has iniciado sesión correctamente.',
       });
     } else {
+        // Step 3: If no user is found, or password doesn't match, show an error.
         toast({
             variant: "destructive",
             title: "❌ Credenciales incorrectas",
@@ -86,7 +88,7 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>Usuario</FormLabel>
               <FormControl>
-                <Input placeholder="admin o a1234567890" {...field} />
+                <Input placeholder="admin o matrícula" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
