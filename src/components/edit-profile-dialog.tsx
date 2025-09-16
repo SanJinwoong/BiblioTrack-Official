@@ -131,7 +131,7 @@ function CroppingView({
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium">Ajustar Imagen</h3>
-       <div className="flex flex-col items-center justify-center bg-muted/50 p-4 rounded-md h-[450px]">
+      <div className="flex flex-col items-center justify-center bg-muted/50 p-4 rounded-md h-[450px]">
         {imgSrc && (
           <ReactCrop
             crop={crop}
