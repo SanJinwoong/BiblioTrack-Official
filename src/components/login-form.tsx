@@ -25,7 +25,7 @@ import { collection, onSnapshot } from 'firebase/firestore';
 
 const formSchema = z.object({
   username: z.string().min(1, {
-    message: 'Por favor ingrese su correo o matrícula.',
+    message: 'Por favor ingrese su usuario.',
   }),
   password: z.string().min(1, {
     message: 'La contraseña no puede estar vacía.',
@@ -55,6 +55,7 @@ export function LoginForm() {
   function onSubmit(values: z.infer<typeof formSchema>) {
     const { username, password } = values;
 
+    // Direct search for a user matching username and password.
     const user = users.find(u => u.username === username && u.password === password);
 
     if (user) {
@@ -83,7 +84,7 @@ export function LoginForm() {
           name="username"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Usuario o Matrícula</FormLabel>
+              <FormLabel>Usuario</FormLabel>
               <FormControl>
                 <Input placeholder="admin o a1234567890" {...field} />
               </FormControl>

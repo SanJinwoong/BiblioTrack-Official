@@ -55,7 +55,7 @@ const librarianSchema = baseSchema.extend({
     username: z.string().min(2, {
         message: 'El nombre de usuario debe tener al menos 2 caracteres.',
     }),
-    email: z.string().optional(),
+    email: z.string().email().optional(),
     librarianId: z.string().min(1, { message: "Por favor ingrese su ID de bibliotecario."}),
 });
 
@@ -117,6 +117,7 @@ export function SignUpForm() {
             username: usernameToRegister,
             password: librarianValues.password,
             role: 'librarian',
+            email: librarianValues.email || `${usernameToRegister}@library.com`,
             status: 'active',
         };
     }
