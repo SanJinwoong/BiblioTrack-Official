@@ -55,18 +55,15 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
     onOpenChange(false); 
   }
 
-  const handleApprove = async () => {
+  const handleApprove = () => {
     if (checkout && onApproveRequest) {
-      setIsProcessing(true);
-      try {
-        await onApproveRequest(checkout);
-        handleOpenChange(false); // Close dialog on success
-      } catch (error) {
-        console.error("Failed to approve request:", error);
-        // Optionally show a toast message here
-      } finally {
-        setIsProcessing(false);
-      }
+      setIsProcessing(true); // Visually disable the button immediately
+      
+      // Don't await this. Let it run in the background.
+      // The UI will update reactively via onSnapshot.
+      onApproveRequest(checkout);
+      
+      handleOpenChange(false); // Close the dialog immediately
     }
   }
 
