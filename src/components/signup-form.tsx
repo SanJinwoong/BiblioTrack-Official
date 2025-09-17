@@ -6,8 +6,8 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { UserPlus, User, Loader2 } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
-import { collection, addDoc, onSnapshot } from 'firebase/firestore';
+import React, { useState } from 'react';
+import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -33,26 +33,36 @@ import { db } from '@/lib/firebase';
 const studentEmailRegex = /^a\d{10}@alumnos\.uat\.edu\.mx$/;
 const ADMIN_REGISTRATION_CODE = 'SUPER_SECRET_CODE';
 
+// Define base schema for common fields
 const baseSchema = z.object({
-    password: z.string().min(6, {
-        message: 'La contraseña debe tener al menos 6 caracteres.',
-    }),
+    password: z.string()
+        .min(6, 'La contraseña debe tener al menos 6 caracteres.')
+        .max(20, 'La contraseña no puede tener más de 20 caracteres.'),
 });
 
+// Schema for client (student) registration
 const clientSchema = baseSchema.extend({
     email: z.string().regex(studentEmailRegex, {
         message: 'Por favor ingrese un correo institucional válido (ej. a1234567890@alumnos.uat.edu.mx).',
     }),
-    name: z.string().min(1, { message: "El nombre es obligatorio." }),
-    curp: z.string().min(1, { message: "La CURP es obligatoria." }),
-    phone: z.string().min(1, { message: "El teléfono es obligatorio." }),
-    address: z.string().min(1, { message: "La dirección es obligatoria." }),
+    name: z.string()
+        .min(2, "El nombre debe tener al menos 2 caracteres.")
+        .max(50, "El nombre no puede tener más de 50 caracteres."),
+    curp: z.string()
+        .length(18, "La CURP debe tener exactamente 18 caracteres."),
+    phone: z.string()
+        .min(10, "El teléfono debe tener al menos 10 dígitos.")
+        .max(15, "El teléfono no puede tener más de 15 dígitos."),
+    address: z.string()
+        .min(10, "La dirección debe tener al menos 10 caracteres.")
+        .max(100, "La dirección no puede tener más de 100 caracteres."),
 });
 
+// Schema for librarian registration
 const librarianSchema = baseSchema.extend({
-    username: z.string().min(2, {
-        message: 'El nombre de usuario debe tener al menos 2 caracteres.',
-    }),
+    username: z.string()
+        .min(2, 'El nombre de usuario debe tener al menos 2 caracteres.')
+        .max(30, 'El nombre de usuario no puede tener más de 30 caracteres.'),
     email: z.string().email({ message: "Por favor ingrese un correo válido."}),
     adminCode: z.string().refine(code => code === ADMIN_REGISTRATION_CODE, {
         message: "El código de registro de administrador no es válido."
@@ -64,15 +74,7 @@ export function SignUpForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [role, setRole] = React.useState<'client' | 'librarian' | null>(null);
-  const [users, setUsers] = useState<UserType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'users'), snapshot => {
-      setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserType)));
-    });
-    return () => unsubscribe();
-  }, []);
 
   const formSchema = role === 'client' ? clientSchema : (role === 'librarian' ? librarianSchema : z.object({}));
 
@@ -111,6 +113,7 @@ export function SignUpForm() {
             address: clientValues.address,
             email: clientValues.email, 
             status: 'active',
+            createdAt: new Date().toISOString(),
         };
     } else { // librarian
         const librarianValues = values as z.infer<typeof librarianSchema>;
@@ -121,21 +124,25 @@ export function SignUpForm() {
             role: 'librarian',
             email: librarianValues.email,
             status: 'active',
+            createdAt: new Date().toISOString(),
         };
     }
 
-    const existingUser = users.find(u => u.username === usernameToRegister);
-    if (existingUser) {
-        toast({
-            variant: "destructive",
-            title: "¡Ups! Ocurrió un error.",
-            description: "Este nombre de usuario ya está registrado. Por favor, elige otro.",
-        });
-        setIsLoading(false);
-        return;
-    }
-    
     try {
+        // Efficiently check for existing user directly in Firestore
+        const userQuery = query(collection(db, "users"), where("username", "==", usernameToRegister));
+        const querySnapshot = await getDocs(userQuery);
+
+        if (!querySnapshot.empty) {
+            toast({
+                variant: "destructive",
+                title: "¡Ups! Ocurrió un error.",
+                description: "Este nombre de usuario ya está registrado. Por favor, elige otro.",
+            });
+            setIsLoading(false);
+            return;
+        }
+        
         await addDoc(collection(db, 'users'), newUser);
         
         localStorage.setItem('userRole', role);
@@ -286,5 +293,3 @@ export function SignUpForm() {
     </>
   );
 }
-
-    
