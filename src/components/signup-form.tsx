@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
-import { UserPlus, User } from 'lucide-react';
+import { UserPlus, User, Loader2 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { collection, addDoc, onSnapshot } from 'firebase/firestore';
 
@@ -65,6 +65,7 @@ export function SignUpForm() {
   const { toast } = useToast();
   const [role, setRole] = React.useState<'client' | 'librarian' | null>(null);
   const [users, setUsers] = useState<UserType[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'users'), snapshot => {
@@ -92,6 +93,7 @@ export function SignUpForm() {
   
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!role) return;
+    setIsLoading(true);
 
     let usernameToRegister: string;
     let newUser: Omit<UserType, 'id'>;
@@ -129,19 +131,30 @@ export function SignUpForm() {
             title: "¡Ups! Ocurrió un error.",
             description: "Este nombre de usuario ya está registrado. Por favor, elige otro.",
         });
+        setIsLoading(false);
         return;
     }
     
-    await addDoc(collection(db, 'users'), newUser);
-    
-    localStorage.setItem('userRole', role);
-    localStorage.setItem('userUsername', newUser.username);
-    
-    router.push('/dashboard');
-    toast({
-        title: "✅ ¡Registro exitoso!",
-        description: "Tu cuenta ha sido creada y has iniciado sesión."
-    });
+    try {
+        await addDoc(collection(db, 'users'), newUser);
+        
+        localStorage.setItem('userRole', role);
+        localStorage.setItem('userUsername', newUser.username);
+        
+        router.push('/dashboard');
+        toast({
+            title: "✅ ¡Registro exitoso!",
+            description: "Tu cuenta ha sido creada y has iniciado sesión."
+        });
+    } catch (error) {
+        console.error("Error creating user:", error);
+        toast({
+            variant: "destructive",
+            title: "Error de Registro",
+            description: "No se pudo crear la cuenta. Inténtalo de nuevo más tarde."
+        });
+        setIsLoading(false);
+    }
   }
 
   if (!role) {
@@ -255,9 +268,13 @@ export function SignUpForm() {
             />
             
             <div className="flex flex-col space-y-2 pt-4">
-                <Button type="submit" size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Crear mi cuenta
+                <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
+                    {isLoading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <UserPlus className="mr-2 h-4 w-4" />
+                    )}
+                    {isLoading ? 'Creando cuenta...' : 'Crear mi cuenta'}
                 </Button>
                 <Button variant="link" size="sm" onClick={() => { form.reset(); setRole(null);}}>
                     &larr; Volver
