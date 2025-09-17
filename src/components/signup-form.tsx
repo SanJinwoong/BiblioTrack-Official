@@ -81,18 +81,26 @@ export function SignUpForm() {
   const { toast } = useToast();
   const [role, setRole] = React.useState<'client' | 'librarian' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
+  const router = useRouter();
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      role: 'client',
+      username: '',
       email: '',
       password: '',
+      adminCode: '',
+      name: '',
+      curp: '',
+      phone: '',
+      address: '',
     },
   });
 
   const handleRoleSelect = (selectedRole: 'client' | 'librarian') => {
     setRole(selectedRole);
-    form.reset(); // Reset form values
+    form.reset(); // Reset form values when role changes
     form.setValue('role', selectedRole); // Set the role for validation
   };
   
@@ -127,15 +135,14 @@ export function SignUpForm() {
                 createdAt: new Date().toISOString(),
             };
         }
-
+        
         await addDoc(collection(db, 'users'), newUser);
         
         toast({
             title: "✅ ¡Registro exitoso!",
             description: "Tu cuenta ha sido creada. Ahora puedes iniciar sesión."
         });
-
-        // Force a full page reload to ensure a clean state
+        
         window.location.assign('/');
 
     } catch (error) {
@@ -145,7 +152,8 @@ export function SignUpForm() {
             title: "Error de Registro",
             description: "Este usuario ya está registrado o ocurrió un error. Inténtalo de nuevo."
         });
-        setIsLoading(false);
+    } finally {
+      setIsLoading(false);
     }
   }
 
