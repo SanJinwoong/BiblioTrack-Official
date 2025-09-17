@@ -509,7 +509,7 @@ export function LibrarianDashboard() {
                                         <BookCard key={`${request.id}`} book={book} onClick={() => handleOpenDialog(book, request)}>
                                             <div className="p-3 border-t mt-auto text-center">
                                                 <p className="text-xs font-semibold text-primary mb-2">Solicitado por:</p>
-                                                <div className='flex items-center justify-center gap-2'>
+                                                <div className='flex items-center justify-center gap-2' onClick={(e) => e.stopPropagation()}>
                                                   <UserDetailsTooltip userId={user?.id || ''}>
                                                     <div className='flex items-center gap-2 cursor-pointer'>
                                                       <Avatar className="h-6 w-6 shrink-0">
@@ -563,7 +563,7 @@ export function LibrarianDashboard() {
                                                     <BookCard key={`${checkout.id}`} book={book} onClick={() => handleOpenDialog(book, checkout)} isLoan={true} isOverdue={isOverdue}>
                                                         <div className="p-3 border-t mt-auto text-center">
                                                             <p className="text-xs font-semibold text-primary mb-2">Prestado a:</p>
-                                                            <div className='flex items-center justify-center gap-2'>
+                                                            <div className='flex items-center justify-center gap-2' onClick={(e) => e.stopPropagation()}>
                                                               <UserDetailsTooltip userId={user?.id || ''}>
                                                                 <div className='flex items-center gap-2 cursor-pointer'>
                                                                   <Avatar className="h-6 w-6 shrink-0">
