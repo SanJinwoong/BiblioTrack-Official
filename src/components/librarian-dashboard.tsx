@@ -66,9 +66,15 @@ export function LibrarianDashboard() {
       onSnapshot(collection(db, 'checkoutRequests'), snapshot =>
         setCheckoutRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Checkout)))
       ),
-      onSnapshot(collection(db, 'users'), snapshot =>
-        setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserType)))
-      ),
+      onSnapshot(collection(db, 'users'), snapshot => {
+        const userList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserType));
+        setUsers(userList);
+        
+        const currentUser = userList.find(u => u.username === storedUsername);
+        if (currentUser?.role !== 'librarian') {
+            // Optional: Redirect or show an unauthorized message
+        }
+      }),
     ];
     
     return () => unsubscribes.forEach(unsub => unsub());
@@ -272,7 +278,6 @@ export function LibrarianDashboard() {
   });
 
   const clientUsers = users.filter(u => u.role === 'client');
-  const activeUsers = clientUsers.filter(u => u.status === 'active');
   const adminUsers = users.filter(u => u.role === 'librarian');
   const deactivatedUsers = users.filter(u => u.status === 'deactivated');
 
@@ -554,35 +559,41 @@ export function LibrarianDashboard() {
                                 <CardContent>
                                     {activeAndAtRiskCheckouts.length > 0 ? (
                                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                                            {activeAndAtRiskCheckouts.map((checkout) => {
-                                                const book = getBook(checkout.bookId);
-                                                if (!book) return null;
-                                                const isOverdue = isPast(parseISO(checkout.dueDate));
-                                                const user = getUser(checkout.userId);
-                                                
-                                                return (
-                                                    <BookCard key={`${checkout.id}`} book={book} onClick={() => handleOpenDialog(book, checkout)} isLoan={true} isOverdue={isOverdue}>
-                                                        <div className="p-3 border-t mt-auto text-left">
-                                                            <p className="text-xs font-semibold text-primary mb-1">Prestado a:</p>
-                                                            <div className='flex items-center gap-2 mb-2' onClick={(e) => e.stopPropagation()}>
-                                                              <UserDetailsTooltip userId={user?.id || ''}>
-                                                                <div className='flex items-center gap-2 cursor-pointer'>
-                                                                  <Avatar className="h-6 w-6 shrink-0">
-                                                                    <AvatarImage src={user?.avatarUrl} alt={user?.name}/>
-                                                                    <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
-                                                                  </Avatar>
-                                                                  <p className="text-sm font-medium truncate hover:underline">{user?.name || checkout.userId}</p>
+                                            {activeAndAtRiskCheckouts
+                                                .sort((a, b) => {
+                                                    const aOverdue = isPast(parseISO(a.dueDate));
+                                                    const bOverdue = isPast(parseISO(b.dueDate));
+                                                    return (aOverdue ? 1 : 0) - (bOverdue ? 1 : 0);
+                                                })
+                                                .map((checkout) => {
+                                                    const book = getBook(checkout.bookId);
+                                                    if (!book) return null;
+                                                    const isOverdue = isPast(parseISO(checkout.dueDate));
+                                                    const user = getUser(checkout.userId);
+                                                    
+                                                    return (
+                                                        <BookCard key={`${checkout.id}`} book={book} onClick={() => handleOpenDialog(book, checkout)} isLoan={true} isOverdue={isOverdue}>
+                                                            <div className="p-3 border-t mt-auto text-left">
+                                                                <p className="text-xs font-semibold text-primary mb-1">Prestado a:</p>
+                                                                <div className='flex items-center gap-2 mb-2' onClick={(e) => e.stopPropagation()}>
+                                                                <UserDetailsTooltip userId={user?.id || ''}>
+                                                                    <div className='flex items-center gap-2 cursor-pointer'>
+                                                                    <Avatar className="h-6 w-6 shrink-0">
+                                                                        <AvatarImage src={user?.avatarUrl} alt={user?.name}/>
+                                                                        <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
+                                                                    </Avatar>
+                                                                    <p className="text-sm font-medium truncate hover:underline">{user?.name || checkout.userId}</p>
+                                                                    </div>
+                                                                </UserDetailsTooltip>
                                                                 </div>
-                                                              </UserDetailsTooltip>
+                                                                {isOverdue ? (
+                                                                    <Badge className='bg-yellow-100 text-yellow-800'>Vencido</Badge>
+                                                                ) : (
+                                                                    <Badge className='bg-green-100 text-green-800'>A tiempo</Badge>
+                                                                )}
                                                             </div>
-                                                            {isOverdue ? (
-                                                                <Badge className='bg-yellow-100 text-yellow-800'>Vencido</Badge>
-                                                            ) : (
-                                                                <Badge className='bg-green-100 text-green-800'>Prestado</Badge>
-                                                            )}
-                                                        </div>
-                                                    </BookCard>
-                                                )
+                                                        </BookCard>
+                                                    )
                                             })}
                                         </div>
                                     ) : (
