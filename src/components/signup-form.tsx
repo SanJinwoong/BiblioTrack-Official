@@ -75,6 +75,26 @@ export function SignUpForm() {
   const { toast } = useToast();
   const [role, setRole] = React.useState<'client' | 'librarian' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
+        setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserType)));
+        setIsDataLoading(false);
+    }, (error) => {
+        console.error("Error fetching users: ", error);
+        toast({
+            variant: "destructive",
+            title: "Error de Conexión",
+            description: "No se pudieron cargar los datos de usuario.",
+        });
+        setIsDataLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [toast]);
+
 
   const formSchema = role === 'client' ? clientSchema : (role === 'librarian' ? librarianSchema : z.object({}));
 
@@ -128,35 +148,29 @@ export function SignUpForm() {
         };
     }
 
+    const userExists = users.some(u => u.username === usernameToRegister);
+
+    if (userExists) {
+        toast({
+            variant: "destructive",
+            title: "¡Ups! Ocurrió un error.",
+            description: "Este usuario ya está registrado. Por favor, inicia sesión o elige otro.",
+        });
+        setIsLoading(false);
+        return;
+    }
+    
     try {
-        const q = query(collection(db, 'users'), where('username', '==', usernameToRegister));
-        const querySnapshot = await getDocs(q);
-
-        if (!querySnapshot.empty) {
-            toast({
-                variant: "destructive",
-                title: "¡Ups! Ocurrió un error.",
-                description: "Este usuario ya está registrado. Por favor, inicia sesión o elige otro.",
-            });
-            setIsLoading(false);
-            return;
-        }
-
         await addDoc(collection(db, 'users'), newUser);
-        
-        localStorage.setItem('userRole', role);
-        localStorage.setItem('userUsername', newUser.username);
         
         toast({
             title: "✅ ¡Registro exitoso!",
             description: "Tu cuenta ha sido creada. Serás redirigido."
         });
-        
-        // Brief timeout to allow the toast to render before navigation
-        setTimeout(() => {
-            router.push('/dashboard');
-            setIsLoading(false);
-        }, 50);
+
+        // Use window.location.assign for a full page reload and navigation
+        // This ensures all states are reset cleanly.
+        window.location.assign('/');
 
     } catch (error) {
         console.error("Error creating user:", error);
@@ -165,6 +179,7 @@ export function SignUpForm() {
             title: "Error de Registro",
             description: "No se pudo crear la cuenta. Inténtalo de nuevo más tarde."
         });
+    } finally {
         setIsLoading(false);
     }
   }
