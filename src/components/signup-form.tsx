@@ -153,6 +153,7 @@ export function SignUpForm() {
             title: "✅ ¡Registro exitoso!",
             description: "Tu cuenta ha sido creada y has iniciado sesión."
         });
+        setIsLoading(false);
     } catch (error) {
         console.error("Error creating user:", error);
         toast({
