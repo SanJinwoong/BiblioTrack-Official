@@ -75,15 +75,16 @@ export function SignUpForm() {
   const { toast } = useToast();
   const [role, setRole] = React.useState<'client' | 'librarian' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [users, setUsers] = useState<UserType[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
 
   useEffect(() => {
+    // This is just to satisfy the old check on existing users without blocking
     const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
-      setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserType)));
-      setIsDataLoading(false);
+      if (!snapshot.metadata.fromCache) {
+          setIsDataLoading(false);
+      }
     }, (error) => {
-        console.error("Error fetching users: ", error);
+        console.error("Error fetching initial user data: ", error);
         setIsDataLoading(false);
     });
 
@@ -142,19 +143,19 @@ export function SignUpForm() {
         };
     }
 
-    // Check for existing user without blocking UI for too long
-    const existingUser = users.find(u => u.username === usernameToRegister);
-    if (existingUser) {
-        toast({
-            variant: "destructive",
-            title: "¡Ups! Ocurrió un error.",
-            description: "Este usuario ya está registrado. Por favor, inicia sesión o elige otro.",
-        });
-        setIsLoading(false);
-        return;
-    }
-    
     try {
+        const q = query(collection(db, 'users'), where('username', '==', usernameToRegister));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            toast({
+                variant: "destructive",
+                title: "¡Ups! Ocurrió un error.",
+                description: "Este usuario ya está registrado. Por favor, inicia sesión o elige otro.",
+            });
+            return;
+        }
+
         await addDoc(collection(db, 'users'), newUser);
         
         localStorage.setItem('userRole', role);
@@ -166,6 +167,7 @@ export function SignUpForm() {
         });
         
         router.push('/dashboard');
+
     } catch (error) {
         console.error("Error creating user:", error);
         toast({
@@ -174,7 +176,6 @@ export function SignUpForm() {
             description: "No se pudo crear la cuenta. Inténtalo de nuevo más tarde."
         });
     } finally {
-        // This will now execute correctly, unblocking the UI
         setIsLoading(false);
     }
   }
