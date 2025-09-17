@@ -273,6 +273,7 @@ export function LibrarianDashboard() {
 
   const clientUsers = users.filter(u => u.role === 'client');
   const activeUsers = clientUsers.filter(u => u.status === 'active');
+  const adminUsers = users.filter(u => u.role === 'librarian');
   const deactivatedUsers = users.filter(u => u.status === 'deactivated');
 
   const loansByUser = checkouts.reduce((acc, checkout) => {
@@ -362,7 +363,7 @@ export function LibrarianDashboard() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Libros en Catálogo</CardTitle>
+                        <CardTitle className="text-sm font-medium">Total de Libros</CardTitle>
                         <Book className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -372,22 +373,22 @@ export function LibrarianDashboard() {
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Usuarios Registrados</CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{clientUsers.length}</div>
+                        <p className="text-xs text-muted-foreground">{adminUsers.length} administrador(es)</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Préstamos Activos</CardTitle>
                         <ListChecks className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{activeCheckouts.length}</div>
-                        <p className="text-xs text-muted-foreground">{atRiskCheckouts.length} por vencer</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Usuarios con Préstamos Vencidos</CardTitle>
-                        <AlertTriangle className="h-4 w-4 text-destructive" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{usersWithOverdueLoans.size}</div>
-                        <p className="text-xs text-muted-foreground">Cuentas en riesgo de desactivación</p>
+                        <p className="text-xs text-muted-foreground">{overdueCheckouts.length} vencidos</p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -397,7 +398,7 @@ export function LibrarianDashboard() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{deactivatedUsers.length}</div>
-                        <p className="text-xs text-muted-foreground">Usuarios con acceso restringido</p>
+                        <p className="text-xs text-muted-foreground">Con acceso restringido</p>
                     </CardContent>
                 </Card>
             </div>
@@ -507,9 +508,9 @@ export function LibrarianDashboard() {
                                     const user = getUser(request.userId);
                                     return (
                                         <BookCard key={`${request.id}`} book={book} onClick={() => handleOpenDialog(book, request)}>
-                                            <div className="p-3 border-t mt-auto text-center">
+                                            <div className="p-3 border-t mt-auto text-left">
                                                 <p className="text-xs font-semibold text-primary mb-2">Solicitado por:</p>
-                                                <div className='flex items-center justify-center gap-2' onClick={(e) => e.stopPropagation()}>
+                                                <div className='flex items-center gap-2' onClick={(e) => e.stopPropagation()}>
                                                   <UserDetailsTooltip userId={user?.id || ''}>
                                                     <div className='flex items-center gap-2 cursor-pointer'>
                                                       <Avatar className="h-6 w-6 shrink-0">
@@ -561,9 +562,9 @@ export function LibrarianDashboard() {
                                                 
                                                 return (
                                                     <BookCard key={`${checkout.id}`} book={book} onClick={() => handleOpenDialog(book, checkout)} isLoan={true} isOverdue={isOverdue}>
-                                                        <div className="p-3 border-t mt-auto text-center">
-                                                            <p className="text-xs font-semibold text-primary mb-2">Prestado a:</p>
-                                                            <div className='flex items-center justify-center gap-2' onClick={(e) => e.stopPropagation()}>
+                                                        <div className="p-3 border-t mt-auto text-left">
+                                                            <p className="text-xs font-semibold text-primary mb-1">Prestado a:</p>
+                                                            <div className='flex items-center gap-2 mb-2' onClick={(e) => e.stopPropagation()}>
                                                               <UserDetailsTooltip userId={user?.id || ''}>
                                                                 <div className='flex items-center gap-2 cursor-pointer'>
                                                                   <Avatar className="h-6 w-6 shrink-0">
@@ -574,6 +575,11 @@ export function LibrarianDashboard() {
                                                                 </div>
                                                               </UserDetailsTooltip>
                                                             </div>
+                                                            {isOverdue ? (
+                                                                <Badge className='bg-yellow-100 text-yellow-800'>Vencido</Badge>
+                                                            ) : (
+                                                                <Badge className='bg-green-100 text-green-800'>Prestado</Badge>
+                                                            )}
                                                         </div>
                                                     </BookCard>
                                                 )
@@ -631,5 +637,3 @@ export function LibrarianDashboard() {
     </>
   );
 }
-
-    
