@@ -200,7 +200,7 @@ export function SignUpForm() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {role === 'client' && (
               <>
-                <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Nombre completo</FormLabel> <FormControl><Input placeholder="Juan Pérez" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
+                <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Nombre completo</FormLabel> <FormControl><Input placeholder="Juan Pérez" {...field} maxLength={50} /></FormControl> <FormMessage /> </FormItem>)} />
                 <FormField control={form.control} name="email" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Correo Institucional</FormLabel>
@@ -211,10 +211,10 @@ export function SignUpForm() {
                   </FormItem>
                 )}
                 />
-                <FormField control={form.control} name="curp" render={({ field }) => ( <FormItem> <FormLabel>CURP</FormLabel> <FormControl><Input placeholder="ABCD123456H..." {...field} />
+                <FormField control={form.control} name="curp" render={({ field }) => ( <FormItem> <FormLabel>CURP</FormLabel> <FormControl><Input placeholder="ABCD123456H..." {...field} maxLength={18} />
                     </FormControl> <FormMessage /> </FormItem>)} />
-                <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem> <FormLabel>Teléfono de contacto</FormLabel> <FormControl><Input placeholder="834-123-4567" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
-                <FormField control={form.control} name="address" render={({ field }) => ( <FormItem> <FormLabel>Dirección</FormLabel> <FormControl><Input placeholder="Calle Falsa 123, Ciudad" {...field} /></FormControl> <FormMessage /> </FormItem>)} />
+                <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem> <FormLabel>Teléfono de contacto</FormLabel> <FormControl><Input placeholder="834-123-4567" {...field} maxLength={15} /></FormControl> <FormMessage /> </FormItem>)} />
+                <FormField control={form.control} name="address" render={({ field }) => ( <FormItem> <FormLabel>Dirección</FormLabel> <FormControl><Input placeholder="Calle Falsa 123, Ciudad" {...field} maxLength={100} /></FormControl> <FormMessage /> </FormItem>)} />
               </>
             )}
             {role === 'librarian' && (
@@ -226,7 +226,7 @@ export function SignUpForm() {
                     <FormItem>
                       <FormLabel>Nombre de usuario</FormLabel>
                       <FormControl>
-                        <Input placeholder="ej. bibliotecario2" {...field} />
+                        <Input placeholder="ej. bibliotecario2" {...field} maxLength={30}/>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -267,7 +267,7 @@ export function SignUpForm() {
                 <FormItem>
                   <FormLabel>Contraseña</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
+                    <Input type="password" placeholder="••••••••" {...field} maxLength={20} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
