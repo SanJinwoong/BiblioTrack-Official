@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import type { Book as BookType, Checkout, User as UserType, Category } from '@/lib/types';
-import { Book, ListChecks, Search, User, Bell, BookCopy, PlusCircle, Users, UserX, AlertTriangle, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Book, ListChecks, Search, User, Bell, BookCopy, PlusCircle, Users, UserX, AlertTriangle, ArrowRight, ArrowLeft, MoreHorizontal } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -27,6 +27,8 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel"
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { UserDetailsTooltip } from './user-details-tooltip';
 
 export function LibrarianDashboard() {
   const [books, setBooks] = useState<BookType[]>([]);
@@ -507,10 +509,17 @@ export function LibrarianDashboard() {
                                         <BookCard key={`${request.id}`} book={book} onClick={() => handleOpenDialog(book, request)}>
                                             <div className="p-3 border-t mt-auto text-center">
                                                 <p className="text-xs font-semibold text-primary mb-2">Solicitado por:</p>
-                                                <Link href={`/profile/${user?.username}`} className='flex items-center justify-center gap-2 hover:underline'>
-                                                    <User className="h-4 w-4" />
-                                                    <p className="text-sm font-medium truncate">{user?.name || request.userId}</p>
-                                                </Link>
+                                                <div className='flex items-center justify-center gap-2'>
+                                                  <UserDetailsTooltip userId={user?.id || ''}>
+                                                    <div className='flex items-center gap-2 cursor-pointer'>
+                                                      <Avatar className="h-6 w-6 shrink-0">
+                                                        <AvatarImage src={user?.avatarUrl} alt={user?.name}/>
+                                                        <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
+                                                      </Avatar>
+                                                      <p className="text-sm font-medium truncate hover:underline">{user?.name || request.userId}</p>
+                                                    </div>
+                                                  </UserDetailsTooltip>
+                                                </div>
                                             </div>
                                         </BookCard>
                                     )
@@ -554,10 +563,17 @@ export function LibrarianDashboard() {
                                                     <BookCard key={`${checkout.id}`} book={book} onClick={() => handleOpenDialog(book, checkout)} isLoan={true} isOverdue={isOverdue}>
                                                         <div className="p-3 border-t mt-auto text-center">
                                                             <p className="text-xs font-semibold text-primary mb-2">Prestado a:</p>
-                                                            <Link href={`/profile/${user?.username}`} className='flex items-center justify-center gap-2 hover:underline'>
-                                                                <User className="h-4 w-4" />
-                                                                <p className="text-sm font-medium truncate">{user?.name || checkout.userId}</p>
-                                                            </Link>
+                                                            <div className='flex items-center justify-center gap-2'>
+                                                              <UserDetailsTooltip userId={user?.id || ''}>
+                                                                <div className='flex items-center gap-2 cursor-pointer'>
+                                                                  <Avatar className="h-6 w-6 shrink-0">
+                                                                    <AvatarImage src={user?.avatarUrl} alt={user?.name}/>
+                                                                    <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
+                                                                  </Avatar>
+                                                                  <p className="text-sm font-medium truncate hover:underline">{user?.name || checkout.userId}</p>
+                                                                </div>
+                                                              </UserDetailsTooltip>
+                                                            </div>
                                                         </div>
                                                     </BookCard>
                                                 )
@@ -615,3 +631,6 @@ export function LibrarianDashboard() {
     </>
   );
 }
+
+
+    
