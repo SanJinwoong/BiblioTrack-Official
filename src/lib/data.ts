@@ -33,7 +33,7 @@ export const initialUsers: Omit<User, 'id'>[] = [
         phone: '834-111-2233',
         email: 'a1234567890@alumnos.uat.edu.mx',
         address: 'Calle Falsa 123, Ciudad Victoria',
-        status: 'active', // Inicia como activo, la lógica lo desactivará
+        status: 'active',
         avatarUrl: 'https://i.pravatar.cc/150?u=a1234567890',
         bannerUrl: 'https://picsum.photos/seed/banner-1/1200/300',
         bio: 'Estudiante de ingeniería. En mis tiempos libres, me sumerjo en mundos de ciencia ficción y distopías.',
@@ -69,7 +69,7 @@ export const initialUsers: Omit<User, 'id'>[] = [
         phone: '834-555-7788',
         email: 'a2222222222@alumnos.uat.edu.mx',
         address: 'Boulevard del Sol 456, Tampico',
-        status: 'active', // Inicia como activo, la lógica lo desactivará
+        status: 'active',
         avatarUrl: 'https://i.pravatar.cc/150?u=a2222222222',
         bannerUrl: 'https://picsum.photos/seed/banner-3/1200/300',
         bio: 'Futuro historiador. Me interesan los libros que exploran el pasado de la humanidad y las grandes civilizaciones.',
@@ -226,12 +226,12 @@ const getFutureDate = (days: number) => {
 
 // We use the matricula/username as the userId now
 export const initialCheckouts: Omit<Checkout, 'id' | 'bookId'> & { bookTitle: string }[] = [
-  // Préstamo VENCIDO (+20 días) para Juan Pérez -> Cuenta Desactivada
-  { userId: 'a1234567890', bookTitle: '1984', dueDate: getPastDate(20), status: 'approved' },
-  // Otro préstamo VENCIDO (+30 días) para el mismo Juan Pérez
-  { userId: 'a1234567890', bookTitle: 'Don Quijote de la Mancha', dueDate: getPastDate(30), status: 'approved' },
+  // Préstamo VENCIDO para Juan Pérez -> Cuenta Desactivada
+  { userId: 'a1234567890', bookTitle: '1984', dueDate: getPastDate(35), status: 'approved' },
+  // Otro préstamo VENCIDO para el mismo Juan Pérez
+  { userId: 'a1234567890', bookTitle: 'Don Quijote de la Mancha', dueDate: getPastDate(50), status: 'approved' },
   
-  // Préstamo VENCIDO (+15 días) para Carlos Sánchez -> Cuenta Desactivada
+  // Préstamo VENCIDO para Carlos Sánchez -> Cuenta Desactivada
   { userId: 'a2222222222', bookTitle: 'Dune', dueDate: getPastDate(15), status: 'approved' },
 
   // Préstamo VENCIDO RECIENTEMENTE (4 días) para Laura Gómez -> Cuenta AÚN ACTIVA
@@ -285,3 +285,4 @@ export const initialReviews: Omit<Review, 'id' | 'bookId'> & { bookTitle: string
 ];
 
     
+

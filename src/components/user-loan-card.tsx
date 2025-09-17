@@ -14,6 +14,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import { formatDistanceToNowStrict, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface UserLoanCardProps {
   user: User;
@@ -23,6 +25,11 @@ interface UserLoanCardProps {
 
 export function UserLoanCard({ user, loans, onReactivateAccount }: UserLoanCardProps) {
   const sortedLoans = [...loans].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+  
+  const mostOverdueLoan = sortedLoans[0];
+  const overdueDistance = mostOverdueLoan 
+    ? formatDistanceToNowStrict(parseISO(mostOverdueLoan.dueDate), { addSuffix: true, locale: es })
+    : '';
 
   return (
     <Accordion type="single" collapsible className="w-full">
@@ -41,6 +48,7 @@ export function UserLoanCard({ user, loans, onReactivateAccount }: UserLoanCardP
                     <div>
                       <h4 className="font-normal text-left">{user.name}</h4>
                       <p className="text-sm text-muted-foreground text-left">{user.username}</p>
+                      {overdueDistance && <p className="text-xs text-destructive text-left mt-1">Vencido {overdueDistance}</p>}
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
