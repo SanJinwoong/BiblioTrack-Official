@@ -75,21 +75,6 @@ export function SignUpForm() {
   const { toast } = useToast();
   const [role, setRole] = React.useState<'client' | 'librarian' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isDataLoading, setIsDataLoading] = useState(true);
-
-  useEffect(() => {
-    // This is just to satisfy the old check on existing users without blocking
-    const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
-      if (!snapshot.metadata.fromCache) {
-          setIsDataLoading(false);
-      }
-    }, (error) => {
-        console.error("Error fetching initial user data: ", error);
-        setIsDataLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
 
   const formSchema = role === 'client' ? clientSchema : (role === 'librarian' ? librarianSchema : z.object({}));
 
@@ -291,13 +276,13 @@ export function SignUpForm() {
             />
             
             <div className="flex flex-col space-y-2 pt-4">
-                <Button type="submit" size="lg" className="w-full" disabled={isLoading || isDataLoading}>
-                    {isLoading || isDataLoading ? (
+                <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
+                    {isLoading ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
                         <UserPlus className="mr-2 h-4 w-4" />
                     )}
-                    {isDataLoading ? 'Cargando datos...' : (isLoading ? 'Creando cuenta...' : 'Crear mi cuenta')}
+                    {isLoading ? 'Creando cuenta...' : 'Crear mi cuenta'}
                 </Button>
                 <Button variant="link" size="sm" onClick={() => { form.reset(); setRole(null);}}>
                     &larr; Volver
