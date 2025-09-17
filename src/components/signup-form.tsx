@@ -155,11 +155,12 @@ export function SignUpForm() {
         localStorage.setItem('userRole', role);
         localStorage.setItem('userUsername', newUser.username);
         
-        router.push('/dashboard');
         toast({
             title: "✅ ¡Registro exitoso!",
             description: "Tu cuenta ha sido creada y has iniciado sesión."
         });
+        
+        router.push('/dashboard');
 
     } catch (error) {
         console.error("Error creating user:", error);
