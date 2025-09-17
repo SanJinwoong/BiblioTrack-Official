@@ -20,7 +20,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import type { User } from '@/lib/types';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, onSnapshot, query, where } from 'firebase/firestore';
 
 const formSchema = z.object({
   username: z.string().min(1, {
@@ -34,34 +34,35 @@ const formSchema = z.object({
 export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
-  const [users, setUsers] = useState<User[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
 
   useEffect(() => {
-    // Listen to the user's collection to get real-time data
-    // This will first read from the cache (if available) and then from the server.
-    const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
-      // The seeder might be running, so we wait until we have users.
-      if (!snapshot.empty) {
-        setUsers(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as User)));
-        setIsDataLoading(false); // Data is loaded, enable the form
-      } else {
-        // This case happens during the re-seeding process
-        setIsDataLoading(true);
-      }
-    }, (error) => {
-      console.error("Error fetching users: ", error);
-      toast({
-        variant: "destructive",
-        title: "Error de Conexión",
-        description: "No se pudieron cargar los datos de los usuarios. Revisa tu conexión.",
-      });
-      setIsDataLoading(false); // Stop loading even if there's an error
-    });
+    // We just check if the seeder has finished by trying to get at least one user.
+    // This is much lighter than subscribing to the whole collection.
+    const checkSeeder = async () => {
+        try {
+            const q = query(collection(db, "users"));
+            const unsubscribe = onSnapshot(q, (querySnapshot) => {
+                if (!querySnapshot.empty) {
+                    setIsDataLoading(false);
+                    unsubscribe(); // We got the confirmation, we can stop listening.
+                } else {
+                    setIsDataLoading(true);
+                }
+            });
+        } catch (error) {
+             console.error("Error checking for users: ", error);
+             toast({
+                variant: "destructive",
+                title: "Error de Conexión",
+                description: "No se pudieron verificar los datos iniciales.",
+             });
+             setIsDataLoading(false);
+        }
+    };
 
-    // Cleanup subscription on component unmount
-    return () => unsubscribe();
+    checkSeeder();
   }, [toast]);
 
 
@@ -73,39 +74,53 @@ export function LoginForm() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsAuthLoading(true);
     const { username, password } = values;
 
-    // We now check against the user list in the component's state
-    const user = users.find(u => u.username === username);
-    
-    if (user) {
-      if (user.password === password) {
-        localStorage.setItem('userRole', user.role);
-        localStorage.setItem('userUsername', user.username);
-        
-        router.push('/dashboard');
+    try {
+        const q = query(collection(db, "users"), where("username", "==", username));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            toast({
+                variant: "destructive",
+                title: "Usuario no encontrado",
+                description: "El usuario ingresado no existe. Por favor, verifícalo o regístrate.",
+            });
+            setIsAuthLoading(false);
+            return;
+        }
+
+        const userDoc = querySnapshot.docs[0];
+        const user = userDoc.data() as User;
+
+        if (user.password === password) {
+            localStorage.setItem('userRole', user.role);
+            localStorage.setItem('userUsername', user.username);
+            
+            router.push('/dashboard');
+            toast({
+                title: `✅ ¡Bienvenido de nuevo, ${user.name || user.username}!`,
+                description: 'Has iniciado sesión correctamente.',
+            });
+        } else {
+            toast({
+                variant: "destructive",
+                title: "Contraseña incorrecta",
+                description: "La contraseña no es correcta. Por favor, inténtalo de nuevo.",
+            });
+            setIsAuthLoading(false);
+        }
+
+    } catch (error) {
+        console.error("Error authenticating user: ", error);
         toast({
-          title: `✅ ¡Bienvenido de nuevo, ${user.name || user.username}!`,
-          description: 'Has iniciado sesión correctamente.',
-        });
-        // No need to set isLoading to false, as we are navigating away
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Contraseña incorrecta",
-          description: "La contraseña no es correcta. Por favor, inténtalo de nuevo.",
+            variant: "destructive",
+            title: "Error de Autenticación",
+            description: "Ocurrió un problema al intentar iniciar sesión. Inténtalo de nuevo.",
         });
         setIsAuthLoading(false);
-      }
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Usuario no encontrado",
-        description: "El usuario ingresado no existe. Por favor, verifícalo o regístrate.",
-      });
-      setIsAuthLoading(false);
     }
   }
   
