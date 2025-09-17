@@ -11,7 +11,7 @@ import { initialUsers, initialCategories, initialBooks, initialCheckouts, initia
 // DEV_NOTE: This component is configured to force-reset the database on every load.
 // This is useful for development to ensure a consistent data state.
 // For production, change FORCE_RESEED to false.
-const FORCE_RESEED = true; 
+const FORCE_RESEED = false; 
 
 async function clearCollection(collectionName: string) {
     const batch = writeBatch(db);
