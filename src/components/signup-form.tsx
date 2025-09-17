@@ -75,26 +75,6 @@ export function SignUpForm() {
   const { toast } = useToast();
   const [role, setRole] = React.useState<'client' | 'librarian' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [users, setUsers] = useState<UserType[]>([]);
-  const [isDataLoading, setIsDataLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
-        setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserType)));
-        setIsDataLoading(false);
-    }, (error) => {
-        console.error("Error fetching users: ", error);
-        toast({
-            variant: "destructive",
-            title: "Error de Conexión",
-            description: "No se pudieron cargar los datos de usuario.",
-        });
-        setIsDataLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [toast]);
-
 
   const formSchema = role === 'client' ? clientSchema : (role === 'librarian' ? librarianSchema : z.object({}));
 
@@ -117,50 +97,52 @@ export function SignUpForm() {
     if (!role) return;
     setIsLoading(true);
 
-    let newUser: Omit<UserType, 'id'>;
-    let usernameToRegister: string;
-    
-    if (role === 'client') {
-        const clientValues = values as z.infer<typeof clientSchema>;
-        usernameToRegister = clientValues.email.split('@')[0];
-        newUser = {
-            username: usernameToRegister,
-            password: clientValues.password,
-            role: 'client',
-            name: clientValues.name,
-            curp: clientValues.curp,
-            phone: clientValues.phone,
-            address: clientValues.address,
-            email: clientValues.email, 
-            status: 'active',
-            createdAt: new Date().toISOString(),
-        };
-    } else { // librarian
-        const librarianValues = values as z.infer<typeof librarianSchema>;
-        usernameToRegister = librarianValues.username;
-        newUser = {
-            username: usernameToRegister,
-            password: librarianValues.password,
-            role: 'librarian',
-            email: librarianValues.email,
-            status: 'active',
-            createdAt: new Date().toISOString(),
-        };
-    }
-
-    const userExists = users.some(u => u.username === usernameToRegister);
-
-    if (userExists) {
-        toast({
-            variant: "destructive",
-            title: "¡Ups! Ocurrió un error.",
-            description: "Este usuario ya está registrado. Por favor, inicia sesión o elige otro.",
-        });
-        setIsLoading(false);
-        return;
-    }
-    
     try {
+        let newUser: Omit<UserType, 'id'>;
+        let usernameToRegister: string;
+
+        if (role === 'client') {
+            const clientValues = values as z.infer<typeof clientSchema>;
+            usernameToRegister = clientValues.email.split('@')[0];
+            newUser = {
+                username: usernameToRegister,
+                password: clientValues.password,
+                role: 'client',
+                name: clientValues.name,
+                curp: clientValues.curp,
+                phone: clientValues.phone,
+                address: clientValues.address,
+                email: clientValues.email, 
+                status: 'active',
+                createdAt: new Date().toISOString(),
+            };
+        } else { // librarian
+            const librarianValues = values as z.infer<typeof librarianSchema>;
+            usernameToRegister = librarianValues.username;
+            newUser = {
+                username: usernameToRegister,
+                password: librarianValues.password,
+                role: 'librarian',
+                email: librarianValues.email,
+                status: 'active',
+                createdAt: new Date().toISOString(),
+            };
+        }
+
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where("username", "==", usernameToRegister));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            toast({
+                variant: "destructive",
+                title: "¡Ups! Ocurrió un error.",
+                description: "Este usuario ya está registrado. Por favor, inicia sesión o elige otro.",
+            });
+            setIsLoading(false);
+            return;
+        }
+
         await addDoc(collection(db, 'users'), newUser);
         
         toast({
