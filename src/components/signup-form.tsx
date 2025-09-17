@@ -6,8 +6,8 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { UserPlus, User, Loader2 } from 'lucide-react';
-import React, { useState } from 'react';
-import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
+import React, { useState, useEffect } from 'react';
+import { collection, addDoc, onSnapshot, query, where, getDocs } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -75,6 +75,15 @@ export function SignUpForm() {
   const { toast } = useToast();
   const [role, setRole] = React.useState<'client' | 'librarian' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [users, setUsers] = useState<UserType[]>([]);
+
+   useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
+        setUsers(snapshot.docs.map(doc => doc.data() as UserType));
+    });
+    return () => unsubscribe();
+  }, []);
+
 
   const formSchema = role === 'client' ? clientSchema : (role === 'librarian' ? librarianSchema : z.object({}));
 
@@ -127,22 +136,20 @@ export function SignUpForm() {
             createdAt: new Date().toISOString(),
         };
     }
+    
+    const userExists = users.some(user => user.username === usernameToRegister);
+
+    if (userExists) {
+        toast({
+            variant: "destructive",
+            title: "¡Ups! Ocurrió un error.",
+            description: "Este nombre de usuario ya está registrado. Por favor, elige otro.",
+        });
+        setIsLoading(false);
+        return;
+    }
 
     try {
-        // Efficiently check for existing user directly in Firestore
-        const userQuery = query(collection(db, "users"), where("username", "==", usernameToRegister));
-        const querySnapshot = await getDocs(userQuery);
-
-        if (!querySnapshot.empty) {
-            toast({
-                variant: "destructive",
-                title: "¡Ups! Ocurrió un error.",
-                description: "Este nombre de usuario ya está registrado. Por favor, elige otro.",
-            });
-            setIsLoading(false);
-            return;
-        }
-        
         await addDoc(collection(db, 'users'), newUser);
         
         localStorage.setItem('userRole', role);
@@ -153,7 +160,7 @@ export function SignUpForm() {
             title: "✅ ¡Registro exitoso!",
             description: "Tu cuenta ha sido creada y has iniciado sesión."
         });
-        setIsLoading(false);
+
     } catch (error) {
         console.error("Error creating user:", error);
         toast({
@@ -161,6 +168,7 @@ export function SignUpForm() {
             title: "Error de Registro",
             description: "No se pudo crear la cuenta. Inténtalo de nuevo más tarde."
         });
+    } finally {
         setIsLoading(false);
     }
   }
@@ -214,7 +222,7 @@ export function SignUpForm() {
                 />
                 <FormField control={form.control} name="curp" render={({ field }) => ( <FormItem> <FormLabel>CURP</FormLabel> <FormControl><Input placeholder="ABCD123456H..." {...field} maxLength={18} />
                     </FormControl> <FormMessage /> </FormItem>)} />
-                <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem> <FormLabel>Teléfono de contacto</FormLabel> <FormControl><Input placeholder="834-123-4567" {...field} maxLength={15} /></FormControl> <FormMessage /> </FormItem>)} />
+                <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem> <FormLabel>Teléfono de contacto</FormLabel> <FormControl><Input type="tel" placeholder="834-123-4567" {...field} maxLength={15} /></FormControl> <FormMessage /> </FormItem>)} />
                 <FormField control={form.control} name="address" render={({ field }) => ( <FormItem> <FormLabel>Dirección</FormLabel> <FormControl><Input placeholder="Calle Falsa 123, Ciudad" {...field} maxLength={100} /></FormControl> <FormMessage /> </FormItem>)} />
               </>
             )}
