@@ -90,7 +90,6 @@ export function SignUpForm() {
       phone: '',
       address: '',
     },
-    shouldUnregister: true,
   });
   
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -129,19 +128,13 @@ export function SignUpForm() {
             };
         }
 
-        // We check for existing user on the backend via security rules in a real app
-        // For this demo, we'll just attempt to add and let it fail if needed, or check quickly.
-        // The main issue was waiting for this check. Let's make it more robust.
-        
         await addDoc(collection(db, 'users'), newUser);
         
         toast({
             title: "✅ ¡Registro exitoso!",
             description: "Tu cuenta ha sido creada. Serás redirigido."
         });
-
-        // Use window.location.assign for a full page reload and navigation
-        // This ensures all states are reset cleanly.
+        
         window.location.assign('/');
 
     } catch (error) {
