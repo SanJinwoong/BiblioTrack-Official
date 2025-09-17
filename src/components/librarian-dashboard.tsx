@@ -272,7 +272,6 @@ export function LibrarianDashboard() {
   });
 
   const clientUsers = users.filter(u => u.role === 'client');
-  const adminUsers = users.filter(u => u.role === 'librarian');
   const activeUsers = clientUsers.filter(u => u.status === 'active');
   const deactivatedUsers = users.filter(u => u.status === 'deactivated');
 
@@ -363,32 +362,32 @@ export function LibrarianDashboard() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Usuarios (Clientes)</CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium">Libros en Catálogo</CardTitle>
+                        <Book className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{clientUsers.length}</div>
-                        <p className="text-xs text-muted-foreground">{activeUsers.length} activos</p>
+                        <div className="text-2xl font-bold">{books.length}</div>
+                        <p className="text-xs text-muted-foreground">{books.reduce((sum, book) => sum + book.stock, 0)} copias totales</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Admins (Bibliotecarios)</CardTitle>
-                        <UserCog className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium">Préstamos Activos</CardTitle>
+                        <ListChecks className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{adminUsers.length}</div>
-                         <p className="text-xs text-muted-foreground">Cuentas con privilegios</p>
+                        <div className="text-2xl font-bold">{activeCheckouts.length}</div>
+                        <p className="text-xs text-muted-foreground">{atRiskCheckouts.length} por vencer</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Préstamos Vencidos</CardTitle>
+                        <CardTitle className="text-sm font-medium">Usuarios con Préstamos Vencidos</CardTitle>
                         <AlertTriangle className="h-4 w-4 text-destructive" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{usersWithOverdueLoans.size}</div>
-                        <p className="text-xs text-muted-foreground">Usuarios con préstamos vencidos</p>
+                        <p className="text-xs text-muted-foreground">Cuentas en riesgo de desactivación</p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -633,6 +632,4 @@ export function LibrarianDashboard() {
   );
 }
 
-
-    
     
