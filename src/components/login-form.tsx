@@ -40,10 +40,8 @@ export function LoginForm() {
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
-        if (!snapshot.empty) {
-            setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
-            setIsDataLoading(false);
-        }
+        setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
+        setIsDataLoading(false);
     }, (error) => {
         console.error("Error fetching users: ", error);
         toast({
@@ -70,6 +68,7 @@ export function LoginForm() {
     setIsAuthLoading(true);
     const { username, password } = values;
 
+    // Use the state which is kept up-to-date by onSnapshot
     const user = users.find(u => u.username === username);
 
     if (!user) {
@@ -98,7 +97,6 @@ export function LoginForm() {
             description: "La contraseña no es correcta. Por favor, inténtalo de nuevo.",
         });
     }
-    // This will run regardless of success or failure, which is fine here.
     setIsAuthLoading(false);
   }
   

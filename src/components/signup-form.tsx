@@ -75,6 +75,20 @@ export function SignUpForm() {
   const { toast } = useToast();
   const [role, setRole] = React.useState<'client' | 'librarian' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
+      setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserType)));
+      setIsDataLoading(false);
+    }, (error) => {
+        console.error("Error fetching users: ", error);
+        setIsDataLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const formSchema = role === 'client' ? clientSchema : (role === 'librarian' ? librarianSchema : z.object({}));
 
@@ -98,62 +112,49 @@ export function SignUpForm() {
     setIsLoading(true);
 
     let newUser: Omit<UserType, 'id'>;
+    let usernameToRegister: string;
+    
+    if (role === 'client') {
+        const clientValues = values as z.infer<typeof clientSchema>;
+        usernameToRegister = clientValues.email.split('@')[0];
+        newUser = {
+            username: usernameToRegister,
+            password: clientValues.password,
+            role: 'client',
+            name: clientValues.name,
+            curp: clientValues.curp,
+            phone: clientValues.phone,
+            address: clientValues.address,
+            email: clientValues.email, 
+            status: 'active',
+            createdAt: new Date().toISOString(),
+        };
+    } else { // librarian
+        const librarianValues = values as z.infer<typeof librarianSchema>;
+        usernameToRegister = librarianValues.username;
+        newUser = {
+            username: usernameToRegister,
+            password: librarianValues.password,
+            role: 'librarian',
+            email: librarianValues.email,
+            status: 'active',
+            createdAt: new Date().toISOString(),
+        };
+    }
+
+    // Check for existing user without blocking UI for too long
+    const existingUser = users.find(u => u.username === usernameToRegister);
+    if (existingUser) {
+        toast({
+            variant: "destructive",
+            title: "¡Ups! Ocurrió un error.",
+            description: "Este usuario ya está registrado. Por favor, inicia sesión o elige otro.",
+        });
+        setIsLoading(false);
+        return;
+    }
     
     try {
-        if (role === 'client') {
-            const clientValues = values as z.infer<typeof clientSchema>;
-            const usernameToRegister = clientValues.email.split('@')[0];
-            
-            const q = query(collection(db, 'users'), where('username', '==', usernameToRegister));
-            const existingUserSnapshot = await getDocs(q);
-            if (!existingUserSnapshot.empty) {
-                 toast({
-                    variant: "destructive",
-                    title: "¡Ups! Ocurrió un error.",
-                    description: "Esta matrícula ya está registrada. Por favor, inicia sesión.",
-                });
-                setIsLoading(false);
-                return;
-            }
-
-            newUser = {
-                username: usernameToRegister,
-                password: clientValues.password,
-                role: 'client',
-                name: clientValues.name,
-                curp: clientValues.curp,
-                phone: clientValues.phone,
-                address: clientValues.address,
-                email: clientValues.email, 
-                status: 'active',
-                createdAt: new Date().toISOString(),
-            };
-        } else { // librarian
-            const librarianValues = values as z.infer<typeof librarianSchema>;
-            const usernameToRegister = librarianValues.username;
-            
-            const q = query(collection(db, 'users'), where('username', '==', usernameToRegister));
-            const existingUserSnapshot = await getDocs(q);
-            if (!existingUserSnapshot.empty) {
-                toast({
-                    variant: "destructive",
-                    title: "¡Ups! Ocurrió un error.",
-                    description: "Este nombre de usuario ya está registrado. Por favor, elige otro.",
-                });
-                setIsLoading(false);
-                return;
-            }
-
-            newUser = {
-                username: usernameToRegister,
-                password: librarianValues.password,
-                role: 'librarian',
-                email: librarianValues.email,
-                status: 'active',
-                createdAt: new Date().toISOString(),
-            };
-        }
-
         await addDoc(collection(db, 'users'), newUser);
         
         localStorage.setItem('userRole', role);
@@ -165,7 +166,6 @@ export function SignUpForm() {
         });
         
         router.push('/dashboard');
-
     } catch (error) {
         console.error("Error creating user:", error);
         toast({
@@ -174,6 +174,7 @@ export function SignUpForm() {
             description: "No se pudo crear la cuenta. Inténtalo de nuevo más tarde."
         });
     } finally {
+        // This will now execute correctly, unblocking the UI
         setIsLoading(false);
     }
   }
@@ -289,13 +290,13 @@ export function SignUpForm() {
             />
             
             <div className="flex flex-col space-y-2 pt-4">
-                <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
-                    {isLoading ? (
+                <Button type="submit" size="lg" className="w-full" disabled={isLoading || isDataLoading}>
+                    {isLoading || isDataLoading ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
                         <UserPlus className="mr-2 h-4 w-4" />
                     )}
-                    {isLoading ? 'Creando cuenta...' : 'Crear mi cuenta'}
+                    {isDataLoading ? 'Cargando datos...' : (isLoading ? 'Creando cuenta...' : 'Crear mi cuenta')}
                 </Button>
                 <Button variant="link" size="sm" onClick={() => { form.reset(); setRole(null);}}>
                     &larr; Volver
