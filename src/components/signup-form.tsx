@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { UserPlus, User, Loader2 } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
@@ -69,17 +69,19 @@ const librarianSchema = baseSchema.extend({
     }),
 });
 
+const getFormSchema = (role: 'client' | 'librarian' | null) => {
+    if (role === 'client') return clientSchema;
+    if (role === 'librarian') return librarianSchema;
+    return z.object({}); // Empty schema for null role
+}
 
 export function SignUpForm() {
-  const router = useRouter();
   const { toast } = useToast();
   const [role, setRole] = React.useState<'client' | 'librarian' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const formSchema = role === 'client' ? clientSchema : (role === 'librarian' ? librarianSchema : z.object({}));
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm({
+    resolver: zodResolver(getFormSchema(role)),
     defaultValues: {
       username: '',
       email: '',
@@ -91,8 +93,12 @@ export function SignUpForm() {
       address: '',
     },
   });
+
+  useEffect(() => {
+    form.reset();
+  }, [role, form]);
   
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<z.ZodType<any, any, any>>) {
     if (!role) return;
     setIsLoading(true);
 
@@ -135,6 +141,7 @@ export function SignUpForm() {
             description: "Tu cuenta ha sido creada. Serás redirigido."
         });
         
+        // Force a full page reload to ensure a clean state
         window.location.assign('/');
 
     } catch (error) {
@@ -268,7 +275,7 @@ export function SignUpForm() {
                     )}
                     {isLoading ? 'Creando cuenta...' : 'Crear mi cuenta'}
                 </Button>
-                <Button variant="link" size="sm" onClick={() => { form.reset(); setRole(null);}}>
+                <Button variant="link" size="sm" onClick={() => { setRole(null);}}>
                     &larr; Volver
                 </Button>
             </div>
