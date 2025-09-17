@@ -138,6 +138,7 @@ export function SignUpForm() {
                 title: "¡Ups! Ocurrió un error.",
                 description: "Este usuario ya está registrado. Por favor, inicia sesión o elige otro.",
             });
+            setIsLoading(false);
             return;
         }
 
@@ -148,10 +149,14 @@ export function SignUpForm() {
         
         toast({
             title: "✅ ¡Registro exitoso!",
-            description: "Tu cuenta ha sido creada y has iniciado sesión."
+            description: "Tu cuenta ha sido creada. Serás redirigido."
         });
         
-        router.push('/dashboard');
+        // Brief timeout to allow the toast to render before navigation
+        setTimeout(() => {
+            router.push('/dashboard');
+            setIsLoading(false);
+        }, 50);
 
     } catch (error) {
         console.error("Error creating user:", error);
@@ -160,7 +165,6 @@ export function SignUpForm() {
             title: "Error de Registro",
             description: "No se pudo crear la cuenta. Inténtalo de nuevo más tarde."
         });
-    } finally {
         setIsLoading(false);
     }
   }
