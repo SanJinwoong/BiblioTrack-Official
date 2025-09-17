@@ -75,15 +75,6 @@ export function SignUpForm() {
   const { toast } = useToast();
   const [role, setRole] = React.useState<'client' | 'librarian' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [users, setUsers] = useState<UserType[]>([]);
-
-   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
-        setUsers(snapshot.docs.map(doc => doc.data() as UserType));
-    });
-    return () => unsubscribe();
-  }, []);
-
 
   const formSchema = role === 'client' ? clientSchema : (role === 'librarian' ? librarianSchema : z.object({}));
 
@@ -106,50 +97,63 @@ export function SignUpForm() {
     if (!role) return;
     setIsLoading(true);
 
-    let usernameToRegister: string;
     let newUser: Omit<UserType, 'id'>;
     
-    if (role === 'client') {
-        const clientValues = values as z.infer<typeof clientSchema>;
-        usernameToRegister = clientValues.email.split('@')[0];
-        newUser = {
-            username: usernameToRegister,
-            password: clientValues.password,
-            role: 'client',
-            name: clientValues.name,
-            curp: clientValues.curp,
-            phone: clientValues.phone,
-            address: clientValues.address,
-            email: clientValues.email, 
-            status: 'active',
-            createdAt: new Date().toISOString(),
-        };
-    } else { // librarian
-        const librarianValues = values as z.infer<typeof librarianSchema>;
-        usernameToRegister = librarianValues.username;
-        newUser = {
-            username: usernameToRegister,
-            password: librarianValues.password,
-            role: 'librarian',
-            email: librarianValues.email,
-            status: 'active',
-            createdAt: new Date().toISOString(),
-        };
-    }
-    
-    const userExists = users.some(user => user.username === usernameToRegister);
-
-    if (userExists) {
-        toast({
-            variant: "destructive",
-            title: "¡Ups! Ocurrió un error.",
-            description: "Este nombre de usuario ya está registrado. Por favor, elige otro.",
-        });
-        setIsLoading(false);
-        return;
-    }
-
     try {
+        if (role === 'client') {
+            const clientValues = values as z.infer<typeof clientSchema>;
+            const usernameToRegister = clientValues.email.split('@')[0];
+            
+            const q = query(collection(db, 'users'), where('username', '==', usernameToRegister));
+            const existingUserSnapshot = await getDocs(q);
+            if (!existingUserSnapshot.empty) {
+                 toast({
+                    variant: "destructive",
+                    title: "¡Ups! Ocurrió un error.",
+                    description: "Esta matrícula ya está registrada. Por favor, inicia sesión.",
+                });
+                setIsLoading(false);
+                return;
+            }
+
+            newUser = {
+                username: usernameToRegister,
+                password: clientValues.password,
+                role: 'client',
+                name: clientValues.name,
+                curp: clientValues.curp,
+                phone: clientValues.phone,
+                address: clientValues.address,
+                email: clientValues.email, 
+                status: 'active',
+                createdAt: new Date().toISOString(),
+            };
+        } else { // librarian
+            const librarianValues = values as z.infer<typeof librarianSchema>;
+            const usernameToRegister = librarianValues.username;
+            
+            const q = query(collection(db, 'users'), where('username', '==', usernameToRegister));
+            const existingUserSnapshot = await getDocs(q);
+            if (!existingUserSnapshot.empty) {
+                toast({
+                    variant: "destructive",
+                    title: "¡Ups! Ocurrió un error.",
+                    description: "Este nombre de usuario ya está registrado. Por favor, elige otro.",
+                });
+                setIsLoading(false);
+                return;
+            }
+
+            newUser = {
+                username: usernameToRegister,
+                password: librarianValues.password,
+                role: 'librarian',
+                email: librarianValues.email,
+                status: 'active',
+                createdAt: new Date().toISOString(),
+            };
+        }
+
         await addDoc(collection(db, 'users'), newUser);
         
         localStorage.setItem('userRole', role);
