@@ -10,8 +10,7 @@ import { Sparkles, Loader2, BookHeart } from 'lucide-react';
 import type { Book } from '@/lib/types';
 import { BookCard } from './book-card';
 import { ScrollArea, ScrollBar } from './ui/scroll-area';
-import { db } from '@/lib/firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { getBooks } from '@/lib/supabase-functions';
 import Image from 'next/image';
 
 interface RecommendationsProps {
@@ -28,12 +27,18 @@ export function Recommendations({ onBookSelect, displayStyle = 'full' }: Recomme
   
   useEffect(() => {
     setUsername(localStorage.getItem('userUsername'));
+    
+    const loadBooks = async () => {
+      try {
+        const booksData = await getBooks();
+        setBooks(booksData);
+      } catch (error) {
+        console.error('Error loading books:', error);
+        setError('Error al cargar los libros.');
+      }
+    };
 
-    const unsubscribe = onSnapshot(collection(db, 'books'), snapshot => {
-        setBooks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Book)));
-    });
-
-    return () => unsubscribe();
+    loadBooks();
   }, []);
 
   const handleGetRecommendations = async () => {

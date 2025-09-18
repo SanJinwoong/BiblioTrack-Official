@@ -20,8 +20,14 @@ import { CheckoutForm } from './checkout-form';
 import { useEffect, useState } from 'react';
 import { UserDetailsTooltip } from './user-details-tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { db } from '@/lib/firebase';
-import { collection, onSnapshot, addDoc, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { 
+  getCheckouts,
+  getReviews,
+  updateUser,
+  updateCheckout,
+  addReview,
+  getUsers
+} from '@/lib/supabase-functions';
 import { StarRating } from './star-rating';
 import { Textarea } from './ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -53,22 +59,23 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
   useEffect(() => {
     if (!book?.id) return;
     
-    const reviewsUnsubscribe = onSnapshot(collection(db, 'reviews'), (snapshot) => {
-        const allReviews = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
-        setReviews(allReviews.filter(r => r.bookId === book.id));
-    });
-
-    const usersUnsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
-        const allUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserType));
-        setUsers(allUsers);
-        const foundUser = allUsers.find(u => u.username === username);
+    const loadData = async () => {
+      try {
+        const [reviewsData, usersData] = await Promise.all([
+          getReviews(),
+          getUsers()
+        ]);
+        
+        setReviews(reviewsData.filter(r => r.bookId === book.id));
+        setUsers(usersData);
+        const foundUser = usersData.find(u => u.username === username);
         setCurrentUser(foundUser || null);
-    });
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    };
 
-    return () => {
-        reviewsUnsubscribe();
-        usersUnsubscribe();
-    }
+    loadData();
   }, [book?.id, username]);
 
   if (!book) {
@@ -104,7 +111,11 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
     };
 
     try {
-        await addDoc(collection(db, 'reviews'), reviewData);
+        await addReview(reviewData);
+        // Reload reviews to show the new one
+        const reviewsData = await getReviews();
+        setReviews(reviewsData.filter(r => r.bookId === book.id));
+        
         toast({
             title: '✅ Reseña enviada',
             description: '¡Gracias por tu opinión!',
@@ -147,17 +158,25 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
   const handleToggleFavorite = async () => {
     if (!currentUser || !book) return;
     
-    const userRef = doc(db, 'users', currentUser.id);
     const isFavorite = currentUser.favoriteBooks?.includes(book.title);
+    const updatedFavorites = isFavorite 
+      ? (currentUser.favoriteBooks || []).filter(title => title !== book.title)
+      : [...(currentUser.favoriteBooks || []), book.title];
 
     try {
-        if (isFavorite) {
-            await updateDoc(userRef, { favoriteBooks: arrayRemove(book.title) });
-            toast({ description: `"${book.title}" eliminado de tus favoritos.` });
-        } else {
-            await updateDoc(userRef, { favoriteBooks: arrayUnion(book.title) });
-            toast({ description: `"${book.title}" añadido a tus favoritos.` });
-        }
+        await updateUser(currentUser.id, { favoriteBooks: updatedFavorites });
+        
+        // Update local state
+        setCurrentUser({
+          ...currentUser,
+          favoriteBooks: updatedFavorites
+        });
+        
+        toast({ 
+          description: isFavorite 
+            ? `"${book.title}" eliminado de tus favoritos.` 
+            : `"${book.title}" añadido a tus favoritos.` 
+        });
     } catch (error) {
         console.error("Error updating favorites:", error);
         toast({ variant: 'destructive', title: 'Error', description: 'No se pudo actualizar tus favoritos.' });

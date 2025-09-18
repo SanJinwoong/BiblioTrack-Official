@@ -23,8 +23,17 @@ import { Button } from './ui/button';
 import { ArrowRight } from 'lucide-react';
 import { RestrictedView } from './restricted-view';
 import { useToast } from '@/hooks/use-toast';
-import { db } from '@/lib/firebase';
-import { collection, onSnapshot, addDoc, doc, updateDoc, writeBatch } from 'firebase/firestore';
+import { 
+  getBooks, 
+  getUsers, 
+  getCategories,
+  getCheckouts,
+  getCheckoutRequests, 
+  getReviews,
+  addCheckout,
+  addCheckoutRequest,
+  addReview 
+} from '@/lib/supabase-functions';
 import { useRouter } from 'next/navigation';
 
 export function ClientDashboard() {
@@ -47,28 +56,31 @@ export function ClientDashboard() {
     const storedUsername = localStorage.getItem('userUsername') || '';
     setUsername(storedUsername);
 
-    const unsubscribes = [
-      onSnapshot(collection(db, 'books'), snapshot => {
-        setBooks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BookType)));
-      }),
-      onSnapshot(collection(db, 'categories'), snapshot => 
-        setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)))
-      ),
-      onSnapshot(collection(db, 'checkouts'), snapshot => 
-        setCheckouts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Checkout)))
-      ),
-      onSnapshot(collection(db, 'checkoutRequests'), snapshot =>
-        setCheckoutRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Checkout)))
-      ),
-      onSnapshot(collection(db, 'users'), snapshot => {
-        const userList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
-        setUsers(userList);
-        
-        const currentUser = userList.find((u: User) => u.username === storedUsername);
+    const loadData = async () => {
+      try {
+        const [booksData, categoriesData, checkoutsData, requestsData, usersData] = await Promise.all([
+          getBooks(),
+          getCategories(),
+          getCheckouts(),
+          getCheckoutRequests(),
+          getUsers()
+        ]);
+
+        setBooks(booksData);
+        setCategories(categoriesData);
+        setCheckouts(checkoutsData);
+        setCheckoutRequests(requestsData);
+        setUsers(usersData);
+
+        const currentUser = usersData.find((u: User) => u.username === storedUsername);
         setUser(currentUser || null);
-      }),
-    ];
-    
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    };
+
+    loadData();
+
     // Toast for reactivation
     if (localStorage.getItem('justReactivated') === 'true') {
         toast({
@@ -77,8 +89,6 @@ export function ClientDashboard() {
         });
         localStorage.removeItem('justReactivated');
     }
-
-    return () => unsubscribes.forEach(unsub => unsub());
   }, [toast]);
 
 
@@ -89,7 +99,12 @@ export function ClientDashboard() {
       dueDate: checkoutData.dueDate,
       status: 'pending',
     };
-    await addDoc(collection(db, 'checkoutRequests'), newRequest);
+    
+    try {
+      await addCheckoutRequest(newRequest);
+    } catch (error) {
+      console.error('Error adding checkout request:', error);
+    }
   };
 
   const handleReturnBook = () => {};

@@ -22,8 +22,7 @@ import {
 import { Input } from './ui/input';
 import { Library } from './icons/uat-logo';
 import { useEffect, useState } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getBooks, getUsers, getCheckouts } from '@/lib/supabase-functions';
 import type { User as UserType, Category } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import {
@@ -55,13 +54,17 @@ export function ClientHeader({ onSelectCategory, categories }: ClientHeaderProps
     
     if (!storedUsername) return;
 
-    const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
-        const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserType));
-        const foundUser = usersData.find(u => u.username === storedUsername);
-        setCurrentUser(foundUser || null);
-    });
+    const loadCurrentUser = async () => {
+        try {
+            const usersData = await getUsers();
+            const foundUser = usersData.find(u => u.username === storedUsername);
+            setCurrentUser(foundUser || null);
+        } catch (error) {
+            console.error('Error loading current user:', error);
+        }
+    };
 
-    return () => unsubscribe();
+    loadCurrentUser();
   }, []);
 
 

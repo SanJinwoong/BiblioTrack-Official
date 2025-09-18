@@ -18,8 +18,21 @@ import { DashboardHeader } from './dashboard-header';
 import { SettingsDialog } from './settings-dialog';
 import { isPast, parseISO, differenceInDays } from 'date-fns';
 import { UserLoanCard } from './user-loan-card';
-import { db } from '@/lib/firebase';
-import { collection, doc, getDocs, writeBatch, onSnapshot, addDoc, updateDoc, deleteDoc, query, where, getDoc } from 'firebase/firestore';
+import { 
+  getUsers, 
+  getBooks, 
+  getCategories,
+  getCheckouts,
+  getCheckoutRequests,
+  updateUser,
+  updateCheckout,
+  deleteCheckout,
+  addBook,
+  updateBook,
+  deleteBook,
+  deleteCheckoutRequest,
+  addCheckout
+} from '@/lib/supabase-functions';
 import {
   Carousel,
   CarouselContent,
@@ -53,31 +66,32 @@ export function LibrarianDashboard() {
     const storedUsername = localStorage.getItem('userUsername') || '';
     setUsername(storedUsername);
 
-    const unsubscribes = [
-      onSnapshot(collection(db, 'books'), snapshot => {
-        setBooks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BookType)))
-      }),
-      onSnapshot(collection(db, 'categories'), snapshot => 
-        setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)))
-      ),
-      onSnapshot(collection(db, 'checkouts'), snapshot => 
-        setCheckouts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Checkout)))
-      ),
-      onSnapshot(collection(db, 'checkoutRequests'), snapshot =>
-        setCheckoutRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Checkout)))
-      ),
-      onSnapshot(collection(db, 'users'), snapshot => {
-        const userList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserType));
-        setUsers(userList);
-        
-        const currentUser = userList.find(u => u.username === storedUsername);
+    const loadData = async () => {
+      try {
+        const [booksData, categoriesData, checkoutsData, requestsData, usersData] = await Promise.all([
+          getBooks(),
+          getCategories(),
+          getCheckouts(),
+          getCheckoutRequests(),
+          getUsers()
+        ]);
+
+        setBooks(booksData);
+        setCategories(categoriesData);
+        setCheckouts(checkoutsData);
+        setCheckoutRequests(requestsData);
+        setUsers(usersData);
+
+        const currentUser = usersData.find(u => u.username === storedUsername);
         if (currentUser?.role !== 'librarian') {
-            // Optional: Redirect or show an unauthorized message
+          // Optional: Redirect or show an unauthorized message
         }
-      }),
-    ];
-    
-    return () => unsubscribes.forEach(unsub => unsub());
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    };
+
+    loadData();
   }, []);
 
   useEffect(() => {
@@ -95,20 +109,21 @@ export function LibrarianDashboard() {
       });
       
       if (overdueUsersToDeactivate.size > 0) {
-        const batch = writeBatch(db);
         let deactivatedCount = 0;
         
-        users.forEach(user => {
+        for (const user of users) {
           const userIdentifier = user.username;
           if (overdueUsersToDeactivate.has(userIdentifier) && user.status === 'active') {
-            const userRef = doc(db, 'users', user.id);
-            batch.update(userRef, { status: 'deactivated' });
-            deactivatedCount++;
+            try {
+              await updateUser(user.id, { status: 'deactivated' });
+              deactivatedCount++;
+            } catch (error) {
+              console.error('Error deactivating user:', error);
+            }
           }
-        });
+        }
 
         if (deactivatedCount > 0) {
-          await batch.commit();
           toast({
             title: 'Cuentas Desactivadas Automáticamente',
             description: `${deactivatedCount} cuenta(s) han sido desactivadas por préstamos vencidos.`,
@@ -157,26 +172,26 @@ export function LibrarianDashboard() {
     const bookToCheckout = getBook(requestToApprove.bookId);
     if (!bookToCheckout || bookToCheckout.stock === 0) {
       toast({ variant: 'destructive', title: 'Error de aprobación', description: `El libro "${bookToCheckout?.title}" no está disponible.` });
-      await deleteDoc(doc(db, 'checkoutRequests', requestToApprove.id));
+      await deleteCheckoutRequest(requestToApprove.id);
       return;
     }
     
-    const batch = writeBatch(db);
+    try {
+      // Update book stock
+      await updateBook(requestToApprove.bookId, { stock: bookToCheckout.stock - 1 });
+      
+      // Create checkout from request
+      const { id, ...requestData } = requestToApprove;
+      await addCheckout({ ...requestData, status: 'approved' });
 
-    const bookRef = doc(db, 'books', requestToApprove.bookId);
-    batch.update(bookRef, { stock: bookToCheckout.stock - 1 });
-    
-    const checkoutRef = doc(collection(db, 'checkouts'));
-    const { id, ...requestData } = requestToApprove;
-    batch.set(checkoutRef, { ...requestData, status: 'approved' });
+      // Delete the request
+      await deleteCheckoutRequest(requestToApprove.id);
 
-    const requestRef = doc(db, 'checkoutRequests', requestToApprove.id);
-    batch.delete(requestRef);
-    
-    await batch.commit();
-
-    handleCloseDialog();
-    toast({ title: '✅ Préstamo Aprobado', description: `El préstamo de "${bookToCheckout.title}" a ${requestToApprove.userId} ha sido confirmado.` });
+      handleCloseDialog();
+      toast({ title: '✅ Préstamo Aprobado', description: `El préstamo de "${bookToCheckout.title}" a ${requestToApprove.userId} ha sido confirmado.` });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo aprobar la solicitud.' });
+    }
   };
 
   const handleSuccessfulCheckout = async (bookId: string, checkoutData: {userId: string; dueDate: string}) => {
@@ -186,28 +201,38 @@ export function LibrarianDashboard() {
       return;
     }
 
-    const batch = writeBatch(db);
-    const bookRef = doc(db, 'books', bookId);
-    batch.update(bookRef, { stock: bookToCheckout.stock - 1 });
+    try {
+      // Update book stock
+      await updateBook(bookId, { stock: bookToCheckout.stock - 1 });
 
-    const newCheckout: Omit<Checkout, 'id'> = { ...checkoutData, bookId: bookId, status: 'approved' };
-    const checkoutRef = doc(collection(db, 'checkouts'));
-    batch.set(checkoutRef, newCheckout);
-    
-    await batch.commit();
+      // Create checkout
+      const newCheckout: Omit<Checkout, 'id'> = { ...checkoutData, bookId: bookId, status: 'approved' };
+      await addCheckout(newCheckout);
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo procesar el préstamo.' });
+    }
   };
   
   const handleAddNewBook = async (newBookData: Omit<BookType, 'id'>) => {
-    const docRef = await addDoc(collection(db, 'books'), newBookData);
-    setBooks(prev => [...prev, { ...newBookData, id: docRef.id }]);
-    toast({ title: '📖 ¡Libro Añadido!', description: `"${newBookData.title}" ha sido añadido al catálogo.` });
+    try {
+      await addBook(newBookData);
+      // Reload books data
+      const booksData = await getBooks();
+      setBooks(booksData);
+      toast({ title: '📖 ¡Libro Añadido!', description: `"${newBookData.title}" ha sido añadido al catálogo.` });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo añadir el libro.' });
+    }
   };
 
   const handleUpdateBook = async (updatedBook: BookType) => {
-    const { id, ...bookData } = updatedBook;
-    const bookRef = doc(db, 'books', id);
-    await updateDoc(bookRef, bookData);
-    toast({ title: '📘 ¡Libro Actualizado!', description: `"${updatedBook.title}" ha sido actualizado.` });
+    try {
+      const { id, ...bookData } = updatedBook;
+      await updateBook(id, bookData);
+      toast({ title: '📘 ¡Libro Actualizado!', description: `"${updatedBook.title}" ha sido actualizado.` });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo actualizar el libro.' });
+    }
   };
   
   const handleOpenAddBookDialog = () => {
@@ -221,50 +246,61 @@ export function LibrarianDashboard() {
   };
 
   const handleDeleteBook = async (bookId: string) => {
-    await deleteDoc(doc(db, 'books', bookId));
-    toast({ title: '🗑️ Libro Eliminado', description: 'El libro ha sido eliminado del catálogo.' });
+    try {
+      await deleteBook(bookId);
+      // Reload books data
+      const booksData = await getBooks();
+      setBooks(booksData);
+      toast({ title: '🗑️ Libro Eliminado', description: 'El libro ha sido eliminado del catálogo.' });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo eliminar el libro.' });
+    }
   };
 
   const handleReturnBook = async (checkoutToReturn: any) => {
-    const batch = writeBatch(db);
+    try {
+      const book = getBook(checkoutToReturn.bookId);
+      if (book) {
+        await updateBook(checkoutToReturn.bookId, { stock: book.stock + 1 });
+      }
 
-    const book = getBook(checkoutToReturn.bookId);
-    if(book) {
-        const bookRef = doc(db, 'books', checkoutToReturn.bookId);
-        batch.update(bookRef, { stock: book.stock + 1 });
-    }
+      await deleteCheckout(checkoutToReturn.id);
+      
+      const userToUpdate = users.find(u => u.username === checkoutToReturn.userId);
 
-    const checkoutRef = doc(db, 'checkouts', checkoutToReturn.id);
-    batch.delete(checkoutRef);
-    
-    const userToUpdate = users.find(u => u.username === checkoutToReturn.userId);
-
-    if (userToUpdate && userToUpdate.status === 'deactivated') {
-        const otherCheckoutsQuery = query(collection(db, 'checkouts'), where('userId', '==', checkoutToReturn.userId));
-        const otherCheckoutsSnapshot = await getDocs(otherCheckoutsQuery);
-        const otherCheckouts = otherCheckoutsSnapshot.docs.map(d => d.data() as Checkout).filter(c => c.id !== checkoutToReturn.id);
+      if (userToUpdate && userToUpdate.status === 'deactivated') {
+        // Check if user has other overdue books
+        const allCheckouts = await getCheckouts();
+        const otherCheckouts = allCheckouts.filter(c => 
+          c.userId === checkoutToReturn.userId && c.id !== checkoutToReturn.id
+        );
         const hasOtherOverdueBooks = otherCheckouts.some(c => isPast(parseISO(c.dueDate)));
 
         if (!hasOtherOverdueBooks) {
-            const userRef = doc(db, 'users', userToUpdate.id);
-            batch.update(userRef, { status: 'active' });
+          await updateUser(userToUpdate.id, { status: 'active' });
         }
-    }
+      }
 
-    await batch.commit();
-    toast({ title: '✅ Libro Devuelto', description: `El libro ha sido marcado como devuelto.` });
+      toast({ title: '✅ Libro Devuelto', description: `El libro ha sido marcado como devuelto.` });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo procesar la devolución.' });
+    }
   };
 
   const handleUserStatusChange = async (userId: string, reactivate: boolean) => {
     const user = users.find(u => u.username === userId || u.id === userId);
     if (!user) return;
-    const userRef = doc(db, "users", user.id);
-    await updateDoc(userRef, { status: reactivate ? 'active' : 'deactivated' });
     
-    toast({
+    try {
+      await updateUser(user.id, { status: reactivate ? 'active' : 'deactivated' });
+      
+      toast({
         title: reactivate ? '👤 Cuenta Reactivada' : '🚫 Cuenta Desactivada',
         description: `La cuenta de ${user?.name || userId} ha sido ${reactivate ? 'reactivada' : 'desactivada'}.`,
-    });
+      });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No se pudo cambiar el estado del usuario.' });
+    }
   };
 
   const activeCheckouts = checkouts.filter(c => c.status === 'approved');
@@ -346,6 +382,8 @@ export function LibrarianDashboard() {
           setCategories={() => {}}
           onEditBook={handleOpenEditBookDialog}
           onDeleteBook={handleDeleteBook}
+          users={users}
+          onUserStatusChange={handleUserStatusChange}
         />
         <BookDetailsDialog 
             book={selectedBook} 

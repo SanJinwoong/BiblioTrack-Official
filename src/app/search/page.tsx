@@ -3,8 +3,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { db } from '@/lib/firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { getBooks, getUsers, getCategories } from '@/lib/supabase-functions';
 import type { Book, User, Category } from '@/lib/types';
 import { ClientHeader } from '@/components/client-header';
 import { BookCard } from '@/components/book-card';
@@ -37,21 +36,26 @@ function SearchResults() {
     const storedUsername = localStorage.getItem('userUsername') || '';
     setUsername(storedUsername);
 
-    const unsubscribes = [
-      onSnapshot(collection(db, 'books'), snapshot => {
-        setAllBooks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Book)));
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [booksData, usersData, categoriesData] = await Promise.all([
+          getBooks(),
+          getUsers(),
+          getCategories()
+        ]);
+        
+        setAllBooks(booksData);
+        setAllUsers(usersData);
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error('Error loading search data:', error);
+      } finally {
         setLoading(false);
-      }),
-      onSnapshot(collection(db, 'users'), snapshot => {
-        setAllUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
-        setLoading(false);
-      }),
-       onSnapshot(collection(db, 'categories'), snapshot => {
-        setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)));
-      }),
-    ];
+      }
+    };
 
-    return () => unsubscribes.forEach(unsub => unsub());
+    loadData();
   }, []);
 
   useEffect(() => {
@@ -121,7 +125,6 @@ function SearchResults() {
   return (
     <div className="bg-background min-h-screen">
       <ClientHeader
-        username={username}
         onSelectCategory={handleCategorySelect}
         categories={categories}
       />

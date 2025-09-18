@@ -7,7 +7,6 @@ import { z } from 'zod';
 import { format, addDays, startOfDay, addWeeks, addMonths } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, addDoc } from 'firebase/firestore';
 
 
 import {
@@ -20,7 +19,7 @@ import {
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import type { Book, User } from '@/lib/types';
-import { db } from '@/lib/firebase';
+import { addCheckout, getUsers, addUser } from '@/lib/supabase-functions';
 import { Button } from './ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
@@ -69,10 +68,16 @@ export function CheckoutForm({ book, username, role, onSuccess, onCancel }: Chec
   const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'users'), snapshot => {
-      setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
-    });
-    return () => unsubscribe();
+    const loadUsers = async () => {
+      try {
+        const usersData = await getUsers();
+        setUsers(usersData);
+      } catch (error) {
+        console.error('Error loading users:', error);
+      }
+    };
+    
+    loadUsers();
   }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -192,7 +197,7 @@ export function CheckoutForm({ book, username, role, onSuccess, onCancel }: Chec
                     username: clientUsername, password: 'password', role: 'client',
                     name: userName, curp: librarianValues.curp!, phone: librarianValues.phone!, email: librarianValues.email!, address: librarianValues.address!, status: 'active'
                 };
-                await addDoc(collection(db, 'users'), newUser);
+                await addUser(newUser);
                 toast({ title: '👤 Nuevo usuario registrado', description: `El usuario con matrícula ${matricula} ha sido creado.` });
             }
         } else {
@@ -201,7 +206,7 @@ export function CheckoutForm({ book, username, role, onSuccess, onCancel }: Chec
                 username: `${userName.toLowerCase().replace(/\s/g, '.')}@externos.uat.edu.mx`, password: 'password', role: 'client',
                 name: userName, curp: librarianValues.curp!, phone: librarianValues.phone!, email: librarianValues.email!, address: librarianValues.address!, status: 'active'
             };
-            await addDoc(collection(db, 'users'), newUser);
+            await addUser(newUser);
             toast({ title: '👤 Nuevo usuario registrado', description: `El usuario ${userName} ha sido creado.` });
         }
         toastDescriptionName = userName;

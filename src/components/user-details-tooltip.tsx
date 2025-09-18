@@ -2,8 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getUsers } from '@/lib/supabase-functions';
 import type { User as UserType } from '@/lib/types';
 import { CardContent, CardHeader, CardTitle } from './ui/card';
 import { User } from 'lucide-react';
@@ -18,10 +17,15 @@ export function UserDetailsTooltip({ userId, children }: UserDetailsTooltipProps
     const [users, setUsers] = useState<UserType[]>([]);
 
     useEffect(() => {
-        const unsubscribe = onSnapshot(collection(db, 'users'), snapshot => {
-            setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserType)));
-        });
-        return () => unsubscribe();
+        const loadUsers = async () => {
+            try {
+                const usersData = await getUsers();
+                setUsers(usersData);
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        };
+        loadUsers();
     }, []);
 
     const user = users.find(u => {

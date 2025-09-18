@@ -18,9 +18,8 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { db } from '@/lib/firebase';
+import { getUsers } from '@/lib/supabase-functions';
 import type { User } from '@/lib/types';
-import { collection, onSnapshot } from 'firebase/firestore';
 
 const formSchema = z.object({
   username: z.string().min(1, {
@@ -39,20 +38,23 @@ export function LoginForm() {
   const [isAuthLoading, setIsAuthLoading] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
-        setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
+    const loadUsers = async () => {
+      try {
+        const usersData = await getUsers();
+        setUsers(usersData);
         setIsDataLoading(false);
-    }, (error) => {
-        console.error("Error fetching users: ", error);
+      } catch (error) {
+        console.error("Error fetching users:", error);
         toast({
-            variant: "destructive",
-            title: "Error de Conexión",
-            description: "No se pudieron cargar los datos de usuario.",
+          variant: "destructive",
+          title: "Error de Conexión",
+          description: "No se pudieron cargar los datos de usuario.",
         });
         setIsDataLoading(false);
-    });
+      }
+    };
 
-    return () => unsubscribe();
+    loadUsers();
   }, [toast]);
 
 

@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { UserPlus, User, Loader2 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
-import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
+import { supabase } from '@/lib/supabase';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -28,7 +28,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import type { User as UserType } from '@/lib/types';
 import { Library } from '@/components/icons/uat-logo';
-import { db } from '@/lib/firebase';
+import { getUsers, getUserByUsername } from '@/lib/supabase-functions';
 
 const studentEmailRegex = /^a\d{10}@alumnos\.uat\.edu\.mx$/;
 const ADMIN_REGISTRATION_CODE = 'SUPER_SECRET_CODE';
@@ -136,7 +136,23 @@ export function SignUpForm() {
             };
         }
         
-        await addDoc(collection(db, 'users'), newUser);
+        // Create user using Supabase
+        const success = await supabase.from('users').insert([{
+            username: newUser.username,
+            password: newUser.password,
+            role: newUser.role,
+            name: newUser.name,
+            curp: newUser.curp,
+            email: newUser.email,
+            phone: newUser.phone,
+            address: newUser.address,
+            status: newUser.status,
+            created_at: newUser.createdAt
+        }]);
+        
+        if (success.error) {
+            throw new Error(success.error.message);
+        }
         
         toast({
             title: "✅ ¡Registro exitoso!",

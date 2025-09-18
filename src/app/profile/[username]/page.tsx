@@ -6,20 +6,26 @@ import { UserProfile } from '@/components/user-profile';
 import { ClientHeader } from '@/components/client-header';
 import { useState, useEffect, use } from 'react';
 import type { Category } from '@/lib/types';
-import { db } from '@/lib/firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { getCategories } from '@/lib/supabase-functions';
 import { useRouter } from 'next/navigation';
 
-export default function ProfilePage({ params }: { params: { username: string } }) {
+export default function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const [categories, setCategories] = useState<Category[]>([]);
-  const { username } = use(params);
+  const resolvedParams = use(params);
+  const { username } = resolvedParams;
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'categories'), (snapshot) => {
-      setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)));
-    });
-    return () => unsubscribe();
+    const loadCategories = async () => {
+      try {
+        const categoriesData = await getCategories();
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error('Error loading categories:', error);
+      }
+    };
+
+    loadCategories();
   }, []);
 
   const handleSelectCategory = (category: string | null) => {

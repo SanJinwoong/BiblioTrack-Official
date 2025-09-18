@@ -4,8 +4,14 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { db } from '@/lib/firebase';
-import { collection, onSnapshot, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { 
+  getUserByUsername, 
+  updateUser, 
+  getBooks, 
+  getCheckoutsByUserId, 
+  getReviewsByBookId,
+  getUsers 
+} from '@/lib/supabase-functions';
 import type { User, Book, Checkout as CheckoutType, Review } from '@/lib/types';
 import { Skeleton } from './ui/skeleton';
 import { Button } from './ui/button';
@@ -41,36 +47,48 @@ export function UserProfile({ username }: UserProfileProps) {
   const [selectedBookCheckout, setSelectedBookCheckout] = useState<CheckoutType | null>(null);
 
   useEffect(() => {
-    const storedUsername = localStorage.getItem('userUsername');
-    
-    const usersUnsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
-      const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
-      setAllUsers(usersData);
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        // Load all users
+        const usersData = await getUsers();
+        setAllUsers(usersData);
 
-      const profileUser = usersData.find(u => u.username === username);
-      setUser(profileUser || null);
+        // Find profile user
+        const profileUser = usersData.find(u => u.username === username);
+        setUser(profileUser || null);
 
-      if (storedUsername) {
-        const currentUserData = usersData.find(u => u.username === storedUsername);
-        setCurrentUser(currentUserData || null);
+        // Find current user from localStorage
+        const storedUsername = localStorage.getItem('userUsername');
+        if (storedUsername) {
+          const currentUserData = usersData.find(u => u.username === storedUsername);
+          setCurrentUser(currentUserData || null);
+        }
+
+        // Load books
+        const booksData = await getBooks();
+        setBooks(booksData);
+
+        // Load reviews for all books
+        const allReviews: Review[] = [];
+        for (const book of booksData) {
+          const bookReviews = await getReviewsByBookId(book.id);
+          allReviews.push(...bookReviews);
+        }
+        setReviews(allReviews);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        toast({
+          title: '❌ Error',
+          description: 'Error al cargar los datos del perfil.',
+        });
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    });
-
-    const booksUnsubscribe = onSnapshot(collection(db, 'books'), (snapshot) => {
-      setBooks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Book)));
-    });
-    
-    const reviewsUnsubscribe = onSnapshot(collection(db, 'reviews'), (snapshot) => {
-      setReviews(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review)));
-    });
-
-    return () => {
-      usersUnsubscribe();
-      booksUnsubscribe();
-      reviewsUnsubscribe();
     };
-  }, [username]);
+
+    loadData();
+  }, [username, toast]);
 
   const handleProfileUpdate = async (data: Partial<User> & { newAvatarUrl?: string, newBannerUrl?: string }) => {
     if (!user) return;
@@ -86,49 +104,68 @@ export function UserProfile({ username }: UserProfileProps) {
     }
 
     try {
-      const userRef = doc(db, 'users', user.id);
-      await updateDoc(userRef, updateData);
+      await updateUser(user.id, updateData);
+      
+      // Reload data to show changes
+      const updatedUser = await getUserByUsername(username);
+      if (updatedUser) {
+        setUser(updatedUser);
+      }
+      
       toast({
         title: '✅ Perfil Actualizado',
         description: 'Tus cambios se han guardado correctamente.',
       });
     } catch (error) {
-      console.error('Error updating profile: ', error);
+      console.error('Error updating profile:', error);
       toast({
-        variant: 'destructive',
-        title: 'Error al actualizar',
-        description: 'No se pudieron guardar los cambios. Inténtalo de nuevo.',
+        title: '❌ Error',
+        description: 'No se pudo actualizar el perfil.',
       });
     }
   };
   
   const handleFollowToggle = async () => {
     if (!currentUser || !user || currentUser.id === user.id) return;
-    
-    const currentUserRef = doc(db, 'users', currentUser.id);
-    const targetUserRef = doc(db, 'users', user.id);
 
     const isFollowing = currentUser.following?.includes(user.username);
 
     try {
-        if (isFollowing) {
-            // Unfollow
-            await updateDoc(currentUserRef, { following: arrayRemove(user.username) });
-            await updateDoc(targetUserRef, { followers: arrayRemove(currentUser.username) });
-            toast({ description: `Dejaste de seguir a @${user.username}` });
-        } else {
-            // Follow
-            await updateDoc(currentUserRef, { following: arrayUnion(user.username) });
-            await updateDoc(targetUserRef, { followers: arrayUnion(currentUser.username) });
-            toast({ description: `Ahora sigues a @${user.username}` });
-        }
+      // Update current user's following list
+      let newFollowing = currentUser.following || [];
+      if (isFollowing) {
+        newFollowing = newFollowing.filter(f => f !== user.username);
+      } else {
+        newFollowing = [...newFollowing, user.username];
+      }
+
+      // Update target user's followers list  
+      let newFollowers = user.followers || [];
+      if (isFollowing) {
+        newFollowers = newFollowers.filter(f => f !== currentUser.username);
+      } else {
+        newFollowers = [...newFollowers, currentUser.username];
+      }
+
+      await updateUser(currentUser.id, { following: newFollowing });
+      await updateUser(user.id, { followers: newFollowers });
+
+      // Update local state
+      setCurrentUser({ ...currentUser, following: newFollowing });
+      setUser({ ...user, followers: newFollowers });
+
+      toast({ 
+        description: isFollowing 
+          ? `Dejaste de seguir a @${user.username}` 
+          : `Ahora sigues a @${user.username}` 
+      });
     } catch (error) {
-        console.error('Error following/unfollowing user:', error);
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'No se pudo completar la acción. Inténtalo de nuevo.',
-        });
+      console.error('Error following/unfollowing user:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'No se pudo completar la acción. Inténtalo de nuevo.',
+      });
     }
   };
 
