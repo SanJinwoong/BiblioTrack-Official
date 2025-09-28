@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { User } from '@/lib/types';
+import type { User, Category } from '@/lib/types';
 import Image from 'next/image';
 import { Camera, ZoomIn, ZoomOut } from 'lucide-react';
 import React, { useEffect, useState, useRef } from 'react';
@@ -26,11 +26,15 @@ import ReactCrop, { type Crop as CropType, centerCrop, makeAspectCrop } from 're
 import 'react-image-crop/dist/ReactCrop.css';
 import { Slider } from './ui/slider';
 import { ScrollArea } from './ui/scroll-area';
+import { getCategories } from '@/lib/supabase-functions';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
   bio: z.string().optional(),
+  badgeCategoryId: z.string().optional(),
+  badgeLabel: z.string().max(40, 'Máximo 40 caracteres').optional(),
 });
 
 // Helper function to get the cropped image data URL
@@ -189,6 +193,7 @@ interface EditProfileDialogProps {
 export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }: EditProfileDialogProps) {
   const [avatarPreview, setAvatarPreview] = useState<string | undefined>(user.avatarUrl);
   const [bannerPreview, setBannerPreview] = useState<string | undefined>(user.bannerUrl);
+  const [categories, setCategories] = useState<Category[]>([]);
   
   // State for the image that is currently being cropped
   const [imageToCrop, setImageToCrop] = useState('');
@@ -197,26 +202,58 @@ export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }:
   // State for the final cropped images
   const [croppedAvatar, setCroppedAvatar] = useState<string | null>(null);
   const [croppedBanner, setCroppedBanner] = useState<string | null>(null);
+  const [lastOpenState, setLastOpenState] = useState(false);
+  // Template para generar la etiqueta automáticamente
+  const [labelTemplate, setLabelTemplate] = useState<string>('');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: user.name || '',
       bio: user.bio || '',
+      badgeCategoryId: user.badgeCategoryId || '',
+      badgeLabel: user.badgeLabel || '',
     },
   });
-  
+
   useEffect(() => {
-    if (open) {
-      form.reset({ name: user.name || '', bio: user.bio || '' });
+    if (open && !lastOpenState) {
+      // Solo resetear cuando el diálogo se abre por primera vez (transición false -> true)
+  form.reset({ name: user.name || '', bio: user.bio || '', badgeCategoryId: user.badgeCategoryId || '', badgeLabel: user.badgeLabel || '' });
       setAvatarPreview(user.avatarUrl);
       setBannerPreview(user.bannerUrl);
       setCroppedAvatar(null);
       setCroppedBanner(null);
       setCroppingTarget(null);
       setImageToCrop('');
+      setLabelTemplate('');
+      console.log('🔄 Diálogo abierto - estados reseteados');
     }
-  }, [open, user, form]);
+    setLastOpenState(open);
+  }, [open, user.name, user.bio, user.avatarUrl, user.bannerUrl, form, lastOpenState]);
+
+  // Load categories once when dialog opens
+  useEffect(() => {
+    if (!open) return;
+    (async () => {
+      try {
+        const cats = await getCategories();
+        setCategories(cats);
+      } catch (e) {
+        console.warn('No se pudieron cargar categorías para insignias', e);
+      }
+    })();
+  }, [open]);
+
+  // Componer etiqueta a partir de plantilla + categoría
+  const applyLabelTemplate = (template: string, categoryId?: string | null) => {
+    const catId = categoryId ?? form.getValues('badgeCategoryId');
+    if (!template || !catId) return;
+    const catName = categories.find(c => c.id === catId)?.name?.trim();
+    if (!catName) return;
+    const result = `${template} ${catName}`;
+    form.setValue('badgeLabel', result, { shouldDirty: true });
+  };
 
   const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>, target: 'avatar' | 'banner') => {
     if (e.target.files && e.target.files.length > 0) {
@@ -230,12 +267,18 @@ export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }:
   };
   
   const handleConfirmCrop = (croppedDataUrl: string) => {
+    console.log('✂️ Imagen recortada confirmada para:', croppingTarget);
+    console.log('📸 Data URL length:', croppedDataUrl.length);
+    console.log('📸 Data URL preview:', croppedDataUrl.substring(0, 100) + '...');
+    
     if (croppingTarget === 'avatar') {
       setCroppedAvatar(croppedDataUrl);
       setAvatarPreview(croppedDataUrl);
+      console.log('✅ Avatar actualizado');
     } else if (croppingTarget === 'banner') {
       setCroppedBanner(croppedDataUrl);
       setBannerPreview(croppedDataUrl);
+      console.log('✅ Banner actualizado');
     }
     // Exit cropping mode
     setCroppingTarget(null);
@@ -248,12 +291,22 @@ export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }:
   }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    onProfileUpdate({
+    console.log('📝 Form submit con valores:', values);
+    console.log('🖼️ croppedAvatar:', croppedAvatar);
+    console.log('🖼️ croppedBanner:', croppedBanner);
+    
+    const updateData = {
       name: values.name,
       bio: values.bio,
       newAvatarUrl: croppedAvatar || undefined,
       newBannerUrl: croppedBanner || undefined,
-    });
+      badgeCategoryId: values.badgeCategoryId || undefined,
+      badgeLabel: values.badgeLabel || undefined,
+    };
+    
+    console.log('📤 Enviando datos:', updateData);
+    
+    onProfileUpdate(updateData);
     onOpenChange(false);
   }
   
@@ -294,6 +347,56 @@ export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }:
                    <div className="space-y-2">
                     <label htmlFor="bio" className="text-sm font-medium">Biografía</label>
                     <Textarea id="bio" placeholder="Cuéntanos un poco sobre ti..." {...form.register('bio')} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Insignia</label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-muted-foreground">Categoría</label>
+                        <Select
+                          value={form.watch('badgeCategoryId') || ''}
+                          onValueChange={(val) => {
+                            form.setValue('badgeCategoryId', val, { shouldDirty: true });
+                            if (labelTemplate) applyLabelTemplate(labelTemplate, val);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona una categoría" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categories.map((c) => (
+                              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground">Plantilla (opcional)</label>
+                        <Select
+                          value={labelTemplate}
+                          onValueChange={(tpl) => {
+                            setLabelTemplate(tpl);
+                            applyLabelTemplate(tpl);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Elige una plantilla" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Amante de">Amante de</SelectItem>
+                            <SelectItem value="Adicto a">Adicto a</SelectItem>
+                            <SelectItem value="Fan de">Fan de</SelectItem>
+                            <SelectItem value="Explorador de">Explorador de</SelectItem>
+                            <SelectItem value="Coleccionista de">Coleccionista de</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <div className="mt-2 space-y-1">
+                          <label className="text-xs text-muted-foreground">Etiqueta final (editable)</label>
+                          <Input placeholder="Ej. Amante de Romance" {...form.register('badgeLabel')} />
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Elige una plantilla para autocompletar con la categoría o escribe tu propia etiqueta. Si la dejas vacía, usaremos el nombre de la categoría.</p>
                   </div>
             </div>
 

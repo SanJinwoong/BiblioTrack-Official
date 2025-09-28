@@ -6,6 +6,7 @@ import Image from 'next/image';
 import type { Book as BookType, Checkout, Category, User, Review } from '@/lib/types';
 import { BookCard } from './book-card';
 import { Recommendations } from './recommendations';
+import { UserStatsPanel } from './user-stats-panel';
 import { Badge } from './ui/badge';
 import { ScrollArea, ScrollBar } from './ui/scroll-area';
 import {
@@ -52,32 +53,35 @@ export function ClientDashboard() {
   const { toast } = useToast();
   const router = useRouter();
   
+  const loadData = async () => {
+    try {
+      const [booksData, categoriesData, checkoutsData, requestsData, usersData] = await Promise.all([
+        getBooks(),
+        getCategories(),
+        getCheckouts(),
+        getCheckoutRequests(),
+        getUsers()
+      ]);
+
+      setBooks(booksData);
+      setCategories(categoriesData);
+      setCheckouts(checkoutsData);
+      setCheckoutRequests(requestsData);
+      setUsers(usersData);
+
+      const storedUsername = localStorage.getItem('userUsername') || '';
+      if (storedUsername && usersData.length > 0) {
+        const currentUser = usersData.find((u: User) => u.username === storedUsername);
+        setUser(currentUser || null);
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+    }
+  };
+  
   useEffect(() => {
     const storedUsername = localStorage.getItem('userUsername') || '';
     setUsername(storedUsername);
-
-    const loadData = async () => {
-      try {
-        const [booksData, categoriesData, checkoutsData, requestsData, usersData] = await Promise.all([
-          getBooks(),
-          getCategories(),
-          getCheckouts(),
-          getCheckoutRequests(),
-          getUsers()
-        ]);
-
-        setBooks(booksData);
-        setCategories(categoriesData);
-        setCheckouts(checkoutsData);
-        setCheckoutRequests(requestsData);
-        setUsers(usersData);
-
-        const currentUser = usersData.find((u: User) => u.username === storedUsername);
-        setUser(currentUser || null);
-      } catch (error) {
-        console.error('Error loading data:', error);
-      }
-    };
 
     loadData();
 
@@ -93,15 +97,23 @@ export function ClientDashboard() {
 
 
   const handleSuccessfulCheckoutRequest = async (bookId: string, checkoutData: {userId: string; dueDate: string}) => {
-    const newRequest: Omit<Checkout, 'id'> = {
-      userId: checkoutData.userId,
-      bookId: bookId,
-      dueDate: checkoutData.dueDate,
-      status: 'pending',
-    };
-    
     try {
-      await addCheckoutRequest(newRequest);
+      // Evitar duplicados en UI antes de llamar a backend
+      const alreadyPending = checkoutRequests.some(r => r.bookId === bookId && r.userId === checkoutData.userId && r.status === 'pending');
+      const alreadyActive = checkouts.some(c => c.bookId === bookId && c.userId === checkoutData.userId && c.status === 'approved');
+      if (alreadyPending || alreadyActive) {
+        console.warn('Solicitud/Préstamo duplicado detectado (frontend) - no se envía.');
+        return;
+      }
+      await addCheckoutRequest({
+        userId: checkoutData.userId, // debe ser UUID
+        bookId,
+        dueDate: checkoutData.dueDate,
+        status: 'pending'
+      });
+      // Recargar solicitudes para reflejar en UI
+      const requestsData = await getCheckoutRequests();
+      setCheckoutRequests(requestsData);
     } catch (error) {
       console.error('Error adding checkout request:', error);
     }
@@ -112,8 +124,9 @@ export function ClientDashboard() {
   
   const handleOpenDialog = (book: BookType) => {
     setSelectedBook(book);
-    const checkout = checkouts.find(c => c.bookId === book.id && c.userId === username && c.status === 'approved');
-    const request = checkoutRequests.find(r => r.bookId === book.id && r.userId === username && r.status === 'pending');
+    const userId = user?.id;
+    const checkout = userId ? checkouts.find(c => c.bookId === book.id && c.userId === userId && c.status === 'approved') : undefined;
+    const request = userId ? checkoutRequests.find(r => r.bookId === book.id && r.userId === userId && r.status === 'pending') : undefined;
     setSelectedBookCheckout(checkout || request || null);
   };
 
@@ -123,14 +136,14 @@ export function ClientDashboard() {
   };
 
   const userCheckouts = checkouts
-    .filter((c) => c.userId === username && c.status === 'approved')
+    .filter((c) => user?.id && c.userId === user.id && c.status === 'approved')
     .map((c) => {
       const book = books.find((b) => b.id === c.bookId);
       return book ? { ...book, ...c } as BookType & Checkout : null;
     }).filter((b): b is BookType & Checkout => b !== null);
 
   const userRequests = checkoutRequests
-    .filter((r) => r.userId === username)
+    .filter((r) => user?.id && r.userId === user.id)
     .map((r) => {
         const book = books.find((b) => b.id === r.bookId);
         return book ? { ...book, ...r } as BookType & Checkout : null;
@@ -172,12 +185,14 @@ export function ClientDashboard() {
       />
       <div className="bg-background min-h-screen">
         <ClientHeader 
-            username={username} 
             onSelectCategory={handleCategorySelect}
             categories={categories}
         />
 
         <main className="container mx-auto p-4 md:p-8 lg:p-12 space-y-16">
+          
+          {/* UI de seeding removida para producción */}
+
           <section id="hero" className="w-full">
                <Carousel 
                   opts={{ loop: true }} 
@@ -189,7 +204,7 @@ export function ClientDashboard() {
                           <CarouselItem key={index} className="pl-4">
                                <div className="relative h-full w-full rounded-2xl overflow-hidden shadow-2xl">
                                   <Image
-                                      src={`https://picsum.photos/seed/hero-${index + 1}/1200/400`}
+                                      src={`https://placehold.co/1200x400/6366f1/ffffff?text=Featured+${index + 1}`}
                                       alt={book.title}
                                       fill
                                       className="object-cover"
@@ -208,33 +223,15 @@ export function ClientDashboard() {
               </Carousel>
           </section>
           
-          {(userCheckouts.length > 0 || userRequests.length > 0) && (
-              <section id="my-activity" className="space-y-6">
-                <h2 className="text-3xl font-bold">Mi Actividad</h2>
-                <ScrollArea>
-                    <div className="flex space-x-6 pb-4">
-                    {userCheckouts.map((loan) =>
-                        <div key={`checkout-${loan.id}`} className="w-44 min-w-44">
-                            <BookCard book={loan as BookType} onClick={() => handleOpenDialog(loan as BookType)} isApproved={true}>
-                            <div className="absolute top-2 left-2">
-                                <Badge className='bg-green-100 text-green-800'>Prestado</Badge>
-                            </div>
-                            </BookCard>
-                        </div>
-                    )}
-                     {userRequests.map((request) =>
-                        <div key={`request-${request.id}`} className="w-44 min-w-44">
-                            <BookCard book={request as BookType} onClick={() => handleOpenDialog(request as BookType)} isPending={true}>
-                              <div className="absolute top-2 left-2">
-                                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 animate-pulse">Pendiente</Badge>
-                             </div>
-                            </BookCard>
-                        </div>
-                    )}
-                    </div>
-                    <ScrollBar orientation="horizontal" />
-                </ScrollArea>
-              </section>
+          {/* User Stats Panel */}
+          {user && (
+            <section id="user-stats" className="mb-12">
+              <UserStatsPanel 
+                user={user} 
+                checkouts={checkouts}
+                checkoutRequests={checkoutRequests}
+              />
+            </section>
           )}
 
           <Separator className="my-8"/>

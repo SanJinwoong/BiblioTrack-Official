@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { cn } from '@/lib/utils';
+import { cn, getBookCoverUrl } from '@/lib/utils';
 import { User, Calendar, AlertCircle, MoreHorizontal, Bell, Check, FolderKanban, BookCheck, Loader2, MessageSquare, Heart } from 'lucide-react';
 import { CheckoutForm } from './checkout-form';
 import { useEffect, useState } from 'react';
@@ -26,7 +26,9 @@ import {
   updateUser,
   updateCheckout,
   addReview,
-  getUsers
+  getUsers,
+  addToFavorites,
+  removeFromFavorites
 } from '@/lib/supabase-functions';
 import { StarRating } from './star-rating';
 import { Textarea } from './ui/textarea';
@@ -101,13 +103,21 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
         });
         return;
     }
-    
+    if (!currentUser) {
+      toast({
+        variant: 'destructive',
+        title: 'Sesión inválida',
+        description: 'No se pudo identificar al usuario para la reseña.'
+      });
+      return;
+    }
+
     const reviewData: Omit<Review, 'id'> = {
-        bookId: book.id,
-        userId: username,
-        rating: newRating,
-        comment: newComment,
-        date: new Date().toISOString(),
+      bookId: book.id,
+      userId: currentUser.id, // usar id real (UUID) en lugar de username
+      rating: newRating,
+      comment: newComment,
+      date: new Date().toISOString(),
     };
 
     try {
@@ -158,15 +168,20 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
   const handleToggleFavorite = async () => {
     if (!currentUser || !book) return;
     
-    const isFavorite = currentUser.favoriteBooks?.includes(book.title);
-    const updatedFavorites = isFavorite 
-      ? (currentUser.favoriteBooks || []).filter(title => title !== book.title)
-      : [...(currentUser.favoriteBooks || []), book.title];
-
+    const isFavorite = currentUser.favoriteBooks?.includes(book.id);
+    
     try {
-        await updateUser(currentUser.id, { favoriteBooks: updatedFavorites });
+        if (isFavorite) {
+          await removeFromFavorites(currentUser.id, book.id);
+        } else {
+          await addToFavorites(currentUser.id, book.id);
+        }
         
         // Update local state
+        const updatedFavorites = isFavorite 
+          ? (currentUser.favoriteBooks || []).filter(id => id !== book.id)
+          : [...(currentUser.favoriteBooks || []), book.id];
+          
         setCurrentUser({
           ...currentUser,
           favoriteBooks: updatedFavorites
@@ -223,17 +238,21 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
 
   const stockStatus = getStockStatus();
   const dueDateStatus = getDueDateStatus();
-  const isRequestByThisUser = checkout?.status === 'pending' && checkout?.userId === username;
+  const isRequestByThisUser = checkout?.status === 'pending' && currentUser && checkout?.userId === currentUser.id;
   const isPendingRequestForLibrarian = checkout?.status === 'pending';
   const isLoanForLibrarian = checkout?.status === 'approved';
+  // Si el usuario actual ya tiene un préstamo aprobado de este libro (aunque no esté en prop checkout) impedir nueva solicitud
+  const userHasActiveLoan = !!(currentUser && reviews.some(() => false)); // placeholder logical marker (no active loan list disponible aquí)
   
+  // Ajuste: ahora userId en reviews es UUID, así que buscamos por u.id
   const reviewsWithUserData = reviews.map(review => {
-      const user = users.find(u => u.username === review.userId);
-      return { ...review, user };
+    const user = users.find(u => u.id === review.userId);
+    return { ...review, user };
   });
   
-  const userHasReviewed = reviews.some(r => r.userId === username);
-  const isFavorite = currentUser?.favoriteBooks?.includes(book.title);
+  // Verificar si el usuario actual ya reseñó usando su id real
+  const userHasReviewed = !!(currentUser && reviews.some(r => r.userId === currentUser.id));
+  const isFavorite = currentUser?.favoriteBooks?.includes(book.id);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -241,8 +260,8 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
         <div className="hidden md:flex items-start justify-center p-6 pr-0">
           <div className="relative aspect-[3/4.5] w-full rounded-md overflow-hidden">
             <Image
-              src={book.coverUrl}
-              alt={`Cover of ${book.title}`}
+              src={getBookCoverUrl(book)}
+              alt={`Cover of ${book?.title || 'Book'}`}
               fill
               className="object-cover"
               sizes="(max-width: 768px) 30vw, 200px"
@@ -429,8 +448,8 @@ export function BookDetailsDialog({ book, checkout, open, onOpenChange, onSucces
                         Realizar Préstamo Directo
                     </Button>
                 )}
-                {role === 'client' && !isRequestByThisUser && !showCheckoutForm && (
-                    <Button type="button" disabled={book.stock === 0} onClick={() => setShowCheckoutForm(true)}>
+        {role === 'client' && !isRequestByThisUser && !showCheckoutForm && (
+          <Button type="button" disabled={book.stock === 0} onClick={() => setShowCheckoutForm(true)}>
                         Solicitar Préstamo
                     </Button>
                 )}

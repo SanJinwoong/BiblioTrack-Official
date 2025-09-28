@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { UserCheck, User as UserIcon, Phone, Mail, Home, ChevronDown } from 'lucide-react';
 import Image from 'next/image';
+import { getBookCoverUrl } from '@/lib/utils';
 import {
   Accordion,
   AccordionContent,
@@ -71,7 +72,7 @@ export function UserLoanCard({ user, loans, onReactivateAccount }: UserLoanCardP
                     <div className="space-y-3">
                         {sortedLoans.map(loan => (
                             <div key={loan.id} className="flex items-center gap-3">
-                                <Image src={loan.book.coverUrl} alt={loan.book.title} width={40} height={60} className="rounded-sm object-cover"/>
+                                <Image src={getBookCoverUrl(loan.book)} alt={loan.book.title} width={40} height={60} className="rounded-sm object-cover"/>
                                 <div>
                                     <p className="text-sm font-medium">{loan.book.title}</p>
                                     <p className="text-xs text-destructive">Venció el: {loan.dueDate}</p>

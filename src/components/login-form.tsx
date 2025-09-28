@@ -89,7 +89,7 @@ export function LoginForm() {
         
         router.push('/dashboard');
         toast({
-            title: `✅ ¡Bienvenido de nuevo, ${user.name || user.username}!`,
+            title: `✅ ¡Bienvenido de nuevo, ${user.name}!`,
             description: 'Has iniciado sesión correctamente.',
         });
     } else {

@@ -18,8 +18,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import type { Book, User } from '@/lib/types';
-import { addCheckout, getUsers, addUser } from '@/lib/supabase-functions';
+import type { Book, User, LibraryPolicies } from '@/lib/types';
+import { addCheckout, getUsers, addUser, getLibraryPolicies, getCheckouts } from '@/lib/supabase-functions';
 import { Button } from './ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
@@ -66,22 +66,28 @@ const formSchema = z.union([clientSchema, librarianSchema]);
 export function CheckoutForm({ book, username, role, onSuccess, onCancel }: CheckoutFormProps) {
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
+  const [policies, setPolicies] = useState<LibraryPolicies | null>(null);
 
   useEffect(() => {
-    const loadUsers = async () => {
+    const loadData = async () => {
       try {
-        const usersData = await getUsers();
+        const [usersData, policiesData] = await Promise.all([
+          getUsers(),
+          getLibraryPolicies()
+        ]);
         setUsers(usersData);
+        setPolicies(policiesData);
       } catch (error) {
-        console.error('Error loading users:', error);
+        console.error('Error loading data:', error);
       }
     };
     
-    loadUsers();
+    loadData();
   }, []);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(role === 'client' ? clientSchema : librarianSchema),
+  const currentSchema = role === 'client' ? clientSchema : librarianSchema;
+  const form = useForm<any>({
+    resolver: zodResolver(currentSchema as any),
     defaultValues:
       role === 'client'
         ? {
@@ -110,24 +116,40 @@ export function CheckoutForm({ book, username, role, onSuccess, onCancel }: Chec
         return;
     }
     
-    const clientUsername = `${matricula}@alumnos.uat.edu.mx`;
-    const foundUser = users.find(u => u.username === clientUsername);
+    // Buscar por múltiples criterios
+    const foundUser = users.find(u => {
+      // Buscar por matrícula extraída del email
+      const userMatricula = u.email?.includes('@alumnos.uat.edu.mx') 
+        ? u.email.split('@')[0] 
+        : u.username;
+      
+      return userMatricula === matricula || 
+             u.username === matricula ||
+             u.email === `${matricula}@alumnos.uat.edu.mx` ||
+             u.curp === matricula.toUpperCase() ||
+             u.name?.toLowerCase().includes(matricula.toLowerCase());
+    });
 
     if (foundUser) {
-      form.setValue('name', foundUser.name || '');
-      form.setValue('curp', foundUser.curp || '');
-      form.setValue('phone', foundUser.phone || '');
-      form.setValue('email', foundUser.email || '');
-      form.setValue('address', foundUser.address || '');
+      form.setValue('name', foundUser.name);
+      form.setValue('curp', foundUser.curp);
+      form.setValue('phone', foundUser.phone);
+      form.setValue('email', foundUser.email);
+      form.setValue('address', foundUser.address);
       toast({
         title: '✅ Usuario Encontrado',
-        description: `Datos de ${foundUser.name} cargados.`,
+        description: `Datos de ${foundUser.name} cargados automáticamente.`,
       });
     } else {
+      // Limpiar campos para nuevo usuario
+      form.setValue('name', '');
+      form.setValue('curp', '');
+      form.setValue('phone', '');
+      form.setValue('email', `${matricula}@alumnos.uat.edu.mx`);
+      form.setValue('address', '');
       toast({
-        variant: 'destructive',
-        title: '⚠️ Usuario no encontrado',
-        description: 'La matrícula no existe. Puede registrar al usuario llenando los campos manualmente.',
+        title: 'ℹ️ Usuario nuevo',
+        description: 'Complete los datos para registrar este nuevo usuario.',
       });
     }
   }
@@ -137,8 +159,8 @@ export function CheckoutForm({ book, username, role, onSuccess, onCancel }: Chec
     const foundUser = users.find(u => u.curp === curp);
 
     if (foundUser) {
-        form.setValue('name', foundUser.name || '');
-        form.setValue('address', foundUser.address || '');
+        form.setValue('name', foundUser.name);
+        form.setValue('address', foundUser.address);
         toast({
             title: '✅ Usuario Encontrado por CURP',
             description: `Datos de ${foundUser.name} cargados.`,
@@ -177,40 +199,144 @@ export function CheckoutForm({ book, username, role, onSuccess, onCancel }: Chec
       return;
     }
 
+    // Get library policies and validate max loans
+    try {
+      const policies = await getLibraryPolicies();
+      let userIdToCheck = '';
+      
+      if (role === 'librarian') {
+        const librarianValues = values as z.infer<typeof librarianSchema>;
+        
+        // Buscar usuario existente por matrícula/identificador ingresado
+        if (librarianValues.userId) {
+          const foundUser = users.find(u => {
+            const userMatricula = u.email?.includes('@alumnos.uat.edu.mx') 
+              ? u.email.split('@')[0] 
+              : u.username;
+            
+            return userMatricula === librarianValues.userId || 
+                   u.username === librarianValues.userId ||
+                   u.email === `${librarianValues.userId}@alumnos.uat.edu.mx` ||
+                   (librarianValues.userId && u.curp === librarianValues.userId.toUpperCase());
+          });
+          
+          userIdToCheck = foundUser ? foundUser.id : librarianValues.userId; // fallback si no se encuentra UUID
+        } else {
+          const found = users.find(u => u.name === librarianValues.name);
+          userIdToCheck = found ? found.id : librarianValues.name!; // fallback nombre
+        }
+      } else {
+        // Cliente: necesitamos el UUID real, no el username
+        const currentUser = users.find(u => u.username === username);
+        if (!currentUser) {
+          toast({
+            variant: 'destructive',
+            title: '❌ Usuario no encontrado',
+            description: 'No se pudo resolver tu usuario. Intenta recargar la página.'
+          });
+          return;
+        }
+        userIdToCheck = currentUser.id; // UUID correcto
+      }
+      
+      const currentCheckouts = await getCheckouts();
+      const userActiveLoans = currentCheckouts.filter(
+        checkout => checkout.userId === userIdToCheck && checkout.status === 'approved'
+      );
+      
+      if (userActiveLoans.length >= (policies?.maxLoans || 3)) {
+        toast({
+          variant: 'destructive',
+          title: '❌ Límite de préstamos alcanzado',
+          description: `Este usuario ya tiene ${userActiveLoans.length} libros prestados. El máximo permitido es ${policies?.maxLoans || 3}.`,
+        });
+        return;
+      }
+    } catch (error) {
+      console.error('Error validating policies:', error);
+      toast({
+        variant: 'destructive',
+        title: '❌ Error de validación',
+        description: 'No se pudo validar las políticas de préstamo.',
+      });
+      return;
+    }
+
     let checkoutUserId: string;
     let toastDescriptionName: string;
     let dueDate: string;
 
     if (role === 'librarian') {
         const librarianValues = values as z.infer<typeof librarianSchema>;
-        const matricula = librarianValues.userId;
+        const searchTerm = librarianValues.userId;
         const userName = librarianValues.name!;
         dueDate = calculateDueDate(undefined, librarianValues.loanDuration);
 
-        if (matricula) {
-            checkoutUserId = matricula;
-            const clientUsername = `${matricula}@alumnos.uat.edu.mx`;
-            const foundUser = users.find(u => u.username === clientUsername);
+        // Buscar usuario existente primero
+        let foundUser = users.find(u => {
+          const userMatricula = u.email?.includes('@alumnos.uat.edu.mx') 
+            ? u.email.split('@')[0] 
+            : u.username;
+          
+          return userMatricula === searchTerm || 
+                 u.username === searchTerm ||
+                 u.email === `${searchTerm}@alumnos.uat.edu.mx` ||
+                 (searchTerm && u.curp === searchTerm.toUpperCase());
+        });
 
-            if (!foundUser) {
-                const newUser: Omit<User, 'id'> = {
-                    username: clientUsername, password: 'password', role: 'client',
-                    name: userName, curp: librarianValues.curp!, phone: librarianValues.phone!, email: librarianValues.email!, address: librarianValues.address!, status: 'active'
-                };
-                await addUser(newUser);
-                toast({ title: '👤 Nuevo usuario registrado', description: `El usuario con matrícula ${matricula} ha sido creado.` });
-            }
+        if (foundUser) {
+          // Usuario existe, usar su UUID
+          checkoutUserId = foundUser.id;
+          toastDescriptionName = foundUser.name;
+        } else if (searchTerm) {
+          // Usuario nuevo, crear con matrícula
+          const clientUsername = `${searchTerm}@alumnos.uat.edu.mx`;
+          const newUser: Omit<User, 'id'> = {
+            username: clientUsername, 
+            password: 'password', 
+            role: 'client',
+            name: userName, 
+            curp: librarianValues.curp!, 
+            phone: librarianValues.phone!, 
+            email: librarianValues.email!, 
+            address: librarianValues.address!, 
+            status: 'active'
+          };
+          
+          const createdUser = await addUser(newUser);
+          checkoutUserId = createdUser.id;
+          toastDescriptionName = userName;
+          
+          toast({ 
+            title: '👤 Nuevo usuario registrado', 
+            description: `El usuario ${userName} con matrícula ${searchTerm} ha sido creado.` 
+          });
         } else {
-            checkoutUserId = userName;
-            const newUser: Omit<User, 'id'> = {
-                username: `${userName.toLowerCase().replace(/\s/g, '.')}@externos.uat.edu.mx`, password: 'password', role: 'client',
-                name: userName, curp: librarianValues.curp!, phone: librarianValues.phone!, email: librarianValues.email!, address: librarianValues.address!, status: 'active'
-            };
-            await addUser(newUser);
-            toast({ title: '👤 Nuevo usuario registrado', description: `El usuario ${userName} ha sido creado.` });
+          // Sin matrícula, crear usuario externo
+          const externalUsername = `${userName.toLowerCase().replace(/\s/g, '.')}@externos.uat.edu.mx`;
+          const newUser: Omit<User, 'id'> = {
+            username: externalUsername, 
+            password: 'password', 
+            role: 'client',
+            name: userName, 
+            curp: librarianValues.curp!, 
+            phone: librarianValues.phone!, 
+            email: librarianValues.email!, 
+            address: librarianValues.address!, 
+            status: 'active'
+          };
+          
+          const createdUser = await addUser(newUser);
+          checkoutUserId = createdUser.id;
+          toastDescriptionName = userName;
+          
+          toast({ 
+            title: '👤 Nuevo usuario externo registrado', 
+            description: `El usuario ${userName} ha sido creado como externo.` 
+          });
         }
-        toastDescriptionName = userName;
-         onSuccess({ userId: checkoutUserId, dueDate });
+
+        onSuccess({ userId: checkoutUserId, dueDate });
 
         toast({
             title: '✅ ¡Préstamo Directo Exitoso!',
@@ -220,8 +346,17 @@ export function CheckoutForm({ book, username, role, onSuccess, onCancel }: Chec
     } else {
         // Client role
         const clientValues = values as z.infer<typeof clientSchema>;
-        checkoutUserId = username;
-        toastDescriptionName = username;
+        const currentUser = users.find(u => u.username === username);
+        if (!currentUser) {
+          toast({
+            variant: 'destructive',
+            title: '❌ Usuario no encontrado',
+            description: 'No se pudo enviar la solicitud porque el usuario no existe en memoria.'
+          });
+          return;
+        }
+        checkoutUserId = currentUser.id; // UUID
+        toastDescriptionName = currentUser.name || username;
         dueDate = calculateDueDate(clientValues.pickupDate, clientValues.loanDuration);
         onSuccess({ userId: checkoutUserId, dueDate });
         
@@ -233,11 +368,21 @@ export function CheckoutForm({ book, username, role, onSuccess, onCancel }: Chec
   }
   
   const userOptions = users
-    .filter(user => user.role === 'client' && user.username.includes('@alumnos.uat.edu.mx'))
-    .map(user => ({
-      value: user.username.split('@')[0],
-      label: user.username.split('@')[0],
-    }));
+    .filter(user => user.role === 'client')
+    .map(user => {
+      // Extraer matrícula del email o usar username
+      const matricula = user.email?.includes('@alumnos.uat.edu.mx') 
+        ? user.email.split('@')[0] 
+        : user.username;
+      
+      const displayName = user.name ? `${user.name} - ${matricula}` : matricula;
+      return {
+        value: matricula,
+        label: displayName,
+        searchable: `${matricula} ${user.name || ''} ${user.email || ''} ${user.curp || ''}`.toLowerCase()
+      };
+    })
+    .sort((a, b) => a.label.localeCompare(b.label));
 
 
   return (
@@ -253,7 +398,7 @@ export function CheckoutForm({ book, username, role, onSuccess, onCancel }: Chec
                     name="userId"
                     render={({ field }) => (
                         <FormItem className="flex flex-col">
-                            <FormLabel>Matrícula del Usuario</FormLabel>
+                            <FormLabel>Buscar Usuario</FormLabel>
                             <Combobox
                                 options={userOptions}
                                 value={field.value || ''}
@@ -261,9 +406,12 @@ export function CheckoutForm({ book, username, role, onSuccess, onCancel }: Chec
                                     form.setValue('userId', value, { shouldValidate: true });
                                     handleUserLookup(value);
                                 }}
-                                placeholder="Busca o escribe una matrícula..."
-                                emptyText="No se encontró ninguna matrícula."
+                                placeholder="Buscar por matrícula, nombre o CURP..."
+                                emptyText={`${userOptions.length > 0 ? 'No se encontró el usuario' : 'Cargando usuarios'}. Puedes crear uno nuevo llenando los campos.`}
                             />
+                            <p className="text-xs text-muted-foreground">
+                              Busca entre {userOptions.length} usuarios por matrícula, nombre o CURP. Escribe una nueva matrícula para crear un usuario.
+                            </p>
                             <FormMessage />
                         </FormItem>
                     )}
@@ -283,7 +431,10 @@ export function CheckoutForm({ book, username, role, onSuccess, onCancel }: Chec
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
                                             e.preventDefault();
-                                            handleCurpLookup(form.getValues().curp || '');
+                                            const values = form.getValues();
+                                            if ('curp' in values) {
+                                                handleCurpLookup(values.curp || '');
+                                            }
                                         }
                                     }}
                                 />
@@ -355,12 +506,16 @@ export function CheckoutForm({ book, username, role, onSuccess, onCancel }: Chec
                             </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            <SelectItem value="1-weeks">1 semana</SelectItem>
-                            <SelectItem value="2-weeks">2 semanas</SelectItem>
-                            <SelectItem value="3-weeks">3 semanas</SelectItem>
-                            <SelectItem value="1-months">1 mes</SelectItem>
-                            <SelectItem value="2-months">2 meses</SelectItem>
-                            <SelectItem value="3-months">3 meses</SelectItem>
+                          {policies?.loanDurationOptions?.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          )) || [
+                            <SelectItem key="1-weeks" value="1-weeks">1 semana</SelectItem>,
+                            <SelectItem key="2-weeks" value="2-weeks">2 semanas</SelectItem>,
+                            <SelectItem key="3-weeks" value="3-weeks">3 semanas</SelectItem>,
+                            <SelectItem key="1-months" value="1-months">1 mes</SelectItem>
+                          ]}
                         </SelectContent>
                     </Select>
                   <FormMessage />

@@ -10,9 +10,19 @@ import {
   getBooks, 
   getCheckoutsByUserId, 
   getReviewsByBookId,
-  getUsers 
+  getReviewsByUserId,
+  getUsers,
+  followUser,
+  unfollowUser,
+  getFollowers,
+  getFollowing,
+  isFollowing,
+  getUserActivities,
+  getUserFavorites,
+  addUserFavorite,
+  removeUserFavorite
 } from '@/lib/supabase-functions';
-import type { User, Book, Checkout as CheckoutType, Review } from '@/lib/types';
+import type { User, Book, Checkout as CheckoutType, Review, UserActivity, UserFavorite, Category } from '@/lib/types';
 import { Skeleton } from './ui/skeleton';
 import { Button } from './ui/button';
 import { UserPlus, UserCheck, Calendar, Edit } from 'lucide-react';
@@ -23,11 +33,14 @@ import { useToast } from '@/hooks/use-toast';
 import { EditProfileDialog } from './edit-profile-dialog';
 import { BookDetailsDialog } from './book-details-dialog';
 import { Recommendations } from './recommendations';
+import { FollowersModal } from './followers-modal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ReviewCard } from './review-card';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
+import { Badge } from './ui/badge';
+import { getCategories } from '@/lib/supabase-functions';
 
 interface UserProfileProps {
   username: string;
@@ -38,6 +51,12 @@ export function UserProfile({ username }: UserProfileProps) {
   const [books, setBooks] = useState<Book[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [activities, setActivities] = useState<UserActivity[]>([]);
+  const [favorites, setFavorites] = useState<UserFavorite[]>([]);
+  const [followers, setFollowers] = useState<User[]>([]);
+  const [following, setFollowing] = useState<User[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isCurrentlyFollowing, setIsCurrentlyFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -60,25 +79,70 @@ export function UserProfile({ username }: UserProfileProps) {
 
         // Find current user from localStorage
         const storedUsername = localStorage.getItem('userUsername');
+        let currentUserData: User | null = null;
         if (storedUsername) {
-          const currentUserData = usersData.find(u => u.username === storedUsername);
-          setCurrentUser(currentUserData || null);
+          currentUserData = usersData.find(u => u.username === storedUsername) || null;
+          setCurrentUser(currentUserData);
         }
 
         // Load books
         const booksData = await getBooks();
         setBooks(booksData);
 
-        // Load reviews for all books
-        const allReviews: Review[] = [];
-        for (const book of booksData) {
-          const bookReviews = await getReviewsByBookId(book.id);
-          allReviews.push(...bookReviews);
+        // Load categories for badge label resolution
+        try {
+          const cats = await getCategories();
+          setCategories(cats);
+        } catch (e) {
+          console.warn('No se pudieron cargar categorías en el perfil:', e);
         }
-        setReviews(allReviews);
+
+        // Load only reviews for the current user instead of all books
+        if (profileUser) {
+          try {
+            const userReviews = await getReviewsByUserId(profileUser.id);
+            setReviews(userReviews);
+            
+            // Load user activities
+            const userActivities = await getUserActivities(profileUser.id, 20);
+            setActivities(userActivities);
+            
+            // Load user favorites
+            const userFavorites = await getUserFavorites(profileUser.id);
+            setFavorites(userFavorites);
+            
+            // Load followers and following
+            const followersList = await getFollowers(profileUser.id);
+            const followingList = await getFollowing(profileUser.id);
+            setFollowers(followersList);
+            setFollowing(followingList);
+            
+            // Check if current user is following this profile
+            if (currentUserData && currentUserData.id !== profileUser.id) {
+              const followStatus = await isFollowing(currentUserData.id, profileUser.id);
+              setIsCurrentlyFollowing(followStatus);
+            }
+          } catch (error) {
+            console.warn('Failed to load user profile data:', error);
+            setReviews([]);
+            setActivities([]);
+            setFavorites([]);
+            setFollowers([]);
+            setFollowing([]);
+            setIsCurrentlyFollowing(false);
+          }
+        } else {
+          setReviews([]);
+          setActivities([]);
+          setFavorites([]);
+          setFollowers([]);
+          setFollowing([]);
+          setIsCurrentlyFollowing(false);
+        }
       } catch (error) {
         console.error('Error loading data:', error);
         toast({
+          variant: 'destructive',
           title: '❌ Error',
           description: 'Error al cargar los datos del perfil.',
         });
@@ -96,12 +160,20 @@ export function UserProfile({ username }: UserProfileProps) {
     const { newAvatarUrl, newBannerUrl, ...userData } = data;
     const updateData: Partial<User> = { ...userData };
 
+    console.log('🖼️ Datos recibidos para actualización:', data);
+    console.log('🖼️ newAvatarUrl:', newAvatarUrl);
+    console.log('🖼️ newBannerUrl:', newBannerUrl);
+
     if (newAvatarUrl) {
       updateData.avatarUrl = newAvatarUrl;
+      console.log('✅ Avatar URL agregada al updateData');
     }
     if (newBannerUrl) {
       updateData.bannerUrl = newBannerUrl;
+      console.log('✅ Banner URL agregada al updateData');
     }
+
+    console.log('📦 updateData final:', updateData);
 
     try {
       await updateUser(user.id, updateData);
@@ -110,6 +182,12 @@ export function UserProfile({ username }: UserProfileProps) {
       const updatedUser = await getUserByUsername(username);
       if (updatedUser) {
         setUser(updatedUser);
+        console.log('🔁 Usuario recargado post-actualización:', {
+          avatarUrl: updatedUser.avatarUrl?.substring(0,60),
+          bannerUrl: updatedUser.bannerUrl?.substring(0,60),
+          hasAvatar: !!updatedUser.avatarUrl,
+          hasBanner: !!updatedUser.bannerUrl
+        });
       }
       
       toast({
@@ -128,43 +206,37 @@ export function UserProfile({ username }: UserProfileProps) {
   const handleFollowToggle = async () => {
     if (!currentUser || !user || currentUser.id === user.id) return;
 
-    const isFollowing = currentUser.following?.includes(user.username);
-
     try {
-      // Update current user's following list
-      let newFollowing = currentUser.following || [];
-      if (isFollowing) {
-        newFollowing = newFollowing.filter(f => f !== user.username);
+      if (isCurrentlyFollowing) {
+        await unfollowUser(currentUser.id, user.id);
+        setIsCurrentlyFollowing(false);
+        toast({
+          title: '👋 Usuario no seguido',
+          description: `Ya no sigues a ${user.name}`,
+        });
       } else {
-        newFollowing = [...newFollowing, user.username];
+        await followUser(currentUser.id, user.id);
+        setIsCurrentlyFollowing(true);
+        toast({
+          title: '👥 Siguiendo usuario',
+          description: `Ahora sigues a ${user.name}`,
+        });
       }
 
-      // Update target user's followers list  
-      let newFollowers = user.followers || [];
-      if (isFollowing) {
-        newFollowers = newFollowers.filter(f => f !== currentUser.username);
-      } else {
-        newFollowers = [...newFollowers, currentUser.username];
-      }
+      // Refresh followers/following lists
+      const [followersList, followingList] = await Promise.all([
+        getFollowers(user.id),
+        getFollowing(user.id)
+      ]);
+      setFollowers(followersList);
+      setFollowing(followingList);
 
-      await updateUser(currentUser.id, { following: newFollowing });
-      await updateUser(user.id, { followers: newFollowers });
-
-      // Update local state
-      setCurrentUser({ ...currentUser, following: newFollowing });
-      setUser({ ...user, followers: newFollowers });
-
-      toast({ 
-        description: isFollowing 
-          ? `Dejaste de seguir a @${user.username}` 
-          : `Ahora sigues a @${user.username}` 
-      });
     } catch (error) {
-      console.error('Error following/unfollowing user:', error);
+      console.error('Error toggling follow status:', error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'No se pudo completar la acción. Inténtalo de nuevo.',
+        title: '❌ Error',
+        description: 'No se pudo cambiar el estado de seguimiento.',
       });
     }
   };
@@ -219,22 +291,15 @@ export function UserProfile({ username }: UserProfileProps) {
     return <div className="text-center py-16">Usuario no encontrado.</div>;
   }
   
-  const favoriteBooks = user.favoriteBooks
-    ?.map(title => books.find(b => b.title === title))
-    .filter((b): b is Book => !!b);
+  const favoriteBooks = favorites.map(fav => fav.book).filter((book): book is Book => !!book);
     
+  // Las reseñas ya vienen filtradas por usuario desde getReviewsByUserId
   const userReviews = reviews
-    .filter(review => review.userId === user.username)
-    .map(review => {
-        const book = books.find(b => b.id === review.bookId);
-        return book ? { ...review, book, user } : null;
-    })
-    .filter((r): r is Review & { book: Book, user: User } => !!r)
+    .slice()
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
 
   const isOwnProfile = currentUser?.username === user.username;
-  const isFollowing = currentUser?.following?.includes(user.username);
 
   return (
     <>
@@ -250,7 +315,24 @@ export function UserProfile({ username }: UserProfileProps) {
         book={selectedBook}
         checkout={selectedBookCheckout}
         open={!!selectedBook}
-        onOpenChange={(isOpen) => !isOpen && handleCloseBookDialog()}
+        onOpenChange={async (isOpen) => {
+          if (!isOpen) {
+            handleCloseBookDialog();
+            // Refrescar favoritos y reseñas tras posibles cambios en el diálogo
+            if (user) {
+              try {
+                const [updatedFavorites, updatedReviews] = await Promise.all([
+                  getUserFavorites(user.id),
+                  getReviewsByUserId(user.id)
+                ]);
+                setFavorites(updatedFavorites);
+                setReviews(updatedReviews);
+              } catch (e) {
+                console.warn('Error refreshing profile data after dialog close', e);
+              }
+            }
+          }
+        }}
         onSuccessfulCheckout={() => {}}
         onReturnBook={() => {}}
         onDeactivateUser={() => {}}
@@ -293,7 +375,7 @@ export function UserProfile({ username }: UserProfileProps) {
                                     <Button variant="outline" onClick={() => setIsEditDialogOpen(true)} className="rounded-full">
                                         <Edit className="mr-2 h-4 w-4" /> Editar Perfil
                                     </Button>
-                                ) : isFollowing ? (
+                                ) : isCurrentlyFollowing ? (
                                     <Button variant="secondary" onClick={handleFollowToggle} className="rounded-full">
                                         <UserCheck className="mr-2 h-4 w-4" />
                                         Siguiendo
@@ -311,18 +393,35 @@ export function UserProfile({ username }: UserProfileProps) {
                             <div>
                                 <h1 className="text-3xl font-bold">{user.name}</h1>
                                 <p className="text-md text-muted-foreground">@{user.username}</p>
+                                {user.badgeCategoryId && (
+                                  <div className="mt-2">
+                                    {(() => {
+                                      const cat = categories.find(c => c.id === user.badgeCategoryId);
+                                      const text = user.badgeLabel || (cat ? `Amante de ${cat.name}` : 'Insignia');
+                                      return (
+                                        <Badge className="bg-amber-400 text-black border-amber-500 shadow-sm">
+                                          {text}
+                                        </Badge>
+                                      );
+                                    })()}
+                                  </div>
+                                )}
                             </div>
                             
                             <p className="text-foreground max-w-2xl">{user.bio || 'Este usuario aún no ha añadido una biografía.'}</p>
                             
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
                                 <p className='font-light'>Puedes hacer clic en los números para explorar las conexiones.</p>
-                                <Link href="#" className="hover:underline">
-                                    <span className="font-bold text-foreground">{user.following?.length || 0}</span> Siguiendo
-                                </Link>
-                                <Link href="#" className="hover:underline">
-                                    <span className="font-bold text-foreground">{user.followers?.length || 0}</span> Seguidores
-                                </Link>
+                                <FollowersModal user={user} currentUser={currentUser}>
+                                    <button className="hover:underline transition-colors">
+                                        <span className="font-bold text-foreground">{following.length}</span> Siguiendo
+                                    </button>
+                                </FollowersModal>
+                                <FollowersModal user={user} currentUser={currentUser}>
+                                    <button className="hover:underline transition-colors">
+                                        <span className="font-bold text-foreground">{followers.length}</span> Seguidores
+                                    </button>
+                                </FollowersModal>
                                 {user.createdAt && (
                                     <div className="flex items-center space-x-1">
                                         <Calendar className="h-4 w-4" />
@@ -333,11 +432,11 @@ export function UserProfile({ username }: UserProfileProps) {
                         </div>
 
                         <div className="mt-6">
-                            <Tabs defaultValue="favorites" className="w-full">
-                                <TabsList>
-                                    <TabsTrigger value="favorites">Libros Favoritos</TabsTrigger>
-                                    <TabsTrigger value="reviews">Reseñas ({userReviews.length})</TabsTrigger>
-                                </TabsList>
+              <Tabs defaultValue="favorites" className="w-full">
+                <TabsList>
+                  <TabsTrigger value="favorites">Favoritos</TabsTrigger>
+                  <TabsTrigger value="activities">Actividades</TabsTrigger>
+                </TabsList>
                                 <TabsContent value="favorites" className="mt-4">
                                     {favoriteBooks && favoriteBooks.length > 0 ? (
                                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -351,16 +450,25 @@ export function UserProfile({ username }: UserProfileProps) {
                                         </div>
                                     )}
                                 </TabsContent>
-                                <TabsContent value="reviews" className="mt-4 space-y-4">
-                                    {userReviews.length > 0 ? (
-                                        <>
-                                        {userReviews.map(review => (
-                                            <ReviewCard key={review.id} review={review} />
-                                        ))}
-                                        </>
+                                <TabsContent value="activities" className="mt-4 space-y-4">
+                                    {activities.length > 0 ? (
+                                        <div className="space-y-3">
+                                            {activities.map(activity => (
+                                                <Card key={activity.id} className="p-4">
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="flex-1">
+                                                            <p className="text-sm font-medium">{activity.description}</p>
+                                                            <p className="text-xs text-muted-foreground mt-1">
+                                                                {format(new Date(activity.createdAt), "dd/MM/yyyy 'a las' HH:mm", { locale: es })}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </Card>
+                                            ))}
+                                        </div>
                                     ) : (
                                         <div className="text-center py-16 text-muted-foreground bg-muted/50 rounded-lg">
-                                            <p>Este usuario aún no ha dejado ninguna reseña.</p>
+                                            <p>Este usuario no tiene actividades recientes.</p>
                                         </div>
                                     )}
                                 </TabsContent>
@@ -371,9 +479,9 @@ export function UserProfile({ username }: UserProfileProps) {
                 <div className="lg:col-span-1 space-y-8 pt-8">
                     <Recommendations onBookSelect={handleOpenBookDialog} displayStyle="compact" />
 
-                    <Card>
+          <Card>
                         <CardHeader>
-                            <CardTitle>Actividad Reciente</CardTitle>
+              <CardTitle>Reseñas Recientes</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {userReviews.length > 0 ? (

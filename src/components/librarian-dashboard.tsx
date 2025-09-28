@@ -24,6 +24,7 @@ import {
   getCategories,
   getCheckouts,
   getCheckoutRequests,
+  getLibraryPolicies,
   updateUser,
   updateCheckout,
   deleteCheckout,
@@ -94,41 +95,67 @@ export function LibrarianDashboard() {
     loadData();
   }, []);
 
+  // Función para refrescar datos
+  const refreshData = async () => {
+    try {
+      const [booksData, categoriesData, checkoutsData, requestsData, usersData] = await Promise.all([
+        getBooks(),
+        getCategories(),
+        getCheckouts(),
+        getCheckoutRequests(),
+        getUsers()
+      ]);
+
+      setBooks(booksData);
+      setCategories(categoriesData);
+      setCheckouts(checkoutsData);
+      setCheckoutRequests(requestsData);
+      setUsers(usersData);
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    }
+  };
+
   useEffect(() => {
     // Automatic deactivation logic
     const checkOverdueAccounts = async () => {
-      const gracePeriod = 7; // days
-      const now = new Date();
-      const overdueUsersToDeactivate = new Set<string>();
+      try {
+        const policies = await getLibraryPolicies();
+        const gracePeriod = policies?.gracePeriod || 7; // days from database or default
+        const now = new Date();
+        const overdueUsersToDeactivate = new Set<string>();
 
-      checkouts.forEach(checkout => {
-        const dueDate = parseISO(checkout.dueDate);
-        if (isPast(dueDate) && differenceInDays(now, dueDate) > gracePeriod) {
-          overdueUsersToDeactivate.add(checkout.userId);
-        }
-      });
-      
-      if (overdueUsersToDeactivate.size > 0) {
-        let deactivatedCount = 0;
+        checkouts.forEach(checkout => {
+          const dueDate = parseISO(checkout.dueDate);
+          if (isPast(dueDate) && differenceInDays(now, dueDate) > gracePeriod) {
+            overdueUsersToDeactivate.add(checkout.userId);
+          }
+        });
         
-        for (const user of users) {
-          const userIdentifier = user.username;
-          if (overdueUsersToDeactivate.has(userIdentifier) && user.status === 'active') {
-            try {
-              await updateUser(user.id, { status: 'deactivated' });
-              deactivatedCount++;
-            } catch (error) {
-              console.error('Error deactivating user:', error);
+        if (overdueUsersToDeactivate.size > 0) {
+          let deactivatedCount = 0;
+          
+          for (const user of users) {
+            const userIdentifier = user.username;
+            if (overdueUsersToDeactivate.has(userIdentifier) && user.status === 'active') {
+              try {
+                await updateUser(user.id, { status: 'deactivated' });
+                deactivatedCount++;
+              } catch (error) {
+                console.error('Error deactivating user:', error);
+              }
             }
           }
-        }
 
-        if (deactivatedCount > 0) {
-          toast({
-            title: 'Cuentas Desactivadas Automáticamente',
-            description: `${deactivatedCount} cuenta(s) han sido desactivadas por préstamos vencidos.`,
-          });
+          if (deactivatedCount > 0) {
+            toast({
+              title: 'Cuentas Desactivadas Automáticamente',
+              description: `${deactivatedCount} cuenta(s) han sido desactivadas por préstamos vencidos (más de ${gracePeriod} días de gracia).`,
+            });
+          }
         }
+      } catch (error) {
+        console.error('Error checking overdue accounts:', error);
       }
     };
 
@@ -173,6 +200,17 @@ export function LibrarianDashboard() {
     if (!bookToCheckout || bookToCheckout.stock === 0) {
       toast({ variant: 'destructive', title: 'Error de aprobación', description: `El libro "${bookToCheckout?.title}" no está disponible.` });
       await deleteCheckoutRequest(requestToApprove.id);
+      // Refrescar datos inmediatamente
+      await refreshData();
+      return;
+    }
+    // Evitar aprobar si ya existe un checkout activo para este usuario/libro
+    const duplicateActive = checkouts.some(c => c.bookId === requestToApprove.bookId && c.userId === requestToApprove.userId && c.status === 'approved');
+    if (duplicateActive) {
+      toast({ variant: 'destructive', title: 'Duplicado', description: 'Ya existe un préstamo activo para este usuario y libro.' });
+      await deleteCheckoutRequest(requestToApprove.id); // limpiar solicitud redundante
+      // Refrescar datos inmediatamente
+      await refreshData();
       return;
     }
     
@@ -188,7 +226,11 @@ export function LibrarianDashboard() {
       await deleteCheckoutRequest(requestToApprove.id);
 
       handleCloseDialog();
-      toast({ title: '✅ Préstamo Aprobado', description: `El préstamo de "${bookToCheckout.title}" a ${requestToApprove.userId} ha sido confirmado.` });
+      
+      // Refrescar datos inmediatamente
+      await refreshData();
+      
+      toast({ title: '✅ Préstamo Aprobado', description: `El préstamo de "${bookToCheckout.title}" ha sido confirmado y movido a préstamos activos.` });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo aprobar la solicitud.' });
     }
@@ -208,6 +250,13 @@ export function LibrarianDashboard() {
       // Create checkout
       const newCheckout: Omit<Checkout, 'id'> = { ...checkoutData, bookId: bookId, status: 'approved' };
       await addCheckout(newCheckout);
+      
+      handleCloseDialog();
+      
+      // Refrescar datos inmediatamente
+      await refreshData();
+      
+      toast({ title: '✅ Préstamo Directo Creado', description: `"${bookToCheckout.title}" ha sido prestado directamente.` });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo procesar el préstamo.' });
     }
@@ -229,6 +278,9 @@ export function LibrarianDashboard() {
     try {
       const { id, ...bookData } = updatedBook;
       await updateBook(id, bookData);
+      // Reload books data
+      const booksData = await getBooks();
+      setBooks(booksData);
       toast({ title: '📘 ¡Libro Actualizado!', description: `"${updatedBook.title}" ha sido actualizado.` });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo actualizar el libro.' });
@@ -281,6 +333,9 @@ export function LibrarianDashboard() {
         }
       }
 
+      // Refrescar datos inmediatamente
+      await refreshData();
+
       toast({ title: '✅ Libro Devuelto', description: `El libro ha sido marcado como devuelto.` });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo procesar la devolución.' });
@@ -293,6 +348,9 @@ export function LibrarianDashboard() {
     
     try {
       await updateUser(user.id, { status: reactivate ? 'active' : 'deactivated' });
+      
+      // Refrescar datos inmediatamente
+      await refreshData();
       
       toast({
         title: reactivate ? '👤 Cuenta Reactivada' : '🚫 Cuenta Desactivada',
@@ -379,7 +437,7 @@ export function LibrarianDashboard() {
           onOpenChange={setIsSettingsDialogOpen}
           books={books}
           categories={categories}
-          setCategories={() => {}}
+          setCategories={setCategories}
           onEditBook={handleOpenEditBookDialog}
           onDeleteBook={handleDeleteBook}
           users={users}
@@ -481,7 +539,7 @@ export function LibrarianDashboard() {
                         />
                       </div>
                       <div className="relative pt-4">
-                        <Carousel opts={{ align: 'start', dragFree: false }} className="w-full max-w-full">
+                        <Carousel opts={{ align: 'start', dragFree: true }} className="w-full max-w-full">
                           <CarouselContent className="-ml-1">
                              <CarouselItem className="basis-auto pl-1">
                                 <Button
@@ -552,7 +610,7 @@ export function LibrarianDashboard() {
                                     return (
                                         <BookCard key={`${request.id}`} book={book} onClick={() => handleOpenDialog(book, request)}>
                                             <div className="p-3 border-t mt-auto text-left">
-                                                <p className="text-xs font-semibold text-primary mb-2">Solicitado por:</p>
+                                                <p className="text-xs font-semibold text-primary mb-2">El usuario "{user?.name || 'Desconocido'}"</p>
                                                 <div className='flex items-center gap-2' onClick={(e) => e.stopPropagation()}>
                                                   <UserDetailsTooltip userId={user?.id || ''}>
                                                     <div className='flex items-center gap-2 cursor-pointer'>
@@ -560,7 +618,7 @@ export function LibrarianDashboard() {
                                                         <AvatarImage src={user?.avatarUrl} alt={user?.name}/>
                                                         <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
                                                       </Avatar>
-                                                      <p className="text-sm font-medium truncate hover:underline">{user?.name || request.userId}</p>
+                                                      <p className="text-xs text-muted-foreground truncate hover:underline">Ver detalles</p>
                                                     </div>
                                                   </UserDetailsTooltip>
                                                 </div>

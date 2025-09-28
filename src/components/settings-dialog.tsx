@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -22,7 +22,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { Book, Category, User } from '@/lib/types';
+import type { Book, Category, User, LoanDurationOption } from '@/lib/types';
+import { createCategory, deleteCategory, getCategories, getLibraryPolicies, updateLibraryPolicies } from '@/lib/supabase-functions';
 import { Input } from './ui/input';
 import { useForm, useForm as useHookForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -33,7 +34,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from './ui/badge';
+import { getBookCoverUrl } from '@/lib/utils';
 import { Label } from './ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 interface SettingsDialogProps {
   open: boolean;
@@ -54,11 +57,17 @@ const categorySchema = z.object({
 const policySchema = z.object({
   maxLoans: z.coerce.number().int().min(1, 'Must be at least 1.'),
   gracePeriod: z.coerce.number().int().min(0, 'Cannot be negative.'),
+  loanDurationOptions: z.array(z.object({
+    value: z.string().min(1, 'Valor requerido'),
+    label: z.string().min(1, 'Etiqueta requerida'),
+  })).min(1, 'Debe tener al menos una opción de duración'),
 });
 
 export function SettingsDialog({ open, onOpenChange, books, categories, setCategories, onEditBook, onDeleteBook, users, onUserStatusChange }: SettingsDialogProps) {
   const { toast } = useToast();
   const [bookSearchTerm, setBookSearchTerm] = useState('');
+  const [newDurationAmount, setNewDurationAmount] = useState('');
+  const [newDurationType, setNewDurationType] = useState<'dias' | 'semanas' | 'meses' | 'años'>('dias');
   
   const categoryForm = useForm({
     resolver: zodResolver(categorySchema),
@@ -70,10 +79,42 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
       defaultValues: {
           maxLoans: 3,
           gracePeriod: 7,
+          loanDurationOptions: [
+            { value: '7', label: '1 semana' },
+            { value: '14', label: '2 semanas' },
+            { value: '21', label: '3 semanas' },
+            { value: '30', label: '1 mes' }
+          ],
       }
   });
 
-  const handleAddCategory = (data: { name: string }) => {
+  // Load existing policies when dialog opens
+  useEffect(() => {
+    if (open) {
+      const loadPolicies = async () => {
+        try {
+          const policies = await getLibraryPolicies();
+          if (policies) {
+            policyForm.reset({
+              maxLoans: policies.maxLoans,
+              gracePeriod: policies.gracePeriod,
+              loanDurationOptions: policies.loanDurationOptions || [
+                { value: '7', label: '1 semana' },
+                { value: '14', label: '2 semanas' },
+                { value: '21', label: '3 semanas' },
+                { value: '30', label: '1 mes' }
+              ],
+            });
+          }
+        } catch (error) {
+          console.error('Error loading policies:', error);
+        }
+      };
+      loadPolicies();
+    }
+  }, [open, policyForm]);
+
+  const handleAddCategory = async (data: { name: string }) => {
     if (categories.some(cat => cat.name.toLowerCase() === data.name.toLowerCase())) {
         toast({
             variant: 'destructive',
@@ -82,20 +123,28 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
         });
         return;
     }
-    const newCategory: Category = {
-      id: data.name.toLowerCase().replace(/\s+/g, '-'),
-      name: data.name,
-    };
-    setCategories(prev => [...prev, newCategory]);
-    categoryForm.reset();
-    toast({
-        title: 'Category Added',
-        description: `"${data.name}" has been added.`,
-    })
+    
+    try {
+      const newCategory = await createCategory({ name: data.name });
+      setCategories(prev => [...prev, newCategory]);
+      categoryForm.reset();
+      toast({
+          title: 'Category Added',
+          description: `"${data.name}" has been added to the database.`,
+      });
+    } catch (error) {
+      console.error('Error adding category:', error);
+      toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to add category to the database.',
+      });
+    }
   };
 
-  const handleDeleteCategory = (categoryId: string) => {
-    if (books.some(book => book.category === categories.find(c => c.id === categoryId)?.name)) {
+  const handleDeleteCategory = async (categoryId: string) => {
+    const categoryToDelete = categories.find(c => c.id === categoryId);
+    if (books.some(book => book.category === categoryToDelete?.name)) {
         toast({
             variant: 'destructive',
             title: 'Cannot delete category',
@@ -103,21 +152,122 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
         });
         return;
     }
-    setCategories(prev => prev.filter(cat => cat.id !== categoryId));
-    toast({
-        title: 'Category Deleted',
-    })
+    
+    try {
+      await deleteCategory(categoryId);
+      setCategories(prev => prev.filter(cat => cat.id !== categoryId));
+      toast({
+          title: 'Category Deleted',
+          description: 'The category has been removed from the database.',
+      });
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to delete category from the database.',
+      });
+    }
   };
 
-  const handlePolicySubmit = (data: z.infer<typeof policySchema>) => {
-      // In a real app, you'd save this to a backend.
-      // For now, we'll just show a toast.
-      localStorage.setItem('libraryPolicies', JSON.stringify(data));
-      toast({
-          title: 'Políticas actualizadas',
-          description: 'Las reglas de la biblioteca han sido guardadas.',
-      })
+  const handlePolicySubmit = async (data: z.infer<typeof policySchema>) => {
+      try {
+        await updateLibraryPolicies({
+          maxLoans: data.maxLoans,
+          gracePeriod: data.gracePeriod,
+          loanDurationOptions: data.loanDurationOptions,
+        });
+        toast({
+            title: 'Políticas actualizadas',
+            description: 'Las reglas de la biblioteca han sido guardadas en la base de datos.',
+        });
+      } catch (error) {
+        console.error('Error updating policies:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'No se pudieron guardar las políticas en la base de datos.',
+        });
+      }
   }
+
+  const handleAddDurationOption = () => {
+    if (!newDurationAmount || !newDurationType) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Por favor complete ambos campos.',
+      });
+      return;
+    }
+
+    const amount = parseInt(newDurationAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Por favor ingrese un número válido mayor a 0.',
+      });
+      return;
+    }
+
+    // Calcular días según el tipo
+    let totalDays: number;
+    let label: string;
+    
+    switch (newDurationType) {
+      case 'dias':
+        totalDays = amount;
+        label = amount === 1 ? '1 día' : `${amount} días`;
+        break;
+      case 'semanas':
+        totalDays = amount * 7;
+        label = amount === 1 ? '1 semana' : `${amount} semanas`;
+        break;
+      case 'meses':
+        totalDays = amount * 30; // Aproximación de 30 días por mes
+        label = amount === 1 ? '1 mes' : `${amount} meses`;
+        break;
+      case 'años':
+        totalDays = amount * 365; // Aproximación de 365 días por año
+        label = amount === 1 ? '1 año' : `${amount} años`;
+        break;
+      default:
+        return;
+    }
+
+    const currentOptions = policyForm.getValues('loanDurationOptions');
+    const exists = currentOptions.some(option => parseInt(option.value) === totalDays);
+    
+    if (exists) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Ya existe una opción con esa duración total de días.',
+      });
+      return;
+    }
+
+    const newOptions = [...currentOptions, { value: totalDays.toString(), label }];
+    policyForm.setValue('loanDurationOptions', newOptions);
+    setNewDurationAmount('');
+    setNewDurationType('dias');
+  };
+
+  const handleRemoveDurationOption = (index: number) => {
+    const currentOptions = policyForm.getValues('loanDurationOptions');
+    if (currentOptions.length <= 1) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Debe mantener al menos una opción de duración.',
+      });
+      return;
+    }
+    
+    const newOptions = currentOptions.filter((_, i) => i !== index);
+    policyForm.setValue('loanDurationOptions', newOptions);
+  };
 
   const filteredBooks = books.filter(book =>
     book.title.toLowerCase().includes(bookSearchTerm.toLowerCase()) ||
@@ -157,7 +307,7 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
                         <div className="space-y-2">
                           {filteredBooks.map(book => (
                               <div key={book.id} className="flex items-center gap-4 p-2 rounded-md hover:bg-muted/50">
-                                  <Image src={book.coverUrl} alt={book.title} width={40} height={60} className="rounded-sm object-cover" />
+                                  <Image src={getBookCoverUrl(book)} alt={book.title} width={40} height={60} className="rounded-sm object-cover" />
                                   <div className="flex-1">
                                       <p className="font-semibold">{book.title}</p>
                                       <p className="text-sm text-muted-foreground">{book.author} &middot; <span className="font-medium">{book.category}</span></p>
@@ -278,6 +428,77 @@ export function SettingsDialog({ open, onOpenChange, books, categories, setCateg
                           </FormItem>
                         )}
                       />
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <Label className="text-sm font-medium">Opciones de Duración de Préstamo</Label>
+                          <p className="text-xs text-muted-foreground mb-3">Configure las duraciones disponibles para los préstamos de libros.</p>
+                          
+                          {/* Current duration options */}
+                          <div className="space-y-2 mb-4">
+                            {policyForm.watch('loanDurationOptions').map((option, index) => (
+                              <div key={index} className="flex items-center justify-between p-2 rounded-md bg-secondary">
+                                <span className="text-sm">
+                                  <span className="font-medium">{option.label}</span> 
+                                  <span className="text-muted-foreground"> ({option.value} días)</span>
+                                </span>
+                                <Button 
+                                  type="button"
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-7 w-7 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" 
+                                  onClick={() => handleRemoveDurationOption(index)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Add new duration option */}
+                          <div className="border rounded-md p-3 space-y-3">
+                            <h4 className="font-medium text-sm">Añadir Nueva Opción</h4>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-1">
+                                <Label htmlFor="duration-amount" className="text-xs">Cantidad</Label>
+                                <Input
+                                  id="duration-amount"
+                                  type="number"
+                                  placeholder="1"
+                                  value={newDurationAmount}
+                                  onChange={(e) => setNewDurationAmount(e.target.value)}
+                                  min="1"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label htmlFor="duration-type" className="text-xs">Tipo de Tiempo</Label>
+                                <Select value={newDurationType} onValueChange={(value: 'dias' | 'semanas' | 'meses' | 'años') => setNewDurationType(value)}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Seleccionar tipo" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="dias">Días</SelectItem>
+                                    <SelectItem value="semanas">Semanas</SelectItem>
+                                    <SelectItem value="meses">Meses</SelectItem>
+                                    <SelectItem value="años">Años</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                            <Button 
+                              type="button"
+                              variant="outline" 
+                              size="sm" 
+                              onClick={handleAddDurationOption}
+                              className="w-full"
+                            >
+                              <PlusCircle className="h-4 w-4 mr-2" />
+                              Añadir Opción
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                      
                       <Button type="submit">Guardar Políticas</Button>
                     </form>
                   </Form>

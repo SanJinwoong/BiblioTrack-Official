@@ -18,9 +18,10 @@ import { Textarea } from '@/components/ui/textarea';
 import type { Book, Category } from '@/lib/types';
 import { ScrollArea } from './ui/scroll-area';
 import Image from 'next/image';
-import { Image as ImageIcon } from 'lucide-react';
+import { Image as ImageIcon, Camera } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { ImageCropDialog } from './image-crop-dialog';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required.'),
@@ -59,6 +60,9 @@ const fileToBase64 = (file: File): Promise<string> => {
 
 export function AddBookForm({ bookToEdit, categories, onSuccess, onCancel, onFormDirtyChange }: AddBookFormProps) {
     const [previewUrl, setPreviewUrl] = useState<string>('');
+    const [cropDialogOpen, setCropDialogOpen] = useState(false);
+    const [imageToCrop, setImageToCrop] = useState<string>('');
+    const [croppedCover, setCroppedCover] = useState<string>('');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -118,10 +122,29 @@ export function AddBookForm({ bookToEdit, categories, onSuccess, onCancel, onFor
     };
   }, [coverUrlValue, coverFileValue, bookToEdit?.coverUrl]);
 
+  const handleFileUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      setImageToCrop(result);
+      setCropDialogOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropComplete = (croppedImage: string) => {
+    setCroppedCover(croppedImage);
+    setPreviewUrl(croppedImage);
+    setCropDialogOpen(false);
+  };
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     let finalCoverUrl = values.coverUrl;
 
-    if (values.coverFile && values.coverFile.length > 0) {
+    // Use cropped cover if available
+    if (croppedCover) {
+      finalCoverUrl = croppedCover;
+    } else if (values.coverFile && values.coverFile.length > 0) {
         const file = values.coverFile[0];
         if (file instanceof File) {
             finalCoverUrl = await fileToBase64(file);
@@ -145,8 +168,9 @@ export function AddBookForm({ bookToEdit, categories, onSuccess, onCancel, onFor
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full p-6">
+    <>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full p-6">
         {/* Columna de Formulario */}
         <ScrollArea className="md:col-span-2 h-full pr-6">
           <div className="space-y-4">
@@ -192,7 +216,13 @@ export function AddBookForm({ bookToEdit, categories, onSuccess, onCancel, onFor
                                 type="file"
                                 accept="image/png, image/jpeg, image/webp"
                                 className="cursor-pointer"
-                                onChange={(e) => field.onChange(e.target.files)}
+                                onChange={(e) => {
+                                  const files = e.target.files;
+                                  if (files && files[0]) {
+                                    handleFileUpload(files[0]);
+                                    field.onChange(files);
+                                  }
+                                }}
                             />
                         </FormControl>
                          <FormMessage />
@@ -206,14 +236,13 @@ export function AddBookForm({ bookToEdit, categories, onSuccess, onCancel, onFor
         <div className="md:col-span-1 flex flex-col justify-between items-center space-y-4">
             <div className='w-full'>
                 <FormLabel>Cover Preview</FormLabel>
-                <div className="mt-2 w-full aspect-[3/4.5] rounded-md border border-dashed flex items-center justify-center bg-muted/50 overflow-hidden">
+                <div className="mt-2 w-full max-w-[200px] mx-auto aspect-[3/4] rounded-md border border-dashed flex items-center justify-center bg-muted/50 overflow-hidden relative">
                 {previewUrl ? (
                     <Image
                         src={previewUrl}
                         alt="Cover preview"
-                        width={300}
-                        height={450}
-                        className="object-cover w-full h-full"
+                        fill
+                        className="object-cover"
                         onError={() => setPreviewUrl('')} // Reset if URL is invalid
                     />
                 ) : (
@@ -236,6 +265,16 @@ export function AddBookForm({ bookToEdit, categories, onSuccess, onCancel, onFor
         </div>
       </form>
     </Form>
+    
+    <ImageCropDialog
+      open={cropDialogOpen}
+      onOpenChange={setCropDialogOpen}
+      imageSrc={imageToCrop}
+      aspectRatio={3/4} // Book cover aspect ratio
+      title="Recortar Portada del Libro"
+      onCropComplete={handleCropComplete}
+    />
+    </>
   );
 }
 

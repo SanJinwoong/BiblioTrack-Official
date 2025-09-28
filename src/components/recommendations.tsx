@@ -8,6 +8,7 @@ import { recommendBooks } from '@/ai/flows/recommend-books';
 import { readingHistory } from '@/lib/data';
 import { Sparkles, Loader2, BookHeart } from 'lucide-react';
 import type { Book } from '@/lib/types';
+import { getBookCoverUrl } from '@/lib/utils';
 import { BookCard } from './book-card';
 import { ScrollArea, ScrollBar } from './ui/scroll-area';
 import { getBooks } from '@/lib/supabase-functions';
@@ -100,7 +101,7 @@ export function Recommendations({ onBookSelect, displayStyle = 'full' }: Recomme
                       <div className="space-y-4 mt-4">
                           {recommendedBooks.slice(0,3).map(book => (
                               <div key={book.id} className="flex items-center gap-3 cursor-pointer" onClick={() => onBookSelect(book)}>
-                                  <Image src={book.coverUrl} alt={book.title} width={40} height={60} className="rounded-sm object-cover"/>
+                                  <Image src={getBookCoverUrl(book)} alt={book.title} width={40} height={60} className="rounded-sm object-cover"/>
                                   <div>
                                       <p className="text-sm font-medium leading-tight">{book.title}</p>
                                       <p className="text-xs text-muted-foreground">{book.author}</p>

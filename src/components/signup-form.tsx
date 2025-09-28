@@ -31,7 +31,9 @@ import { Library } from '@/components/icons/uat-logo';
 import { getUsers, getUserByUsername } from '@/lib/supabase-functions';
 
 const studentEmailRegex = /^a\d{10}@alumnos\.uat\.edu\.mx$/;
-const ADMIN_REGISTRATION_CODE = 'SUPER_SECRET_CODE';
+const curpRegex = /^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[0-9A-Z]{2}$/;
+const phoneRegex = /^[0-9]{10}$/;
+const ADMIN_REGISTRATION_CODE = 'UAT2024';
 
 const formSchema = z.object({
   role: z.enum(['client', 'librarian']),
@@ -55,11 +57,19 @@ const formSchema = z.object({
     if (!data.name || data.name.length < 2) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El nombre debe tener al menos 2 caracteres.', path: ['name'] });
     }
-    if (!data.curp || data.curp.length !== 18) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La CURP debe tener exactamente 18 caracteres.', path: ['curp'] });
+    if (!data.curp || !curpRegex.test(data.curp)) {
+      ctx.addIssue({ 
+        code: z.ZodIssueCode.custom, 
+        message: 'La CURP debe tener el formato correcto (ej. MAJJ990315HDFNTN01).', 
+        path: ['curp'] 
+      });
     }
-     if (!data.phone || data.phone.length < 10) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El teléfono debe tener al menos 10 dígitos.', path: ['phone'] });
+     if (!data.phone || !phoneRegex.test(data.phone)) {
+      ctx.addIssue({ 
+        code: z.ZodIssueCode.custom, 
+        message: 'El teléfono debe tener exactamente 10 dígitos sin espacios ni guiones (ej. 6441234567).', 
+        path: ['phone'] 
+      });
     }
     if (!data.address || data.address.length < 10) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La dirección debe tener al menos 10 caracteres.', path: ['address'] });
@@ -69,6 +79,26 @@ const formSchema = z.object({
   if (data.role === 'librarian') {
     if (!data.username || data.username.length < 2) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El nombre de usuario debe tener al menos 2 caracteres.', path: ['username'] });
+    }
+    if (!data.name || data.name.length < 2) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El nombre completo es obligatorio.', path: ['name'] });
+    }
+    if (!data.curp || !curpRegex.test(data.curp)) {
+      ctx.addIssue({ 
+        code: z.ZodIssueCode.custom, 
+        message: 'La CURP debe tener el formato correcto (ej. GARM850301MDFRNR02).', 
+        path: ['curp'] 
+      });
+    }
+    if (!data.phone || !phoneRegex.test(data.phone)) {
+      ctx.addIssue({ 
+        code: z.ZodIssueCode.custom, 
+        message: 'El teléfono debe tener exactamente 10 dígitos sin espacios ni guiones (ej. 6441234567).', 
+        path: ['phone'] 
+      });
+    }
+    if (!data.address || data.address.length < 10) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'La dirección debe tener al menos 10 caracteres.', path: ['address'] });
     }
     if (data.adminCode !== ADMIN_REGISTRATION_CODE) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El código de registro de administrador no es válido.', path: ['adminCode'] });
@@ -130,6 +160,10 @@ export function SignUpForm() {
                 username: values.username!,
                 password: values.password,
                 role: 'librarian',
+                name: values.name!,
+                curp: values.curp!,
+                phone: values.phone!,
+                address: values.address!,
                 email: values.email,
                 status: 'active',
                 createdAt: new Date().toISOString(),
@@ -223,7 +257,7 @@ export function SignUpForm() {
                 />
                 <FormField control={form.control} name="curp" render={({ field }) => ( <FormItem> <FormLabel>CURP</FormLabel> <FormControl><Input placeholder="ABCD123456H..." {...field} maxLength={18} />
                     </FormControl> <FormMessage /> </FormItem>)} />
-                <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem> <FormLabel>Teléfono de contacto</FormLabel> <FormControl><Input type="tel" placeholder="834-123-4567" {...field} maxLength={15} /></FormControl> <FormMessage /> </FormItem>)} />
+                <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem> <FormLabel>Teléfono de contacto</FormLabel> <FormControl><Input type="tel" placeholder="6441234567" {...field} maxLength={10} /></FormControl> <FormMessage /> </FormItem>)} />
                 <FormField control={form.control} name="address" render={({ field }) => ( <FormItem> <FormLabel>Dirección</FormLabel> <FormControl><Input placeholder="Calle Falsa 123, Ciudad" {...field} maxLength={100} /></FormControl> <FormMessage /> </FormItem>)} />
               </>
             )}
@@ -231,12 +265,25 @@ export function SignUpForm() {
               <>
                 <FormField
                   control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nombre completo</FormLabel>
+                      <FormControl>
+                        <Input placeholder="María García Bibliotecaria" {...field} maxLength={50} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
                   name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nombre de usuario</FormLabel>
+                      <FormLabel>Nombre de usuario (para login)</FormLabel>
                       <FormControl>
-                        <Input placeholder="ej. bibliotecario2" {...field} maxLength={30}/>
+                        <Input placeholder="María García Bibliotecaria" {...field} maxLength={50}/>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -249,13 +296,52 @@ export function SignUpForm() {
                     <FormItem>
                       <FormLabel>Correo electrónico</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="tu@correo.com" {...field} />
+                        <Input type="email" placeholder="bibliotecario@biblioteca.com" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                 <FormField
+                <FormField
+                  control={form.control}
+                  name="curp"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CURP</FormLabel>
+                      <FormControl>
+                        <Input placeholder="GARM850301MDFRNR02" {...field} maxLength={18} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Teléfono de contacto</FormLabel>
+                      <FormControl>
+                        <Input type="tel" placeholder="6441234567" {...field} maxLength={10} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dirección</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Av. Universidad 123, Victoria, Tamaulipas" {...field} maxLength={100} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
                  control={form.control}
                  name="adminCode"
                  render={({ field }) => (

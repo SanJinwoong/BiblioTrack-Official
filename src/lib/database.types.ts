@@ -15,11 +15,11 @@ export interface Database {
           username: string
           password: string
           role: 'client' | 'librarian'
-          name: string | null
-          curp: string | null
-          phone: string | null
-          email: string | null
-          address: string | null
+          name: string                    // OBLIGATORIO en esquema UAT
+          curp: string                    // OBLIGATORIO en esquema UAT
+          phone: string                   // OBLIGATORIO en esquema UAT
+          email: string                   // OBLIGATORIO en esquema UAT
+          address: string                 // OBLIGATORIO en esquema UAT
           status: 'active' | 'deactivated'
           avatar_url: string | null
           banner_url: string | null
@@ -34,11 +34,11 @@ export interface Database {
           username: string
           password: string
           role: 'client' | 'librarian'
-          name?: string | null
-          curp?: string | null
-          phone?: string | null
-          email?: string | null
-          address?: string | null
+          name: string                    // OBLIGATORIO en esquema UAT
+          curp: string                    // OBLIGATORIO en esquema UAT
+          phone: string                   // OBLIGATORIO en esquema UAT
+          email: string                   // OBLIGATORIO en esquema UAT
+          address: string                 // OBLIGATORIO en esquema UAT
           status?: 'active' | 'deactivated'
           avatar_url?: string | null
           banner_url?: string | null
@@ -53,11 +53,11 @@ export interface Database {
           username?: string
           password?: string
           role?: 'client' | 'librarian'
-          name?: string | null
-          curp?: string | null
-          phone?: string | null
-          email?: string | null
-          address?: string | null
+          name?: string                   // Opcional para updates
+          curp?: string                   // Opcional para updates
+          phone?: string                  // Opcional para updates
+          email?: string                  // Opcional para updates
+          address?: string                // Opcional para updates
           status?: 'active' | 'deactivated'
           avatar_url?: string | null
           banner_url?: string | null

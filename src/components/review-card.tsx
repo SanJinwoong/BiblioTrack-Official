@@ -8,9 +8,10 @@ import { StarRating } from './star-rating';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { getBookCoverUrl } from '@/lib/utils';
 
 interface ReviewCardProps {
-  review: Review & { user?: User, book?: Book };
+  review: Review;
 }
 
 export function ReviewCard({ review }: ReviewCardProps) {
@@ -34,17 +35,17 @@ export function ReviewCard({ review }: ReviewCardProps) {
       <CardContent className="p-4 pt-0">
         <p className="text-sm text-muted-foreground italic">&quot;{comment}&quot;</p>
       </CardContent>
-      {book && (
-         <CardFooter className="p-4 pt-0 mt-2 border-t bg-muted/50">
-            <div className="flex items-center gap-3">
-                <Image src={book.coverUrl} alt={book.title} width={30} height={45} className="rounded-sm object-cover" />
-                <div>
-                    <p className="text-xs font-semibold leading-tight">Sobre &quot;{book.title}&quot;</p>
-                    <p className="text-xs text-muted-foreground">{book.author}</p>
-                </div>
-            </div>
-         </CardFooter>
-      )}
+    {book && (
+     <CardFooter className="px-4 py-3 mt-2 border-t bg-muted/50">
+      <div className="flex items-center gap-3">
+        <Image src={getBookCoverUrl(book)} alt={book.title} width={36} height={54} className="rounded-sm object-cover shadow-sm" />
+        <div className="space-y-0.5">
+          <p className="text-xs font-semibold leading-tight">Sobre &quot;{book.title}&quot;</p>
+          <p className="text-xs text-muted-foreground">{book.author}</p>
+        </div>
+      </div>
+     </CardFooter>
+    )}
     </Card>
   );
 }

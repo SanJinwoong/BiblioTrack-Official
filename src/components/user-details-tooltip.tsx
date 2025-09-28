@@ -41,7 +41,7 @@ export function UserDetailsTooltip({ userId, children }: UserDetailsTooltipProps
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-2 text-sm space-y-2">
-                <p><strong>Nombre:</strong> {user.name || 'N/A'}</p>
+                <p><strong>Nombre:</strong> {user.name}</p>
                 <p><strong>Matrícula/Usuario:</strong> {user.username}</p>
                 <p><strong>CURP:</strong> {user.curp || 'N/A'}</p>
                 <p><strong>Teléfono:</strong> {user.phone || 'N/A'}</p>

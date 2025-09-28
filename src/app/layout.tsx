@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
-import { DatabaseSeeder } from "@/components/database-seeder";
 
 const poppins = Poppins({ 
   subsets: ["latin"],
@@ -22,7 +21,6 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={`${poppins.className} antialiased min-h-screen bg-background`}>
-        <DatabaseSeeder />
         {children}
         <Toaster />
       </body>

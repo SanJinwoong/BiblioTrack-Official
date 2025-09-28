@@ -5,7 +5,7 @@ import {
   CardContent,
 } from '@/components/ui/card';
 import type { Book } from '@/lib/types';
-import { cn } from '@/lib/utils';
+import { cn, getBookCoverUrl } from '@/lib/utils';
 import { Check } from 'lucide-react';
 import { Badge } from './ui/badge';
 
@@ -18,9 +18,10 @@ interface BookCardProps {
   isPending?: boolean;
   isOverdue?: boolean;
   isLoan?: boolean;
+  emphasizeAuthor?: boolean; // mejora contraste de autor en contextos con badges
 }
 
-export function BookCard({ book, children, className, onClick, isApproved = false, isPending = false, isOverdue = false, isLoan = false }: BookCardProps) {
+export function BookCard({ book, children, className, onClick, isApproved = false, isPending = false, isOverdue = false, isLoan = false, emphasizeAuthor = false }: BookCardProps) {
 
   const getStockBadge = () => {
     if (book.stock === 0) {
@@ -66,7 +67,7 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
     >
         <div className="relative aspect-[3/4.5] w-full overflow-hidden rounded-lg">
           <Image
-            src={book.coverUrl}
+            src={getBookCoverUrl(book)}
             alt={`Portada de ${book.title}`}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -81,7 +82,10 @@ export function BookCard({ book, children, className, onClick, isApproved = fals
           <div className="absolute bottom-0 left-0 right-0 h-2/3 bg-gradient-to-t from-black/80 via-black/50 to-transparent"></div>
            <CardContent className="absolute bottom-0 left-0 right-0 p-3 text-white">
                 <h3 className="font-semibold text-sm line-clamp-2">{book.title}</h3>
-                <p className="text-xs text-white/80 line-clamp-1">{book.author}</p>
+                <p className={cn(
+                  "text-xs line-clamp-1",
+                  emphasizeAuthor ? "text-white/95 font-medium drop-shadow" : "text-white/80"
+                )}>{book.author}</p>
            </CardContent>
         </div>
       {children}
