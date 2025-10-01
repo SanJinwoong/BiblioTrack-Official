@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { User, Category } from '@/lib/types';
+import type { User } from '@/lib/types';
 import Image from 'next/image';
 import { Camera, ZoomIn, ZoomOut } from 'lucide-react';
 import React, { useEffect, useState, useRef } from 'react';
@@ -26,15 +26,12 @@ import ReactCrop, { type Crop as CropType, centerCrop, makeAspectCrop } from 're
 import 'react-image-crop/dist/ReactCrop.css';
 import { Slider } from './ui/slider';
 import { ScrollArea } from './ui/scroll-area';
-import { getCategories } from '@/lib/supabase-functions';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
   bio: z.string().optional(),
-  badgeCategoryId: z.string().optional(),
-  badgeLabel: z.string().max(40, 'Máximo 40 caracteres').optional(),
+  thoughtText: z.string().max(100, 'Máximo 100 caracteres').optional(),
 });
 
 // Helper function to get the cropped image data URL
@@ -186,14 +183,13 @@ interface EditProfileDialogProps {
     user: User;
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onProfileUpdate: (data: { name: string; bio?: string; newAvatarUrl?: string; newBannerUrl?: string }) => void;
+    onProfileUpdate: (data: { name: string; bio?: string; thoughtText?: string; newAvatarUrl?: string; newBannerUrl?: string }) => void;
 }
 
 
 export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }: EditProfileDialogProps) {
   const [avatarPreview, setAvatarPreview] = useState<string | undefined>(user.avatarUrl);
   const [bannerPreview, setBannerPreview] = useState<string | undefined>(user.bannerUrl);
-  const [categories, setCategories] = useState<Category[]>([]);
   
   // State for the image that is currently being cropped
   const [imageToCrop, setImageToCrop] = useState('');
@@ -203,57 +199,30 @@ export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }:
   const [croppedAvatar, setCroppedAvatar] = useState<string | null>(null);
   const [croppedBanner, setCroppedBanner] = useState<string | null>(null);
   const [lastOpenState, setLastOpenState] = useState(false);
-  // Template para generar la etiqueta automáticamente
-  const [labelTemplate, setLabelTemplate] = useState<string>('');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: user.name || '',
       bio: user.bio || '',
-      badgeCategoryId: user.badgeCategoryId || '',
-      badgeLabel: user.badgeLabel || '',
+      thoughtText: user.thoughtText || '',
     },
   });
 
   useEffect(() => {
     if (open && !lastOpenState) {
       // Solo resetear cuando el diálogo se abre por primera vez (transición false -> true)
-  form.reset({ name: user.name || '', bio: user.bio || '', badgeCategoryId: user.badgeCategoryId || '', badgeLabel: user.badgeLabel || '' });
+      form.reset({ name: user.name || '', bio: user.bio || '', thoughtText: user.thoughtText || '' });
       setAvatarPreview(user.avatarUrl);
       setBannerPreview(user.bannerUrl);
       setCroppedAvatar(null);
       setCroppedBanner(null);
       setCroppingTarget(null);
       setImageToCrop('');
-      setLabelTemplate('');
       console.log('🔄 Diálogo abierto - estados reseteados');
     }
     setLastOpenState(open);
-  }, [open, user.name, user.bio, user.avatarUrl, user.bannerUrl, form, lastOpenState]);
-
-  // Load categories once when dialog opens
-  useEffect(() => {
-    if (!open) return;
-    (async () => {
-      try {
-        const cats = await getCategories();
-        setCategories(cats);
-      } catch (e) {
-        console.warn('No se pudieron cargar categorías para insignias', e);
-      }
-    })();
-  }, [open]);
-
-  // Componer etiqueta a partir de plantilla + categoría
-  const applyLabelTemplate = (template: string, categoryId?: string | null) => {
-    const catId = categoryId ?? form.getValues('badgeCategoryId');
-    if (!template || !catId) return;
-    const catName = categories.find(c => c.id === catId)?.name?.trim();
-    if (!catName) return;
-    const result = `${template} ${catName}`;
-    form.setValue('badgeLabel', result, { shouldDirty: true });
-  };
+  }, [open, user.name, user.bio, user.thoughtText, user.avatarUrl, user.bannerUrl, form, lastOpenState]);
 
   const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>, target: 'avatar' | 'banner') => {
     if (e.target.files && e.target.files.length > 0) {
@@ -298,10 +267,9 @@ export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }:
     const updateData = {
       name: values.name,
       bio: values.bio,
+      thoughtText: values.thoughtText,
       newAvatarUrl: croppedAvatar || undefined,
       newBannerUrl: croppedBanner || undefined,
-      badgeCategoryId: values.badgeCategoryId || undefined,
-      badgeLabel: values.badgeLabel || undefined,
     };
     
     console.log('📤 Enviando datos:', updateData);
@@ -349,54 +317,20 @@ export function EditProfileDialog({ user, open, onOpenChange, onProfileUpdate }:
                     <Textarea id="bio" placeholder="Cuéntanos un poco sobre ti..." {...form.register('bio')} />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Insignia</label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-xs text-muted-foreground">Categoría</label>
-                        <Select
-                          value={form.watch('badgeCategoryId') || ''}
-                          onValueChange={(val) => {
-                            form.setValue('badgeCategoryId', val, { shouldDirty: true });
-                            if (labelTemplate) applyLabelTemplate(labelTemplate, val);
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecciona una categoría" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {categories.map((c) => (
-                              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground">Plantilla (opcional)</label>
-                        <Select
-                          value={labelTemplate}
-                          onValueChange={(tpl) => {
-                            setLabelTemplate(tpl);
-                            applyLabelTemplate(tpl);
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Elige una plantilla" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Amante de">Amante de</SelectItem>
-                            <SelectItem value="Adicto a">Adicto a</SelectItem>
-                            <SelectItem value="Fan de">Fan de</SelectItem>
-                            <SelectItem value="Explorador de">Explorador de</SelectItem>
-                            <SelectItem value="Coleccionista de">Coleccionista de</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <div className="mt-2 space-y-1">
-                          <label className="text-xs text-muted-foreground">Etiqueta final (editable)</label>
-                          <Input placeholder="Ej. Amante de Romance" {...form.register('badgeLabel')} />
-                        </div>
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground">Elige una plantilla para autocompletar con la categoría o escribe tu propia etiqueta. Si la dejas vacía, usaremos el nombre de la categoría.</p>
+                    <label htmlFor="thoughtText" className="text-sm font-medium">Pensamiento Personal</label>
+                    <Textarea 
+                      id="thoughtText" 
+                      placeholder="Comparte un pensamiento que aparecerá en tu perfil..." 
+                      {...form.register('thoughtText')} 
+                      maxLength={100}
+                      rows={2}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Este pensamiento aparecerá como una burbuja en tu foto de perfil. Máximo 100 caracteres.
+                    </p>
+                    {form.formState.errors.thoughtText && (
+                      <p className="text-sm text-destructive">{form.formState.errors.thoughtText.message}</p>
+                    )}
                   </div>
             </div>
 

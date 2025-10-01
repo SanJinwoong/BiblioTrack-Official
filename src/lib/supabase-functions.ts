@@ -29,6 +29,7 @@ export async function getUsers(): Promise<User[]> {
     bio: u.bio,
     badgeCategoryId: u.badge_category_id || undefined,
     badgeLabel: u.badge_label || undefined,
+    thoughtText: u.thought_text || undefined,
     createdAt: u.created_at,
     favoriteBooks: u.favorite_books || undefined,
   }))
@@ -64,6 +65,7 @@ export async function getUserByUsername(username: string): Promise<User | null> 
     bio: data.bio,
     badgeCategoryId: data.badge_category_id || undefined,
     badgeLabel: data.badge_label || undefined,
+    thoughtText: data.thought_text || undefined,
     createdAt: data.created_at,
     favoriteBooks: data.favorite_books || undefined,
   }
@@ -114,6 +116,11 @@ export async function updateUser(id: string, updates: Partial<User>): Promise<Us
     mappedUpdates.badge_label = updates.badgeLabel
     delete mappedUpdates.badgeLabel
   }
+  // Pensamiento
+  if (updates.thoughtText !== undefined) {
+    mappedUpdates.thought_text = updates.thoughtText
+    delete mappedUpdates.thoughtText
+  }
 
   console.log('📤 Datos a enviar a Supabase:', mappedUpdates);
 
@@ -148,6 +155,7 @@ export async function updateUser(id: string, updates: Partial<User>): Promise<Us
     bio: data.bio,
     badgeCategoryId: data.badge_category_id || undefined,
     badgeLabel: data.badge_label || undefined,
+    thoughtText: data.thought_text || undefined,
     createdAt: data.created_at,
     favoriteBooks: data.favorite_books || undefined,
   }

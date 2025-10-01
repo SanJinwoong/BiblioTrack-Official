@@ -31,21 +31,22 @@ Sistema moderno y completo para la gestión de bibliotecas, desarrollado con **N
 	npm install
 	```
 
-2. **Configura Supabase:**
-	- Crea un proyecto en [supabase.com](https://supabase.com)
-	- Ejecuta el script `supabase-schema.sql` en el SQL Editor para crear las tablas
-	- Ve a **Settings > API** y copia la URL y la anon key
-	- Crea el archivo `.env.local` y agrega:
-	  ```bash
-	  NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
-	  NEXT_PUBLIC_SUPABASE_ANON_KEY=tu-clave-anon-aqui
-	  ```
+2. **¡La base de datos ya está configurada!** 🎉
+	- Las credenciales de Supabase están incluidas en `.env.local`
+	- La base de datos ya tiene datos de prueba configurados
+	- **¡Solo clona y ejecuta!**
 
 3. **Ejecuta el proyecto en desarrollo:**
 	```bash
 	npm run dev
 	```
-	El proyecto estará disponible en `http://localhost:9003`
+	El proyecto estará disponible en `http://localhost:9002`
+
+4. **Usuarios de prueba disponibles:**
+	- **Bibliotecario:** `María García Bibliotecaria` / `admin123`
+	- **Usuario normal:** `a2022088888` / `ejemplar123`  
+	- **Usuario suspendido:** `a2020011111` / `moroso123`
+	- Ver más usuarios en `test-data-vencimientos.sql`
 
 
 ## � Usuarios de prueba

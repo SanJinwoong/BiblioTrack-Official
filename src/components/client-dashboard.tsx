@@ -33,9 +33,13 @@ import {
   getReviews,
   addCheckout,
   addCheckoutRequest,
+  updateCheckout,
+  deleteCheckout,
+  updateUser,
   addReview 
 } from '@/lib/supabase-functions';
 import { useRouter } from 'next/navigation';
+import { getBookCoverUrl, getBookBannerUrl } from '@/lib/utils';
 
 export function ClientDashboard() {
   const [username, setUsername] = useState('');
@@ -149,7 +153,17 @@ export function ClientDashboard() {
         return book ? { ...book, ...r } as BookType & Checkout : null;
     }).filter((b): b is BookType & Checkout => b !== null);
 
-  const heroBooks = books.slice(0, 5);
+  // Prioritize books with real cover images for hero section
+  const booksWithRealCovers = books.filter(book => 
+    book.coverUrl && 
+    book.coverUrl.trim() !== '' && 
+    !book.coverUrl.includes('placehold.co') &&
+    book.coverUrl.includes('https://')
+  );
+  
+  const heroBooks = booksWithRealCovers.length >= 5 
+    ? booksWithRealCovers.slice(0, 5)
+    : [...booksWithRealCovers, ...books.filter(book => !booksWithRealCovers.includes(book))].slice(0, 5);
   
   const booksByCategory = categories.map(category => ({
     ...category,
@@ -202,13 +216,19 @@ export function ClientDashboard() {
                   <CarouselContent className="-ml-4 h-[400px]">
                       {heroBooks.map((book, index) => (
                           <CarouselItem key={index} className="pl-4">
-                               <div className="relative h-full w-full rounded-2xl overflow-hidden shadow-2xl">
+                               <div className="relative h-full w-full rounded-2xl overflow-hidden shadow-2xl cursor-pointer"
+                                    onClick={() => handleOpenDialog(book)}>
                                   <Image
-                                      src={`https://placehold.co/1200x400/6366f1/ffffff?text=Featured+${index + 1}`}
+                                      src={getBookBannerUrl(book)}
                                       alt={book.title}
                                       fill
-                                      className="object-cover"
-                                      data-ai-hint="fantasy landscape"
+                                      className="object-cover object-center"
+                                      style={{
+                                        objectPosition: 'center',
+                                        filter: 'brightness(0.7) contrast(1.1)'
+                                      }}
+                                      sizes="100vw"
+                                      priority={index === 0}
                                   />
                                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
                                   <div className="absolute bottom-0 left-0 p-8 text-white">

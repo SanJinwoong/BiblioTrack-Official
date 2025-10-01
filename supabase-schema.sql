@@ -123,6 +123,7 @@ CREATE TABLE users (
     bio TEXT,
     badge_category_id UUID NULL,
     badge_label TEXT NULL,
+    thought_text TEXT, -- Pensamiento/nota personal
     favorite_books TEXT[], -- Mantener por compatibilidad
     following TEXT[], -- Mantener por compatibilidad
     followers TEXT[], -- Mantener por compatibilidad

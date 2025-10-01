@@ -41,6 +41,7 @@ import { es } from 'date-fns/locale';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { getCategories } from '@/lib/supabase-functions';
+import { ThoughtBubble } from './thought-bubble';
 
 interface UserProfileProps {
   username: string;
@@ -241,6 +242,29 @@ export function UserProfile({ username }: UserProfileProps) {
     }
   };
 
+  const handleThoughtUpdate = async (newThought: string) => {
+    if (!user || !isOwnProfile) return;
+
+    try {
+      await updateUser(user.id, { thoughtText: newThought });
+      
+      // Update the local user state
+      setUser(prev => prev ? { ...prev, thoughtText: newThought } : null);
+      
+      toast({
+        title: '💭 Pensamiento actualizado',
+        description: 'Tu pensamiento se ha guardado correctamente.',
+      });
+    } catch (error) {
+      console.error('Error updating thought:', error);
+      toast({
+        variant: 'destructive',
+        title: '❌ Error',
+        description: 'No se pudo actualizar tu pensamiento.',
+      });
+    }
+  };
+
   const handleOpenBookDialog = (book: Book) => {
     setSelectedBook(book);
     // This dialog is for viewing, so we don't need checkout data here.
@@ -369,6 +393,12 @@ export function UserProfile({ username }: UserProfileProps) {
                                     <AvatarImage src={user.avatarUrl} alt={user.name} />
                                     <AvatarFallback className="text-5xl">{user.name?.charAt(0)}</AvatarFallback>
                                 </Avatar>
+                                {/* Thought Bubble */}
+                                <ThoughtBubble
+                                  text={user.thoughtText || ''}
+                                  isOwner={isOwnProfile}
+                                  onEdit={handleThoughtUpdate}
+                                />
                             </div>
                             <div className='pt-4'>
                                 {isOwnProfile ? (
@@ -393,19 +423,6 @@ export function UserProfile({ username }: UserProfileProps) {
                             <div>
                                 <h1 className="text-3xl font-bold">{user.name}</h1>
                                 <p className="text-md text-muted-foreground">@{user.username}</p>
-                                {user.badgeCategoryId && (
-                                  <div className="mt-2">
-                                    {(() => {
-                                      const cat = categories.find(c => c.id === user.badgeCategoryId);
-                                      const text = user.badgeLabel || (cat ? `Amante de ${cat.name}` : 'Insignia');
-                                      return (
-                                        <Badge className="bg-amber-400 text-black border-amber-500 shadow-sm">
-                                          {text}
-                                        </Badge>
-                                      );
-                                    })()}
-                                  </div>
-                                )}
                             </div>
                             
                             <p className="text-foreground max-w-2xl">{user.bio || 'Este usuario aún no ha añadido una biografía.'}</p>

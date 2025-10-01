@@ -7,7 +7,8 @@ import { SignUpForm } from '@/components/signup-form';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Library } from '@/components/icons/uat-logo';
-import { initialBooks } from '@/lib/data';
+import { getBooks } from '@/lib/supabase-functions';
+import type { Book } from '@/lib/types';
 import Autoplay from 'embla-carousel-autoplay';
 import {
   Carousel,
@@ -17,14 +18,33 @@ import {
 import { BookCard } from '@/components/book-card';
 
 export default function AuthPage() {
-  const [featuredBooks, setFeaturedBooks] = useState([...initialBooks]);
+  const [featuredBooks, setFeaturedBooks] = useState<Book[]>([]);
   const [view, setView] = useState<'login' | 'signup'>('login');
 
   useEffect(() => {
-    // Shuffle books on mount for variety
-    setFeaturedBooks((prevBooks) =>
-      [...prevBooks].sort(() => 0.5 - Math.random())
-    );
+    // Load real books from database
+    const loadBooks = async () => {
+      try {
+        const books = await getBooks();
+        // Filter books that have actual cover images (not placeholders)
+        const booksWithCovers = books.filter(book => 
+          book.coverUrl && 
+          book.coverUrl.trim() !== '' && 
+          !book.coverUrl.includes('placehold.co')
+        );
+        
+        // If we have books with real covers, use them; otherwise use all books
+        const booksToShow = booksWithCovers.length > 0 ? booksWithCovers : books;
+        
+        // Shuffle books for variety
+        const shuffledBooks = [...booksToShow].sort(() => 0.5 - Math.random());
+        setFeaturedBooks(shuffledBooks.slice(0, 8)); // Limit to 8 books
+      } catch (error) {
+        console.error('Error loading books for carousel:', error);
+      }
+    };
+
+    loadBooks();
   }, []);
 
   const autoplayPlugin = useRef(Autoplay({ delay: 2000, stopOnInteraction: false }));
@@ -76,13 +96,22 @@ export default function AuthPage() {
             className="w-full"
           >
             <CarouselContent className="-ml-2">
-              {featuredBooks.map((book, index) => (
-                <CarouselItem key={`${book.title}-${index}`} className="pl-2 basis-full md:basis-1/2">
+              {featuredBooks.length > 0 ? featuredBooks.map((book, index) => (
+                <CarouselItem key={`${book.id}-${index}`} className="pl-2 basis-full md:basis-1/2">
                   <div className="p-1">
-                    <BookCard book={{...book, id: `${book.title}-${index}`}} />
+                    <BookCard book={book} />
                   </div>
                 </CarouselItem>
-              ))}
+              )) : (
+                // Fallback skeleton while loading
+                Array.from({ length: 4 }).map((_, index) => (
+                  <CarouselItem key={`skeleton-${index}`} className="pl-2 basis-full md:basis-1/2">
+                    <div className="p-1">
+                      <div className="aspect-[3/4.5] bg-gray-200 animate-pulse rounded-lg" />
+                    </div>
+                  </CarouselItem>
+                ))
+              )}
             </CarouselContent>
           </Carousel>
         </div>

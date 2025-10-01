@@ -35,6 +35,8 @@ export interface User {
   // Insignia seleccionable por categoría
   badgeCategoryId?: string;
   badgeLabel?: string;
+  // Pensamiento/nota personal
+  thoughtText?: string;
     favoriteBooks?: string[];
     following?: string[];
     followers?: string[];
