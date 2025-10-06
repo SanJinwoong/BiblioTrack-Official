@@ -30,6 +30,7 @@ export async function getUsers(): Promise<User[]> {
     badgeCategoryId: u.badge_category_id || undefined,
     badgeLabel: u.badge_label || undefined,
     thoughtText: u.thought_text || undefined,
+    books_read: u.books_read || 0,
     createdAt: u.created_at,
     favoriteBooks: u.favorite_books || undefined,
   }))
@@ -66,6 +67,7 @@ export async function getUserByUsername(username: string): Promise<User | null> 
     badgeCategoryId: data.badge_category_id || undefined,
     badgeLabel: data.badge_label || undefined,
     thoughtText: data.thought_text || undefined,
+    books_read: data.books_read || 0,
     createdAt: data.created_at,
     favoriteBooks: data.favorite_books || undefined,
   }
@@ -121,6 +123,7 @@ export async function updateUser(id: string, updates: Partial<User>): Promise<Us
     mappedUpdates.thought_text = updates.thoughtText
     delete mappedUpdates.thoughtText
   }
+  // Libros leídos - no necesita mapeo ya que ambos usan books_read
 
   console.log('📤 Datos a enviar a Supabase:', mappedUpdates);
 
@@ -156,6 +159,7 @@ export async function updateUser(id: string, updates: Partial<User>): Promise<Us
     badgeCategoryId: data.badge_category_id || undefined,
     badgeLabel: data.badge_label || undefined,
     thoughtText: data.thought_text || undefined,
+    books_read: data.books_read || 0,
     createdAt: data.created_at,
     favoriteBooks: data.favorite_books || undefined,
   }
@@ -733,7 +737,7 @@ export async function getFollowers(userId: string): Promise<User[]> {
       return []
     }
     
-    return data?.map(follow => ({
+    const followers = data?.map(follow => ({
       id: follow.follower.id,
       username: follow.follower.username,
       role: follow.follower.role,
@@ -748,6 +752,8 @@ export async function getFollowers(userId: string): Promise<User[]> {
       status: follow.follower.status,
       createdAt: follow.follower.created_at,
     })) || []
+    
+    return followers;
   } catch (error) {
     console.error('Error in getFollowers:', error)
     return []

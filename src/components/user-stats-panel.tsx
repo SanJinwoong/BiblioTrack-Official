@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { User, Checkout, Review, Book } from '@/lib/types';
 import { BookCard } from './book-card';
-import { getReviewsByUserId, getUserByUsername, getBooks } from '@/lib/supabase-functions';
+import { getReviewsByUserId, getUserByUsername, getBooks, getFollowers, getFollowing } from '@/lib/supabase-functions';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
@@ -90,14 +90,20 @@ export function UserStatsPanel({ user, checkouts, checkoutRequests }: UserStatsP
           ? userReviews.reduce((sum, review) => sum + review.rating, 0) / userReviews.length 
           : 0;
 
+        // Load followers and following data
+        const [followers, following] = await Promise.all([
+          getFollowers(user.id),
+          getFollowing(user.id)
+        ]);
+
         setStats({
           booksRead,
           currentLoans,
           pendingRequests,
           totalReviews: userReviews.length,
           averageRating,
-          followersCount: user.followers?.length || 0,
-          followingCount: user.following?.length || 0,
+          followersCount: followers.length,
+          followingCount: following.length,
           joinDate: user.createdAt || ''
         });
       } catch (error) {
@@ -255,29 +261,27 @@ export function UserStatsPanel({ user, checkouts, checkoutRequests }: UserStatsP
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="current" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="current">
-                Actuales ({stats.currentLoans})
-              </TabsTrigger>
-              <TabsTrigger value="pending">
-                Pendientes ({stats.pendingRequests})
-              </TabsTrigger>
-              <TabsTrigger value="reviews">
-                Reseñas ({stats.totalReviews})
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="current" className="space-y-4">
-              {getCurrentLoans().length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <BookOpen className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>No tienes préstamos activos</p>
-                  <p className="text-sm">¡Explora nuestro catálogo y pide un libro!</p>
-                </div>
-              ) : (
+          {/* Mostrar todos los libros juntos: primero prestados, después pendientes */}
+          <div className="space-y-4">
+            {(() => {
+              const currentLoans = getCurrentLoans();
+              const pendingRequests = getPendingRequests();
+              const allBooks = [...currentLoans, ...pendingRequests];
+              
+              if (allBooks.length === 0) {
+                return (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <BookOpen className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>No tienes actividad de lectura</p>
+                    <p className="text-sm">¡Explora nuestro catálogo y pide un libro!</p>
+                  </div>
+                );
+              }
+              
+              return (
                 <div className="flex flex-wrap -ml-4">
-                  {getCurrentLoans().map((book) => {
+                  {/* Primero mostrar los libros prestados */}
+                  {currentLoans.map((book) => {
                     const isOverdue: boolean = !!(book.dueDate && new Date(book.dueDate) < new Date());
                     return (
                       <div
@@ -299,26 +303,15 @@ export function UserStatsPanel({ user, checkouts, checkoutRequests }: UserStatsP
                               <Badge className="bg-green-100 text-green-800">Prestado</Badge>
                             )}
                           </div>
-                          {/* Fecha removida para no sobreponer el autor */}
                         </BookCard>
                       </div>
                     );
                   })}
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="pending" className="space-y-4">
-              {getPendingRequests().length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Clock className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>No tienes solicitudes pendientes</p>
-                </div>
-              ) : (
-                <div className="flex flex-wrap -ml-4">
-                  {getPendingRequests().map((book) => (
+                  
+                  {/* Después mostrar los libros pendientes */}
+                  {pendingRequests.map((book) => (
                     <div
-                      key={book.id}
+                      key={`pending-${book.id}`}
                       className="pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 xl:basis-1/6 mb-6"
                     >
                       <BookCard
@@ -330,63 +323,13 @@ export function UserStatsPanel({ user, checkouts, checkoutRequests }: UserStatsP
                         <div className="absolute top-2 left-2">
                           <Badge className="bg-blue-100 text-blue-800 animate-pulse">Pendiente</Badge>
                         </div>
-                        {/* Fecha removida para no sobreponer el autor */}
                       </BookCard>
                     </div>
                   ))}
                 </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="reviews" className="space-y-4">
-              {reviews.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Star className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>No has escrito reseñas aún</p>
-                  <p className="text-sm">¡Comparte tu opinión sobre los libros que has leído!</p>
-                </div>
-              ) : (
-                <ScrollArea className="h-64">
-                  <div className="space-y-3">
-                    {reviews.slice(0, 10).map((review) => {
-                      const book = getBookDetails(review.bookId);
-                      return (
-                        <div key={review.id} className="p-3 border rounded-lg space-y-2">
-                          {book && (
-                            <div className="flex items-center space-x-3">
-                              <img
-                                src={getBookCoverUrl(book)}
-                                alt={book.title}
-                                className="w-8 h-10 object-cover rounded"
-                              />
-                              <div>
-                                <h5 className="font-medium text-sm">{book.title}</h5>
-                                <p className="text-xs text-muted-foreground">{book.author}</p>
-                              </div>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-1">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`h-3 w-3 ${
-                                  i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                                }`}
-                              />
-                            ))}
-                            <span className="text-xs text-muted-foreground ml-1">
-                              {format(new Date(review.date), "d 'de' MMM", { locale: es })}
-                            </span>
-                          </div>
-                          <p className="text-sm text-muted-foreground line-clamp-2">{review.comment}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </ScrollArea>
-              )}
-            </TabsContent>
-          </Tabs>
+              );
+            })()}
+          </div>
         </CardContent>
       </Card>
     </div>

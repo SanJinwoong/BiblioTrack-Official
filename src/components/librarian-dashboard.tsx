@@ -320,23 +320,32 @@ export function LibrarianDashboard() {
       
       const userToUpdate = users.find(u => u.username === checkoutToReturn.userId);
 
-      if (userToUpdate && userToUpdate.status === 'deactivated') {
-        // Check if user has other overdue books
-        const allCheckouts = await getCheckouts();
-        const otherCheckouts = allCheckouts.filter(c => 
-          c.userId === checkoutToReturn.userId && c.id !== checkoutToReturn.id
-        );
-        const hasOtherOverdueBooks = otherCheckouts.some(c => isPast(parseISO(c.dueDate)));
+      if (userToUpdate) {
+        // Incrementar el contador de libros leídos
+        const currentBooksRead = userToUpdate.books_read || 0;
+        const updates: any = { books_read: currentBooksRead + 1 };
 
-        if (!hasOtherOverdueBooks) {
-          await updateUser(userToUpdate.id, { status: 'active' });
+        // Si el usuario estaba desactivado, verificar si debe reactivarse
+        if (userToUpdate.status === 'deactivated') {
+          // Check if user has other overdue books
+          const allCheckouts = await getCheckouts();
+          const otherCheckouts = allCheckouts.filter(c => 
+            c.userId === checkoutToReturn.userId && c.id !== checkoutToReturn.id
+          );
+          const hasOtherOverdueBooks = otherCheckouts.some(c => isPast(parseISO(c.dueDate)));
+
+          if (!hasOtherOverdueBooks) {
+            updates.status = 'active';
+          }
         }
+
+        await updateUser(userToUpdate.id, updates);
       }
 
       // Refrescar datos inmediatamente
       await refreshData();
 
-      toast({ title: '✅ Libro Devuelto', description: `El libro ha sido marcado como devuelto.` });
+      toast({ title: '✅ Libro Devuelto', description: `El libro ha sido marcado como devuelto y se ha sumado a los libros leídos.` });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'No se pudo procesar la devolución.' });
     }

@@ -115,6 +115,7 @@ export function UserProfile({ username }: UserProfileProps) {
             // Load followers and following
             const followersList = await getFollowers(profileUser.id);
             const followingList = await getFollowing(profileUser.id);
+            
             setFollowers(followersList);
             setFollowing(followingList);
             
@@ -124,15 +125,19 @@ export function UserProfile({ username }: UserProfileProps) {
               setIsCurrentlyFollowing(followStatus);
             }
           } catch (error) {
-            console.warn('Failed to load user profile data:', error);
-            setReviews([]);
-            setActivities([]);
-            setFavorites([]);
-            setFollowers([]);
-            setFollowing([]);
-            setIsCurrentlyFollowing(false);
+            console.warn('Failed to load some user profile data:', error);
+            // Only reset if we can't load the basic user data
+            if (!profileUser) {
+              setReviews([]);
+              setActivities([]);
+              setFavorites([]);
+              setFollowers([]);
+              setFollowing([]);
+              setIsCurrentlyFollowing(false);
+            }
           }
-        } else {
+        } else if (usersData.length > 0) {
+          // Only reset if we've loaded users but can't find the profile user
           setReviews([]);
           setActivities([]);
           setFavorites([]);
@@ -140,6 +145,7 @@ export function UserProfile({ username }: UserProfileProps) {
           setFollowing([]);
           setIsCurrentlyFollowing(false);
         }
+        // If usersData.length === 0, don't reset - might still be loading
       } catch (error) {
         console.error('Error loading data:', error);
         toast({
