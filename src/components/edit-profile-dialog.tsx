@@ -166,7 +166,7 @@ function CroppingView({
           min={0.1}
           max={4}
           step={0.01}
-          onValueChange={(value) => setScale(value[0])}
+          onValueChange={(value: number[]) => setScale(value[0])}
         />
         <ZoomIn className="h-5 w-5 text-muted-foreground" />
       </div>
