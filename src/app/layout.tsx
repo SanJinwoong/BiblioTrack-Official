@@ -1,12 +1,6 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
-
-const poppins = Poppins({ 
-  subsets: ["latin"],
-  weight: ['300', '400', '500', '600', '700', '800']
-});
 
 export const metadata: Metadata = {
   title: "BiblioTrack",
@@ -20,7 +14,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={`${poppins.className} antialiased min-h-screen bg-background`}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+      </head>
+      <body className="antialiased min-h-screen bg-background" style={{ fontFamily: "'Poppins', sans-serif" }}>
         {children}
         <Toaster />
       </body>
